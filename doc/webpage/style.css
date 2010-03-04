@@ -1,0 +1,52 @@
+/* Hermes Home Page Main CSS Style                         */
+/* Parts are based on:                                     */
+/* - Eric S. Raymond (http://www.catb.org/~esr/) home page */
+/* - Lua (http://www.lua.org/) home page                   */
+/*                                                         */
+/* Last update on 2007/03/23 by Tiago Tresoldi             */
+
+body
+{
+  background-color: white;
+  font-family: helvetica, sans-serif;
+}
+
+a:link
+{
+  color: #0000cd;
+}
+
+a:link:hover, a:visited:hover
+{
+  background-color: #ccc;
+}
+
+table
+{
+  border: 2px ridge grey;
+  border-collapse: collapse;
+  background-color: white;
+}
+
+th
+{
+  border: 1px solid grey;
+  background-color: #88cfff;
+}
+
+td
+{
+  border: 1px solid grey;
+}
+
+#PageHeader {
+  font-weight: 600;
+  font-size: x-large;
+  margin: 20px 0 10px 0;
+  padding: 0.3ex 0 0.3ex 15px;
+  border-style: solid;
+  border-color: black;
+  border-width: 1px 0;
+  background-color: #eee;
+}
+
