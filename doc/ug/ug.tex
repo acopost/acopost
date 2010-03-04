@@ -1,0 +1,1120 @@
+\documentclass[11pt,twoside,a4paper]{article} 
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{natbib}
+\usepackage{fancyheadings}
+\usepackage{comment}
+\usepackage{url}
+\usepackage{xspace}
+
+%%\hyphenation{}
+
+% Allow the new placement directive H for tables and figures.
+%%\restylefloat{table}
+%%\floatstyle{boxed}
+%\floatstyle{ruled}
+%%\restylefloat{figure}
+%\restylefloat{table}
+
+% Set parameters for floating objects.
+\setcounter{topnumber}{4}
+% fraction of the page at top for floating objects
+\renewcommand{\topfraction}{.9}
+\setcounter{bottomnumber}{2}
+\renewcommand{\bottomfraction}{.7}
+\setcounter{totalnumber}{10}
+% minimum fraction of page covered by text (constraint syntax)
+\renewcommand{\textfraction}{.05}
+\renewcommand\floatpagefraction{.8}
+
+% Do not indent on new paragraph.
+\setlength{\parindent}{0em}
+% Skip 1.5ex on new paragraph.
+\setlength{\parskip}{1.5ex plus0.5ex minus0.5ex}
+
+% boxed minipage environment
+\newsavebox{\fminibox}
+\newlength{\fminilength}
+\newenvironment{fminipage}[1][\linewidth]
+  {\setlength{\fminilength}{#1}%
+    \addtolength{\fminilength}{-2\fboxrule}%
+    \addtolength{\fminilength}{-2\fboxsep}%
+    \begin{lrbox}{\fminibox}\begin{minipage}{\fminilength}}
+  {\end{minipage}\end{lrbox}\noindent\fbox{\usebox{\fminibox}}}
+
+% boxed figure environment
+\newenvironment{Figure}[1][hbtp]%
+  {\begin{figure}[#1]\centering\begin{fminipage}\vspace*{0mm}\centering}
+  {\end{fminipage}\end{figure}}
+
+% boxed table environment
+\newenvironment{Table}[1][hbtp]%
+  {\begin{table}[#1]\centering\begin{fminipage}\vspace*{0mm}\centering}
+  {\end{fminipage}\end{table}}
+
+% new quotation environment
+\newcommand{\QuoteArg}{*foo*}
+\newcommand{\QuoteCite}{*bar*}
+\newenvironment{Quote}[2][*foo*]%
+  {\renewcommand{\QuoteArg}{#1}\renewcommand{\QuoteCite}{#2}\begin{quote}``\ignorespaces}
+  {\unskip''\quotecite[\QuoteArg]{\QuoteCite}\end{quote}}
+
+% Definition environment
+%\newcounter{Definition}[chapter]
+%\newcounter{Definitionsave}
+%\renewcommand{\theDefinition}{\thechapter.\arabic{Definition}}
+%\newenvironment{Definition}
+%{\ignorespaces\textbf{Definition~\thechapter.\arabic{Definition}}\begin{itshape}}
+%{\unskip\end{itshape}}
+
+\newtheorem{Definition}{Definition}[section]
+
+\newcommand{\margintop}[1]{\marginpar%
+  [{\parbox[t]{\marginparwidth}{\scriptsize\raggedleft#1}}]%
+  {{\parbox[t]{\marginparwidth}{\scriptsize\raggedright#1}}}}
+\newcommand{\margincenter}[1]{\marginpar%
+  [{\parbox[c]{\marginparwidth}{\scriptsize\raggedleft#1}}]%
+  {{\parbox[c]{\marginparwidth}{\scriptsize\raggedright#1}}}}
+\newcommand{\marginbottom}[1]{\marginpar%
+  [{\parbox[b]{\marginparwidth}{\scriptsize\raggedleft#1}}]%
+  {{\parbox[b]{\marginparwidth}{\scriptsize\raggedright#1}}}}
+
+\newcommand{\Attention}[0]{%
+  \margincenter{\includegraphics[width=6mm]{fig/attention.eps}}}
+
+\newcommand{\Comment}[1]{\textbf{\small\scshape{}#1}\Attention}
+
+\newcommand{\textitem}[1]{\textbf{#1}}
+
+\newcommand{\quotecite}[2][*foo*]{%
+  \hspace*{\fill}\nolinebreak[1]\hspace*{\fill}------~\ifthenelse{%
+    \equal{#1}{*foo*}}{%
+    \mbox{\citet{#2}}}{%
+    \mbox{\citet[#1]{#2}}}}
+
+\newcommand{\engl}[1]{(engl.\ \textit{#1})}
+\newcommand{\nvec}[1]{\mbox{$#1_1, #1_2, \ldots, #1_n$}}
+\newcommand{\xvec}[2]{\mbox{$#1_1, #1_2, \ldots, #1_#2$}}
+%\newcommand{\IN}{I\hspace{-0.15em}N}
+\newcommand{\IN}{\mbox{$\mathds{N}$}}
+%\newcommand{\IR}{I\hspace{-0.15em}R}
+\newcommand{\IR}{\mbox{$\mathds{R}$}}
+
+\newcommand{\Define}{\mbox{$\stackrel{\text{def}}{=}$}}
+%\newcommand{\Define}{\stackrel{\text{def}}{=}}
+\newcommand{\URL}[1]{\url{#1}}
+\newcommand{\Oz}{\textsc{Oz}\xspace}
+
+%\renewcommand{\baselinestretch}{1.2}
+\setlength{\oddsidemargin}{0cm}
+\setlength{\evensidemargin}{0cm}
+\setlength{\textwidth}{17cm}
+\setlength{\textheight}{22cm}
+%\setlength{\hoffset}{-.22in}
+%\setlength{\voffset}{0.18in}
+%\setlength{\headheight}{2cm}
+%\setlength{\headsep}{0cm}
+%\setlength{\marginparsep}{3pt}
+%\setlength{\marginparwidth}{35pt}
+
+\newcommand{\eg}{e.g.,\xspace}
+\newcommand{\ie}{i.e.,\xspace}
+\newcommand{\met}{\textsf{met}\xspace}
+\newcommand{\ttt}{\textsf{t3}\xspace}
+\newcommand{\tbt}{\textsf{tbt}\xspace}
+\newcommand{\et}{\textsf{et}\xspace}
+
+\newcommand{\acopost}{\textsf{ACOPOST}\xspace}
+
+% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+\begin{document}
+
+\pagestyle{fancyplain}
+\thispagestyle{plain}
+%\addtolength{\headwidth}{\marginparsep}
+%\addtolength{\headwidth}{\marginparwidth}
+%%\renewcommand{\chaptermark}[1]{\markboth{\thechapter.\ #1}{}}
+%%\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\renewcommand{\subsectionmark}[1]{\markboth{\thesubsection.\ #1}{}}
+% hack \let\uppercase\relax
+\lhead[\fancyplain{}{\normalfont\thepage}]%
+          {\fancyplain{}{\let\uppercase\relax\rightmark}}
+\chead{}
+\rhead[\fancyplain{}{\let\uppercase\relax\leftmark}]%
+          {\fancyplain{}{\normalfont\thepage}}
+\lfoot[]{}
+\cfoot{\fancyplain{\normalfont\thepage}{}}
+\rfoot[]{}
+\setlength{\headrulewidth}{0.4pt}
+\setlength{\footrulewidth}{0pt}
+\setlength{\plainheadrulewidth}{0pt}
+\setlength{\plainheadrulewidth}{0pt}
+\addtolength{\headheight}{2pt}
+
+% switch on page numbering
+\setcounter{page}{1}
+\pagenumbering{arabic}
+
+% ------------------------------------------------------------------------
+
+\begin{center}
+  \Huge\bfseries 
+  \acopost: User manual
+
+  \LARGE
+  Version 1.8.4
+
+  \normalsize\normalfont
+  Ingo Schröder \\
+  \URL{ixs@users.sourceforge.net}
+\end{center}
+
+\addcontentsline{toc}{section}{Contents}
+\tableofcontents
+
+% ------------------------------------------------------------------------
+\section{Introduction}
+
+This document describes how to use the \acopost program suite. 
+
+\acopost is a collection of part-of-speech tagging algorithms, each
+originating from a different machine learning paradigm.
+
+\begin{itemize}
+\item \ttt is a trigram tagger based on Markov models.
+\item \met is a maximum entropy inspired tagger.
+\item \tbt is an error-driven learner of transformation rules. 
+\item \et is an example-based tagger.
+\end{itemize}
+
+An evaluation of the individual part-of-speech taggers and of novel 
+combination techniques can be found in an accompanying  technical
+report \citep{Schroeder:2002b}.
+
+% ------------------------------------------------------------------------
+\section{Installation}
+
+\acopost is available under the GNU public license\footnote{%
+  See \URL{http://www.gnu.org/licenses/gpl.html}.
+  }
+from the project homepage hosted at
+\URL{http://www.sourceforge.net}.
+
+\acopost comes as a gzipped tar archive of the source code named
+acopost-$x.y.z$.tar.gz where $x.y.z$ is the version number. 
+No pre-compiiled binaries are available but don't worry: 
+Compiling is easy. You only need a C compiler (gcc is recommended) and
+the \verb+make+ program which are both most probably already installed
+on your machine if you're using UNIX.\footnote{%
+  I have not tried to compile \acopost on MS Windows but I am
+  interested in reports from Windows users.
+  }
+Some scripts use the Perl programming language\footnote{%
+  See \URL{http://www.perl.org/} and \URL{http://www.perl.com/}. 
+} which you want to have installed anyway.
+
+Find a convenient place in your directory tree and unzip the
+archive which unpacks into a new directory acopost-$x.y.z$: 
+
+\begin{quote}
+\begin{verbatim}
+PROMPT> gunzip -c acopost-1.8.4.tar.gz | tar fxv -
+acopost-1.8.4/
+acopost-1.8.4/src/
+acopost-1.8.4/src/Makefile
+acopost-1.8.4/src/array.c
+...
+\end{verbatim}
+\end{quote}
+
+The fresh directory contains at least the following files and
+directories: 
+
+\begin{itemize}
+\item 
+  Text file \verb+README+ with a short intro and latest changes.
+\item 
+  Directory \verb+bin+ which contains the Perl scripts and where the
+  binaries are installed after compilation.
+\item 
+  Directory \verb+src+ which contains the C files.
+\item 
+  Directory \verb+docs+ which contains the documentation, this user
+  guide and a technical report \citep{Schroeder:2002b}.
+\item 
+  Directory \verb+examples+ which contains some example files.
+\end{itemize}
+
+To compile, change to the \verb+src+ directory and type
+\verb+make+. If everything works out ok, issue the command 
+\verb+make install+ which installs the binaries into the directory 
+\verb+../bin+. Congratulations! You're done. 
+
+If something goes wrong, try to fix it by adpating the \verb+Makefile+
+or the source code. Don't forget to tell me about your problems so
+that I can provide a better solution with the next release.
+
+You can now chose to add the \verb+bin+ directory as a full path to
+your \verb+PATH+ variable, to move/copy all binaries from the
+\verb+bin+ directory to a directory already in your \verb+PATH+
+variable or simply decide to always use the full path to an \acopost
+program. 
+
+% ------------------------------------------------------------------------
+\section{File formats}
+\label{S:FileFormats}
+
+I tried to keep everything as simple as possible in order to be able
+to use other tools on the corpora, \eg UNIX tools like 
+\verb+grep+, \verb+sed+, \verb+wc+ etc.\ or Perl. Therefore, I chose
+line-based formats for the corpora, \ie each line of texts (separated
+by the newline character \verb+\n+) holds exactly one sentence. The
+items in a sentence are separated by one or more white space
+characters, \ie tabular \verb+\t+ or space characters. Punctuation
+marks should be separated from preceding words.
+
+\acopost uses two file formats for text: raw and cooked.
+
+\begin{itemize}
+\item
+  Raw text follows the line-based format described above but doesn't
+  contain any additional information. Here's an example from the Wall
+  Street Journal corpus \citep{Marcus+Santorini+Marcinkiewicz:93a}:
+
+  \begin{footnotesize}\ttfamily
+    The rest went to investors from France and Hong Kong .
+  \end{footnotesize}
+
+\item
+  Cooked text contains the part-of-speech tags for the words. The tag
+  immediately follows the word and the two are separated by one or
+  more white space characters, \ie in the same way ajacent words are
+  separated. Of course, a line of cooked text must always contain an
+  even number of items. Here's the same example as above as cooked
+  text: 
+
+  \begin{footnotesize}\ttfamily
+    The DT rest NN went VBD to TO investors NNS from IN France NNP and CC Hong NNP Kong NNP . .
+  \end{footnotesize}
+
+  Note that the period functions as both a word and a tag symbol in
+  the Wall Street Journal corpus.
+\end{itemize}
+
+The \acopost program suite contains Perl scripts which convert from
+and into different formats, \eg
+\verb+wsj2cooked.pl+ (cf.\ Section~\ref{S:wsj2cooked.pl}),
+\verb+tt2cooked.pl+ (cf.\ Section~\ref{S:tt2cooked.pl}) and
+\verb+cooked2tt.pl+ (cf.\ Section~\ref{S:cooked2tt.pl}).
+
+The individual taggers use additional data formats to store the model
+information. These formats have been chosen to be human-readable but
+completely understanding them requires deep insights into the tagging
+algorithms. The formats of model file might change between releases.
+
+The format of the lexicon files is also line-based. Each line lists
+the word form and the possible tags including the tag counts.
+
+\begin{footnotesize}\ttfamily
+  WORDFORM TAG1 TAGCOUNT1 TAG2 TAGCOUNT2 ...
+\end{footnotesize}
+
+An older format allowed for an optional word count after the word form
+but since this information is redundant it is deprecated.
+
+% ------------------------------------------------------------------------
+\section{Tutorial}
+
+Nothing yet.
+
+% ------------------------------------------------------------------------
+\section{Program references}
+
+Note that not all programs in the \verb+bin+ directory are described
+here. This may be the case due to one of the following reasons. 
+
+\begin{itemize}
+\item
+  The program is considered to be of marginal importance.
+\item
+  It hasn't reached a stable state.
+\item
+  It's obsolete.
+\end{itemize}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{complementary-rate.pl}
+\label{S:complementary-rate.pl}
+
+\subsubsection{Purpose}
+
+Report the complementary error rate \citep{Brill+Wu:98} of two versions
+of a tagged corpus.  
+
+\subsubsection{Usage}
+
+\verb+complementary-rate.pl [-h] ref a b+
+
+\begin{tabular}{lp{15cm}}
+\verb+-h+ &
+display short help text and exit \\
+%
+\verb+ref+ & 
+reference corpus in cooked format \\
+%
+\verb+a+ &
+first tagged corpus in cooked format \\
+%
+\verb+b+ &
+second tagged corpus in cooked format
+\end{tabular}
+
+\subsubsection{Example}
+
+\begin{verbatim}
+PROMPT> ~/acopost/bin/complementary-rate.pl 0.ref 0.t3 0.tnt
+accuracy A  96.221% 16651 654        0
+accuracy B  96.689% 16732 573
+comp(A,B)   22.783% 505 654
+comp(B,A)   11.867% 505 573
+PROMPT>
+\end{verbatim}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{cooked2lex.pl}
+\label{S:cooked2lex.pl}
+
+\subsubsection{Purpose}
+
+Convert a corpus in cooked format to a lexicon.
+
+\subsubsection{Usage}
+
+\verb+cooked2lex.pl [-h] [-c] < in.cooked > out.lex+
+
+\begin{tabular}{lp{15cm}}
+\verb+-h+ & display a short help text and exit \\
+\verb+-c+ & output deprecated word count after the word form 
+(cf.\ Section~\ref{S:FileFormats})
+\end{tabular}
+
+\subsubsection{Example}
+
+\begin{verbatim}
+PROMPT> cooked2lex.pl < negra.cooked > negra.lex
+20602 sentences
+55 tags 51272 types 355096 tokens
+  1     49189  95.937%    238545  67.178%
+  2      1884   3.675%     45586  12.838%
+  3       164   0.320%     46789  13.176%
+  4        32   0.062%     20090   5.658%
+  5         1   0.002%      2715   0.765%
+  6         1   0.002%      1363   0.384%
+  7         1   0.002%         8   0.002%
+Mean ambiguity A=1.611544
+
+Entropy H(p)=4.273873
+PROMPT>
+\end{verbatim}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{cooked2ngram.pl}
+\label{S:cooked2ngram.pl}
+
+\subsubsection{Purpose}
+
+Convert a corpus in cooked format to a file containing counts for tag
+$n$-grams.
+
+\subsubsection{Usage}
+
+\verb+cooked2ngram.pl [-h] < in.cooked > out.ngram+
+
+\begin{tabular}{lp{15cm}}
+\verb+-h+ & 
+display a short help text and exit \\
+\end{tabular}
+
+\subsubsection{Example}
+
+\begin{verbatim}
+PROMPT> cooked2ngram.pl < corpus.cooked > corpus.ngram
+\end{verbatim}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{cooked2tt.pl}
+\label{S:cooked2tt.pl}
+
+\subsubsection{Purpose}
+
+Convert a corpus in cooked format to a corpus in the format
+\citep{Brants:97b} used by the TnT tagger package
+\citep{Brants:2000a}. 
+
+\subsubsection{Usage}
+
+\verb+cooked2tt.pl [-h] < in.cooked > out.tt+
+
+\begin{tabular}{lp{15cm}}
+\verb+-h+ & display a short help text and exit \\
+\end{tabular}
+
+\subsubsection{Example}
+
+\begin{verbatim}
+PROMPT> cooked2tt.pl < negra.cooked > negra.tt
+20602 sentences
+PROMPT>
+\end{verbatim}
+
+\begin{comment}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{cooked2wsj.pl}
+\label{S:cooked2wsj.pl}
+
+\subsubsection{Purpose}
+
+Convert a corpus in cooked format to a corpus in the format
+used by the Wall Street Journal corpus
+\citep{Marcus+Santorini+Marcinkiewicz:93a}. 
+
+\subsubsection{Usage}
+
+\verb+cooked2wsj.pl [-h] < in.cooked > out.wsj+
+
+\begin{tabular}{lp{15cm}}
+\verb+-h+ & display a short help text and exit \\
+\end{tabular}
+
+\subsubsection{Example}
+
+\begin{verbatim}
+PROMPT>
+PROMPT>
+\end{verbatim}
+
+\end{comment}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{cooked2wtree.pl}
+\label{S:cooked2wtree.pl}
+
+\subsubsection{Purpose}
+
+Convert a corpus in cooked format to a weighted tree
+\citep{Daelemans+Bosch+Weijters:97a,Schroeder:2002b} for use in
+example-based disambiguation.
+
+\textbf{Warning: the current implementation is far from
+  efficient. Training on the Wall Street Journal corpus requires large
+  amounts of main memory. Be careful!}
+
+\subsubsection{Usage}
+
+\verb+cooked2wtree.pl OPTIONS f-file < in.cooked > out.wsj+
+
+where \verb+f-file+ is a feature file (see below) and \verb+OPTIONS+
+can be one or more of:
+
+\begin{tabular}{lp{15cm}}
+\verb+-a a+ & 
+is the minimal word count that a word must have to be considered
+(default: unlimited) \\
+%
+\verb+-b b+ &
+is the maximal word count that a word must have to be considered
+(default: unlimited) \\
+%
+\verb+-d+ &
+debug flag \\
+%
+\verb+-e e+ &
+file with tags to be excluded (default: exclude none) \\
+%
+\verb+-i i+ &
+file with tags to be explicitely included (default: include all) \\
+%
+\verb+-h+ & 
+display a short help text and exit \\
+%
+\verb+-r r+ &
+rare word count threshold \\
+%
+\verb+-w w+ &
+word rank threshold (default: 100) \\
+\end{tabular}
+
+\subsubsection{Features}
+
+Features describe characteristics of tagging context that can be used
+for the tagging decision. The following features are allowed:
+
+\begin{itemize}
+\item
+  \verb+TAG[+\emph{relpos}\verb+]+:
+  Include the tag at the relative position \emph{relpos} as a
+  criterion for the decision. For example, \verb+TAG[-1]+ means the
+  tag of the word immediately to the left. Of course, \emph{relpos}
+  must be negative since the tags to the right are not yet known.
+\item 
+  \verb+CLASS[+\emph{relpos}\verb+]+:
+  Use the ambiguity class at the relative position \emph{relpos} as a
+  criterion. For example, \verb+CLASS[1]+ considers the ambiguity
+  class of the word to the right of the current word.
+\item
+  \verb+WORD[+\emph{relpos}\verb+]+:
+  Use the word form at the relative position \emph{relpos} as a
+  criterion. Note that only frequent words (see options \verb+-r+ and
+  \verb+-w+) are used. For rare words the artifical token
+  \verb+*RARE*+ is substituted.
+\item
+  \verb+LETTER[+\emph{relpos, index}\verb+]+:
+  Use the letter at position \emph{index} of the word at the relative
+  position \emph{relpos} as a criterion. Negative values of
+  \emph{index} count from the end of the word backwards.
+\item
+  \verb+CAP[+\emph{relpos}\verb+]+:
+  Use the binary answer whether the word at the relative position
+  \emph{relpos} is capitatized as a criterion.
+\item
+  \verb+HYPHEN[+\emph{relpos}\verb+]+:
+  Use the binary answer whether the word at the relative position
+  \emph{relpos} contains a hyphen as a criterion.
+\item
+  \verb+NUMBER[+\emph{relpos}\verb+]+:
+  Use the binary answer whether the word at the relative position
+  \emph{relpos} contains a digit as a criterion.
+\item
+  \verb+INTER[+\emph{relpos}\verb+]+:
+  Use the binary answer whether the word at the relative position
+  \emph{relpos} contains an interpunctuation mark as a criterion.
+\end{itemize}
+
+The directory \verb+examples/et+ contains example feature files.
+
+\subsubsection{Example}
+
+\begin{verbatim}
+PROMPT>
+PROMPT>
+\end{verbatim}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{et}
+\label{S:et}
+
+\subsubsection{Purpose}
+
+Assign tags to a natural language text in raw format using the
+example-based paradigm 
+\citep[Section~5.4]{Schroeder:2002b}.
+
+Note that the learning phase is done by the Perl script 
+\verb+cooked2wtree.pl+ 
+(cf.\ Section~\ref{S:cooked2wtree.pl}).
+
+\subsubsection{Usage}
+
+\verb+et OPTIONS knownwtree unknownwtree lexiconfile [in.raw] > out.cooked+
+
+where 
+\verb+knowntree+ is a weighted tree file generated by 
+\verb+cooked2wtree.pl+
+(cf.\ Section~\ref{S:cooked2wtree.pl})
+for known words,
+\verb+unknowntree+ is a weighted tree file for unknown words
+and 
+\verb+lexiconfile+ is a lexicon file generated by
+\verb+cooked2lex.pl+
+(cf.\ Section~\ref{S:cooked2lex.pl}). 
+If the input file
+\verb+in.raw+
+is omitted standard input is used. 
+\verb+OPTIONS+ can be:
+
+\begin{tabular}{lp{15cm}}
+\verb+-v v+ & verbosity (default: 1) \\
+\end{tabular}
+
+\subsubsection{Example}
+
+\begin{small}
+\begin{verbatim}
+PROMPT> cooked2lex.pl < train.cooked > train.lex
+...
+PROMPT> cooked2wtree.pl -a 3 known.etf < train.cooked > known.wtree
+...
+PROMPT> cooked2wtree.pl -b 2 unknown.etf -e closed-class-tags < train.cooked > unknown.wtree
+...
+PROMPT> et known.wtree unknown.wtree train.lex < test.raw > test.et
+[        0 ms::1]
+[        0 ms::1] Example-based Tagger (c) Ingo Schröder, schroeder@informatik.uni-hamburg.de
+[        0 ms::1]
+[     2240 ms::1] read wtree with 156173 nodes from "known.wtree"
+[     3580 ms::1] read wtree with 116334 nodes from "unknown.wtree"
+[     3590 ms::1] done
+PROMPT> evaluate.pl test.cooked test.et
+2060 sentences
+             test.et    33990     1434  95.952%
+\end{verbatim}
+\end{small}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{evaluate.pl}
+\label{S:evaluate.pl}
+
+\subsubsection{Purpose}
+
+Report tagging accuracy on sentence level, for unknown, known and all
+words.
+
+\subsubsection{Usage}
+
+\verb+evaluate.pl+ [-h] [[-i] -l l] [-v] ref t1 ...
+
+\begin{tabular}{lp{15cm}}
+\verb+-h+ &
+display short help text and exit \\
+%
+\verb+-i+ &
+use case-insensitive lexicon \\
+%
+\verb+-l l+ &
+use lexicon \verb+l+ \\
+%
+\verb+-v+ &
+be verbose \\
+%
+\verb+ref+ & 
+reference corpus in cooked format \\
+%
+\verb+t1+ &
+tagged corpus in cooked format
+\end{tabular}
+
+\subsubsection{Example}
+
+\begin{verbatim}
+PROMPT> evaluate.pl 0.ref 0.t3 0.tnt
+1002 sentences
+                0.t3    16651      654  96.221%
+               0.tnt    16732      573  96.689%
+PROMPT>
+\end{verbatim}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{majority-voter.pl}
+\label{S:majority-voter.pl}
+
+\subsubsection{Purpose}
+
+Report how often different numbers of different taggers have tagged
+words correctly. See \citet{Schroeder:2002b}.
+This immediately tells one how efficient a parallel
+combination of different taggers can be. Four numbers are given in
+each line: 
+The number of taggers that were correct, the percentage of words, the
+accumulated percentage of words and the mean ambiguity of tags if all
+emitted tags are counted.
+
+\subsubsection{Usage}
+
+\verb+majority-voter.pl+ [-h] ref t1 t2 ...
+
+\begin{tabular}{lp{15cm}}
+\verb+-h+ &
+display short help text and exit \\
+%
+\verb+ref+ & 
+reference corpus in cooked format \\
+%
+\verb+t1+ &
+first tagged corpus in cooked format \\
+%
+\verb+t2+ &
+second tagged corpus in cooked format
+\end{tabular}
+
+\subsubsection{Example}
+
+\begin{verbatim}
+PROMPT> majority-voter.pl 0.ref 0.t3 0.tbt 0.et 0.met
+2061 sentences
+35674 words
+4:  92.928%  92.928% 0.937658
+3:   3.493%  96.420% 0.983041
+2:   1.343%  97.763% 1.010988
+1:   1.090%  98.854% 1.068313
+0:   1.146% 100.000%
+PROMPT>
+\end{verbatim}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{met}
+\label{S:met}
+
+\subsubsection{Purpose}
+
+Nothing yet.
+
+\subsubsection{Usage}
+
+\verb+met OPTIONS modelfile [inputfile]+
+
+where \verb+modelfile+ is a trained or a new model file and
+\verb+inputfile+ is either a corpus in cooked format (for training) or
+in raw format (for tagging). \verb+OPTIONS+ can be one or more of the
+following: 
+
+\begin{tabular}{lp{15cm}}
+\verb+-b b+ &
+beam factor (default: 1000) for viterbi search
+or n-best width (default: 5) for n-best search \\
+%
+\verb+-c c+ &
+command mode, "tag", "train" or "test" \\
+%
+\verb+-d d+ &
+dictionary file \\
+%
+\verb+-f f+ &
+threshold for feature count (default: 5) \\
+%
+\verb+-h+ &
+display short help and exit \\
+%
+\verb+-i i+ &
+maximum number of iterations (default: 100), training only \\
+%
+\verb+-m m+ &
+probability threshold (default: 1.0) \\
+%
+\verb+-n+ &
+use n-best instead of viterbi \\
+%
+\verb+-p p+ &
+UNIX priority class (default: 19) \\
+%
+\verb+-r r+ &
+rare word threshold (defualt: 5) \\
+%
+\verb+-s+ &
+case sensitive dictionary \\
+%
+\verb+-t t+ &
+minimum accuracy improvement per iteration (default: 0.0), 
+training only \\
+%
+\verb+-v v+ &
+verbosity (default: 1) \\
+\end{tabular}
+
+\subsubsection{Example}
+
+\begin{small}
+\begin{verbatim}
+PROMPT> met -c test -d train.lex train.model.met < test.cooked
+[        0 ms::1] running as test
+[        0 ms::1] using test.lex as dictionary file
+[     1390 ms::1] read 54 tags, 40690 predicates and 83343 features
+[     2090 ms::1] read 45779 lexicon entries, discarded 2237 entries
+[    24620 ms::1] 35674 (35257 pos 417 neg) words tagged, accuracy  98.831%
+PROMPT>
+\end{verbatim}
+\end{small}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{t3}
+\label{S:t3}
+
+\subsubsection{Purpose}
+
+Assign tags to a natural language text in raw format using the Viterbi
+algorithm based on a hidden Markov model (HMM). The model information
+is extracted from a tag trigram file and a lexicon file.
+
+Note that the learning phase is very easy for HMMs. For that reason,
+the training phase is done by the Perl script 
+\verb+cooked2ngramn.pl+ 
+(cf.\ Section~\ref{S:cooked2ngram.pl}).
+
+\subsubsection{Usage}
+
+\verb+t3 OPTIONS modelfile lexiconfile [in.raw] > out.cooked+
+
+where \verb+modelfile+ is a tag trigram file generated by 
+\verb+cooked2ngram.pl+
+(cf.\ Section~\ref{S:cooked2ngram.pl})
+and 
+\verb+lexiconfile+ is a lexicon file generated by
+\verb+cooked2lex.pl+
+(cf.\ Section~\ref{S:cooked2lex.pl}). 
+If the input file
+\verb+in.raw+
+is omitted standard input is used. 
+\verb+OPTIONS+ can be:
+
+\begin{tabular}{lp{15cm}}
+\verb+-a a+ & 
+smoothing parameters for transitional probabilities,
+see \citet[Section~5.1.1]{Schroeder:2002b} and
+\citet{Brants:2000a} for the default \\
+%
+\verb+-b b+ &
+beam factor (default: 1000), states that are worse by this factor or
+more than the best state at this time point are discarded \\
+%
+\verb+-d+ & debug mode \\
+%
+\verb+-h+ & display short help and exit \\
+%
+\verb+-l l+ &
+maximum suffix length for estimating output probability for unknown
+words (default: 10) \\
+%
+\verb+-m m+ &
+mode of operation (default: 0): 0 means tagging, 1 testing, ... \\
+%
+\verb+-q+ &
+quiet mode of operation \\
+% 
+\verb+-r r+ &
+rare word count (default: 1) (for output probabilities) \\
+%
+\verb+-s s+ &
+theta for suffix backoff (default: SD of tag probabilities),
+see \citet[Section~5.1.1]{Schroeder:2002b} and
+\citet{Brants:2000a} \\
+%
+\verb+-t+ & test mode (reads cooked input) \\
+%
+\verb+-u+ & 
+use line-buffered IO for input (default: block-buffered on files) \\ 
+%
+\verb+-v v+ & verbosity (default: 1) \\
+%
+\verb+-x+ & case-insensitive suffix tries (default: sensitive) \\ 
+%
+\verb+-y+ & 
+case-insensitive when branching in suffix trie (default: sensitive) \\
+%
+\verb+-z+ &
+use zero probability for unseen transition probabilities
+(default: 1/\#tags) \\
+\end{tabular}
+
+\subsubsection{Example}
+
+\begin{small}
+\begin{verbatim}
+PROMPT> cooked2lex.pl < train.cooked > train.lex
+...
+PROMPT> cooked2ngram.pl < train.cooked > train.ngram
+...
+PROMPT> t3 train.ngram train.lex < test.raw > test.t3
+[        0 ms::1]
+[        0 ms::1] Trigram POS Tagger (c) Ingo Schröder, schroeder@informatik.uni-hamburg.de
+[        0 ms::1]
+[       80 ms::1] model generated from 18541 sentences (thereof 491 one-word)
+[       80 ms::1] found 55623 uni-, 74164 bi-, and 92214 trigram counts for the boundary tag
+[      210 ms::1] computed smoothed transition probabilities
+[     1940 ms::1] built suffix tries with 32602 lowercase and 74242 uppercase nodes
+[     1970 ms::1] leaves/single/total LC: 8628 20073 32603
+[     2040 ms::1] leaves/single/total UC: 18627 47180 74243
+[     4420 ms::1] suffix probabilities smoothing done [theta 7.489e-02]
+[    21690 ms::1] done
+PROMPT> evaluate.pl test.cooked test.t3
+2061 sentences
+         test.t3    34547     1127  96.841%
+\end{verbatim}
+\end{small}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{tbt}
+\label{S:tbt}
+
+\subsubsection{Purpose}
+
+Nothing yet.
+
+\subsubsection{Usage}
+
+\verb+tbt OPTIONS rulefile [inputfile]+
+
+\begin{tabular}{lp{15cm}}
+\verb+-i i+ &  
+maximum number of training iterations (default: unlimited), 
+training only \\ 
+%
+\verb+-l l+ & lexicon file (default: none) \\
+%
+\verb+-m m+ &  
+minimum improvement per training iteration (default: 1), 
+training only \\
+%
+\verb+-n n+ & rare wore threshold (default: 0) \\
+%
+\verb+-o o+ &
+mode of operation (default: 0): 0 tagging, 1 testing, 2 training \\ 
+%
+\verb+-p p+ &
+preload file (default: lexically most probable tag), 
+start from a different initial tagging \\
+%
+\verb+-r+ &
+assume raw format for input (default: cooked format), 
+tagging only \\
+%
+\verb+-t t+ &
+template file (default: none), 
+training only, 
+see below \\
+%
+\verb+-u u+ &
+unknown word default tag 
+(default: most probable tag from lexicon) \\
+%
+\verb+-v v+ &
+verbosity (defualt: 1) \\
+\end{tabular}
+
+\subsubsection{Templates}
+
+Templates are patterns for rules. The file format is line-based, i.~e.,
+one rule per line, empty lines and everything after a hash
+sign~\verb+#+ is ignored. The format for a rule or template is as
+follows: 
+
+\verb+TARGETTAG CONDITION1 CONDITION2 ...+
+
+where \verb+TARGETTAG+ is the new tag for the word under consideration
+and the conditions are prerequisites for the application of the
+rule. All conditions must be fulfilled for a rule to trigger.
+The following types of conditions are allowed:
+
+\begin{tabular}{lp{12cm}}
+\verb+tag[+\emph{relpos}\verb+]=+\emph{tag} &  
+The current tag of the word at relative position \emph{relpos} is
+\emph{tag}. \\
+%
+\verb+bos[+\emph{relpos}\verb+]+ &  
+Begin of sentence marker at relative position \emph{relpos}. \\
+%
+\verb+eos[+\emph{relpos}\verb+]+ &  
+End of sentence marker at relative position \emph{relpos}. \\
+%
+\verb+word[+\emph{relpos}\verb+]=+\emph{word} &  
+The word at relative position \emph{relpos} is \emph{word}. \\
+%
+\verb+rare[+\emph{relpos}\verb+]+ &  
+The word at relative position \emph{relpos} is rare. \\
+%
+\verb+prefix[+\emph{length}\verb+]=+\emph{prefix} &  
+The prefix of length \emph{length} of the current word is
+\emph{prefix}. \\
+%
+\verb+suffix[+\emph{length}\verb+]=+\emph{suffix} &  
+The suffix of length \emph{length} of the current word is
+\emph{suffix}. \\
+%
+\verb+cap[+\emph{relpos}\verb+]=+\emph{mode} &  
+The capitilization of the word at relative position \emph{relpos} is
+as \emph{mode} which can be:
+
+\begin{tabular}{lp{8cm}}
+\verb+no+ & No character is capitilized. \\
+\verb+some+ & Some characters are capitilized. \\
+\verb+all+ & All characters are capitilized. \\
+\end{tabular}
+\\
+%
+\verb+digit[+\emph{relpos}\verb+]=+\emph{mode} &  
+The word at relative position \emph{relpos} contains digits according
+to \emph{mode} which can be \verb+no+, \verb+some+ or \verb+all+ 
+(see \verb+cap+) \\
+%
+\end{tabular}
+
+The placeholders \emph{tag}, \emph{word}, \emph{prefix}, \emph{suffix}
+and \emph{mode} can also be the wildcard symbol \verb+*+ in
+templates. A typical rule template which takes the two preceding tags
+into account would then be:
+
+\verb+* tag[-2]=* tag[-1]=*+
+
+The \verb+examples/tbt+ directory contains example template files.
+
+\subsubsection{Example}
+
+\begin{small}
+\begin{verbatim}
+PROMPT> cat train.rules
+$. rare[0]
+NN rare[0] digit[0]=no
+ADJA rare[0] tag[0]=NN cap[0]=no
+VVPP rare[0] tag[0]=ADJA suffix[0]=t
+...
+PROMPT> tbt -r -l train.lex train.rules < test.raw > test.tbt
+Transformation-based Tagger 
+(c) Ingo Schröder, ingo@nats.informatik.uni-hamburg.de
+done
+PROMPT> evaluate.pl test.cooked test.tbt
+2061 sentences
+        test.tbt    34430     1244  96.513%
+\end{verbatim}
+\end{small}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{tt2cooked.pl}
+\label{S:tt2cooked.pl}
+
+\subsubsection{Purpose}
+
+Convert a corpus in a format \citep{Brants:97b} used by the TnT tagger
+package \citep{Brants:2000a} to a corpus in cooked format.
+
+\subsubsection{Usage}
+
+\verb+tt2cooked.pl [-h] < in.tt > out.cooked+
+
+\begin{tabular}{lp{15cm}}
+\verb+-h+ & display a short help text and exit \\
+\end{tabular}
+
+\subsubsection{Example}
+
+\begin{verbatim}
+PROMPT> tt2cooked.pl < negra.tt > negra.cooked
+396309 lines read
+PROMPT>
+\end{verbatim}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\subsection{wsj2cooked.pl}
+\label{S:wsj2cooked.pl}
+
+\subsubsection{Purpose}
+
+Convert a corpus in Wall Street Journal format to cooked format.
+
+\subsubsection{Usage}
+
+\verb+wsj2cooked.pl < in.wsj > out.cooked+
+
+\subsubsection{Example}
+
+\begin{verbatim}
+PROMPT> wsj2cooked.pl < corpus.wsj > negra.cooked
+PROMPT>
+\end{verbatim}
+
+% ------------------------------------------------------------------------
+\addcontentsline{toc}{section}{References}
+\bibliography{ug}
+\bibliographystyle{plainnat}
+
+% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+\end{document}

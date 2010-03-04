@@ -1,0 +1,45 @@
+# unigram
+* tag[0]=*
+
+# bigram
+* bos[-1] tag[0]=*
+* tag[-1]=* tag[0]=*
+* tag[0]=* eos[1]
+* tag[0]=* tag[1]=*
+
+* bos[-2] tag[0]=*
+* tag[-2]=* tag[0]=*
+* tag[0]=* eos[2]
+* tag[0]=* tag[2]=*
+
+# trigram
+* bos[-2] tag[-1]=* tag[0]=*
+* tag[-2]=* tag[-1]=* tag[0]=*
+* bos[-1] tag[0]=* eos[1]
+* bos[-1] tag[0]=* tag[1]=*
+* tag[-1]=* tag[0]=* eos[1]
+* tag[-1]=* tag[0]=* tag[1]=*
+* tag[0]=* tag[1]=* eos[2]
+* tag[0]=* tag[1]=* tag[2]=*
+
+# lexicalized 
+* word[0]=*
+
+* word[-1]=* 
+* word[1]=* 
+
+* word[-2]=*
+* word[2]=*
+
+* word[-1]=* word[0]=*
+* word[0]=* word[1]=*
+
+* word[-2]=* word[0]=*
+* word[0]=* word[2]=*
+
+* tag[-1]=* word[0]=*
+* word[0]=* tag[1]=*
+
+* tag[-1]=* word[-1]=* word[0]=*
+* word[0]=* tag[1]=* word[1]=*
+ 
