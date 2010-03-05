@@ -148,7 +148,7 @@ option_t ops[]={
   { 'b', "-b b  beam factor [1000]" },
   { 'd', "-d    debug mode" },
   { 'h', "-h    display help" },
-  { 'l', "-l l  maximum suffix length [10]" },
+  { 'l', "-l l  maximum suffix length [6]" },
   { 'm', "-m m  mode of operation [0]" },
   { 'q', "-q    be quite" },
   { 'r', "-r r  rare word threshold [1]" },
@@ -175,7 +175,7 @@ globals_pt new_globals(globals_pt old)
   g->cmd=g->mf=g->df=g->rf=NULL;
   g->bw=0;
   g->rwt=1;
-  g->msl=10;
+  g->msl=6;
   g->stcs=1;
   g->stics=1;
   g->zuetp=0;
@@ -268,10 +268,10 @@ void trie_add_daughter(trie_pt tr, unsigned char c, trie_pt daughter)
 void add_word_info_to_trie_node(model_pt m, trie_pt tr, word_pt wd)
 {
   int i;
-  int not=array_count(m->tags);
-  tr->count+=wd->count;
-  for (i=0; i<not; i++)
-    { tr->tagcount[i]+=wd->tagcount[i]; }
+  int not = array_count(m->tags);
+  tr->count += wd->count;
+  for (i = 0; i < not; i++)
+    tr->tagcount[i] += wd->tagcount[i];
 }
 
 /* ------------------------------------------------------------ */
@@ -280,14 +280,14 @@ void add_word_to_trie(void *key, void *value, void *data)
   char *s=(char *)key;
   word_pt wd=(word_pt)value;
   model_pt m=(model_pt)data;
-  char *uc=strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ", s[0]);
+  char *uc=strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", s[0]);
   trie_pt tr= uc ? m->upper_trie : m->lower_trie;
   char *t;
   int i;
 
-  if (wd->count>g->rwt) { return; }
+  if (wd->count > g->rwt) { return; }
   add_word_info_to_trie_node(m, tr, wd);
-  for (t=s+strlen(s)-1, i=g->msl; t>=s && i>0; t--, i--)
+  for (t = s+strlen(s)-1, i = g->msl; t >= s && i > 0; t--, i--)
     {
       unsigned char c = g->stics ? *t : tolower(*t);
       trie_pt daughter=trie_get_daughter(tr, c);
@@ -888,11 +888,11 @@ void build_suffix_trie(model_pt m)
 {
   m->lower_trie=new_trie(m, NULL);
   m->upper_trie=new_trie(m, NULL);
-  
+
   hash_map1(m->dictionary, add_word_to_trie, m);
   report(1, "built suffix tries with %d lowercase and %d uppercase nodes\n",
 	 m->lc_count, m->uc_count);
-  
+
 #if 1
   {
     int c[]={0, 0, 0};
