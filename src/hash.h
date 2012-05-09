@@ -37,7 +37,7 @@ typedef struct hash_iterator_s hash_iterator_s, *hash_iterator_pt;
    - hash function
    - equal function
 */
-extern hash_pt hash_new(int, double, int (*)(void *), int (*)(void *, void *));
+extern hash_pt hash_new(size_t, double, size_t (*)(void *), int (*)(void *, void *));
 
 /* deletes a hashtable, but can't free memory for the content */
 extern void hash_delete(hash_pt ht);
@@ -70,7 +70,7 @@ extern void *hash_remove(hash_pt ht, void *key);
 extern void hash_clear(hash_pt ht);
 
 /* returns number of entries in hashtable */
-extern int hash_size(hash_pt ht);
+extern size_t hash_size(hash_pt ht);
 
 /* returns TRUE if empty */
 extern int hash_is_empty(hash_pt ht);
@@ -94,7 +94,7 @@ extern void *hash_iterator_next_value(hash_iterator_pt hi);
 extern void hash_iterator_delete(hash_iterator_pt hi);
 
 /* returns product over all ASCII codes of string */
-extern int hash_string_hash(void *s);
+extern size_t hash_string_hash(void *s);
 
 /* returns TRUE if s and t are the same strings */
 extern int hash_string_equal(void *s, void *t);

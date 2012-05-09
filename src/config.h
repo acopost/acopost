@@ -11,4 +11,4 @@
  */
 
 /*#define SYS32BIT */
-#define SYS64BIT
+/*#define SYS64BIT */

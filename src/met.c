@@ -24,6 +24,7 @@
 */
 
 /* ------------------------------------------------------------ */
+#include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -161,46 +162,28 @@ double *dp=NULL;
 char *cmd=NULL;
 
 /* ------------------------------------------------------------ */
-static char *register_word(char *w, int t, array_pt wds, array_pt wtgs, array_pt wcs, hash_pt wh)
+static char *register_word(char *w, size_t t, array_pt wds, array_pt wtgs, array_pt wcs, hash_pt wh)
 {
   char *s=register_string(w);
-#ifdef SYS64BIT
-  int i=(int)(long int)hash_get(wh, s)-1;
-#else
-  int i=(int)hash_get(wh, s)-1;
-#endif
+  ptrdiff_t i=((ptrdiff_t)hash_get(wh, s))-1;
   array_pt tags;
   
   if (i>=0)
     {
-#ifdef SYS64BIT
-      int wc=(int)(long int)array_get(wcs, i);
-      array_set(wcs, i, (void *)(long int)(wc+1));
-      array_add_unique((array_pt)array_get(wtgs, i), (void *)(long int)t);
-#else
-      int wc=(int)array_get(wcs, i);
+      size_t wc=(size_t)array_get(wcs, i);
       array_set(wcs, i, (void *)(wc+1)); 
       array_add_unique((array_pt)array_get(wtgs, i), (void *)t);
-#endif
-      return array_get(wds, i);
+      return (char*)array_get(wds, i);
     }
 
   i=array_add(wcs, (void *)1);
   tags=array_new(16);
-#ifdef SYS64BIT
-  array_add_unique(tags, (void *)(long int)t);
-#else
   array_add_unique(tags, (void *)t);
-#endif
   if (i!=array_add(wtgs, tags))
     { error("word count/tag inconsistency\n"); }
   if (i!=array_add(wds, s))
     { error("word count/string inconsistency\n"); }
-#ifdef SYS64BIT
-  hash_put(wh, s, (void *)(long int)(i+1));
-#else
   hash_put(wh, s, (void *)(i+1));
-#endif
   return s;
 }
 
@@ -251,13 +234,13 @@ static void register_predinfo(predinfo_pt p, model_pt m, event_pt ev)
   array_pt pds=m->predicates;
   array_pt ta;
   predinfo_pt pr;
-  int i;
+  size_t i;
 
   if (!table[0])
     {
       for (i=min_ptype_e; i<=max_ptype_e; i++)
 	{
-	  int j;
+	  size_t j;
 	  table[i]=array_new(256);
 	  for (j=0; j<256; j++) { array_add(table[i], array_new(32)); }	      
 	}
@@ -292,7 +275,7 @@ static void register_predinfo(predinfo_pt p, model_pt m, event_pt ev)
 
   for (i=0; i<array_count(ta); i++)
     {
-      int l=0;
+      size_t l=0;
       ptype_e pt=p->type;
       pr=(predinfo_pt)array_get(ta, i);
       
@@ -340,8 +323,8 @@ static void register_predinfo(predinfo_pt p, model_pt m, event_pt ev)
 static predindex_pt new_predindex(model_pt m)
 {
   predindex_pt pi=(predindex_pt)mem_malloc(sizeof(predindex_t));
-  int not=array_count(m->outcomes);
-  int i;
+  size_t not=array_count(m->outcomes);
+  size_t i;
   
   memset(pi, 0, sizeof(predindex_t));
   pi->word=hash_new(1000, 0.7, hash_string_hash, hash_string_equal);
@@ -363,11 +346,7 @@ static void make_event(char *w[], int t[], array_pt wcs, hash_pt wh, model_pt m,
 {
   predinfo_t p;
   event_pt ev=new_event(1, t[2]);
-#ifdef SYS64BIT
-  int wc=(int)(long int)array_get(wcs, ((int)(long int)hash_get(wh, w[2])-1));
-#else
-  int wc=(int)array_get(wcs, ((int)hash_get(wh, w[2])-1));
-#endif
+  size_t wc= (size_t) array_get(wcs, ((ptrdiff_t)hash_get(wh, w[2]))-1);
 
 #if 0
 #define W(i) w[i]?w[i]:"NULL"
@@ -381,8 +360,8 @@ static void make_event(char *w[], int t[], array_pt wcs, hash_pt wh, model_pt m,
     { p.w=w[2]; p.type=pt_word; register_predinfo(&p, m, ev); }
   else
     {
-      int cl=strlen(w[2]);
-      int i;
+      size_t cl=strlen(w[2]);
+      size_t i;
       
       /* FIXME: bug in jmx: a X-character word cannot have prefixes
 	 or suffixes of length X
@@ -423,7 +402,7 @@ static void sample2event(array_pt wcs, hash_pt wh,
 
   do
     {
-      int i;      
+      size_t i;      
       for (i=0; i<4; i++) { wds[i]=wds[i+1]; tgs[i]=tgs[i+1]; }      
       wds[4]=w; tgs[4]=tg;
       if (wds[2]) { make_event(wds, tgs, wcs, wh, m, evs); }
@@ -516,20 +495,20 @@ static void filter_predicates_from_event(void *p)
 }
 
 /* ------------------------------------------------------------ */
-static void select_features(model_pt m, array_pt evs, int fmin)
+static void select_features(model_pt m, array_pt evs, size_t fmin)
 {
   array_pt pds=m->predicates;
-  int i;
-  int s_count=0;
-  int d_count=0;
-  int pds_count=array_count(pds);
+  size_t i;
+  size_t s_count=0;
+  size_t d_count=0;
+  size_t pds_count=array_count(pds);
   
   /* discards features that are rare */
   for (i=0; i<pds_count; i++)
     {
       predicate_pt pd=(predicate_pt)array_get(pds, i);
-      int j;
-      int counter=0;
+      size_t j;
+      size_t counter=0;
       
       for (j=0; j<m->no_ocs; j++)
 	{
@@ -551,7 +530,7 @@ static void select_features(model_pt m, array_pt evs, int fmin)
 #if DEBUG_SELECT_FEATURES
   {
     FILE *f=fopen("FEATURES", "w");
-    int i;
+    size_t i;
     for (i=0; i<array_count(pds); i++)
       {
 	predicate_pt pd=(predicate_pt)array_get(pds, i);
@@ -579,10 +558,10 @@ static void setup_cf_E(void *p, void *data)
 static void add_default_features(model_pt md, array_pt evs)
 {
   array_pt pds=md->predicates;
-  int i;
-  int minp=array_count(pds), maxp=0;
+  size_t i;
+  size_t minp=array_count(pds), maxp=0;
   predinfo_pt p;
-  int no_etoken=0;  
+  size_t no_etoken=0;  
   
   p=new_predinfo(NULL, md->no_ocs);
   p->type=pt_default;
@@ -592,7 +571,7 @@ static void add_default_features(model_pt md, array_pt evs)
   for (i=0; i<array_count(evs); i++)
     {
       event_pt ev=(event_pt)array_get(evs, i);
-      int no_pds;
+      size_t no_pds;
       
       no_etoken+=ev->count;
       add_feature(p, md, ev);
@@ -614,13 +593,13 @@ static void write_model_file(FILE *f, model_pt m)
 {
   array_pt pds=m->predicates;
   array_pt tgs=m->outcomes;
-  int i;
+  size_t i;
   
-  fprintf(f, "MET %d %d %+12.11e\n", array_count(m->outcomes), m->max_pds, m->cf_alpha);
+  fprintf(f, "MET %zd %d %+12.11e\n", array_count(m->outcomes), m->max_pds, m->cf_alpha);
   for (i=0; i<array_count(pds); i++)
     {
       predicate_pt pd=(predicate_pt)array_get(pds, i);
-      int j;
+      size_t j;
 
       print_predinfo(pd->data, f, tgs);
       fprintf(f, "\n");
@@ -636,9 +615,9 @@ static void write_model_file(FILE *f, model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-static int find_tag(char *s, array_pt tgs)
+static ptrdiff_t find_tag(char *s, array_pt tgs)
 {
-  int i;
+  ptrdiff_t i;
 
   for (i=0; i<array_count(tgs); i++)
     { if (!strcmp(s, (char *)array_get(tgs, i))) { return i; } }
@@ -650,7 +629,7 @@ static predicate_pt read_predicate(char *s, model_pt m)
 {
   array_pt tgs=m->outcomes;
   predinfo_pt pi=new_predinfo(NULL, m->no_ocs);
-  int slen=strlen(s);
+  size_t slen=strlen(s);
   char b[slen];
   char c[slen];
 
@@ -696,7 +675,7 @@ static predicate_pt read_predicate(char *s, model_pt m)
 /* ------------------------------------------------------------ */
 static void index_predicates(model_pt m)
 {
-  int i;
+  size_t i;
   array_pt pds=m->predicates;
   predindex_pt idx=new_predindex(m);
   
@@ -751,7 +730,7 @@ static model_pt read_model_file(FILE *f)
   model_pt m=new_model(tgs, pds);
   predicate_pt pd=NULL;
   char b[1024];
-  int lno=1;
+  size_t lno=1;
   
   if (!fgets(b, 1024, f))
     { error("can't read from model file\n"); }
@@ -804,10 +783,10 @@ static model_pt read_model_file(FILE *f)
 #if DEBUG_READ_MODEL_FILE
   {
     FILE *f=fopen("M-TT", "w");
-    int i;
+    size_t i;
     for (i=0; i<array_count(pds); i++)
       {
-	int j;
+	size_t j;
 	pd=array_get(pds, i);
 	print_predinfo(pd->data, f, tgs);
 	fprintf(f, "\n");
@@ -827,21 +806,21 @@ static model_pt read_model_file(FILE *f)
 }
 
 /* ------------------------------------------------------------ */
-static int read_samples(FILE *f, array_pt sms, array_pt wds, 
+static size_t read_samples(FILE *f, array_pt sms, array_pt wds, 
 			array_pt wtgs, array_pt wcs, hash_pt wdh,
 			array_pt tgs)
 {
-  int lno, no_sts=0;
+  size_t lno, no_sts=0;
   char *s;
 
   for (lno=1, s=freadline(f); s; lno++, s=freadline(f))
     {
       char *w, *t;
-      int wdc;
+      size_t wdc;
       
       for (wdc=0, w=strtok(s, " \t"); w; wdc++, w=strtok(NULL, " \t"))
 	{
-	  int ti;
+	  size_t ti;
 	  t=strtok(NULL, " \t");
 	  if (!t)
 	    { report(0, "can't read tag %d in line %d\n", wdc, lno); continue; }
@@ -859,22 +838,22 @@ static int read_samples(FILE *f, array_pt sms, array_pt wds,
 static void write_dictionary_file(FILE *f, array_pt wds, array_pt wcs,
 				  array_pt wtgs, array_pt tgs)
 {
-  int i;
+  size_t i;
   
   if (!f) { return; }
   for (i=0; i<array_count(wcs); i++)
     {
-      int wc=(int)array_get(wcs, i);
-      int j;
+      size_t wc= array_get(wcs, i);
+      size_t j;
       array_pt tags;
       
       if (wc<rwt) { continue; }
       tags=(array_pt)array_get(wtgs, i);
       fprintf(f, "%s", (char *)array_get(wds, i));
-/*       fprintf(f, " %d", wc); */
+/*       fprintf(f, " %zd", wc); */
       for (j=0; j<array_count(tags); j++)
 	{
-	  int ti=(int)array_get(tags, j);
+	  size_t ti=array_get(tags, j);
 	  fprintf(f, " %s", (char *)array_get(tgs, ti));
 	}
       fprintf(f, "\n");
@@ -883,11 +862,11 @@ static void write_dictionary_file(FILE *f, array_pt wds, array_pt wcs,
 }
 #endif
 /* ------------------------------------------------------------ */
-static hash_pt read_dictionary_file(model_pt m, FILE *f, int cs)
+static hash_pt read_dictionary_file(model_pt m, FILE *f, size_t cs)
 {
   hash_pt d;
   char *l;
-  int lno;
+  size_t lno;
   
   if (!f) { return NULL; }
   d=hash_new(1000, .5, hash_string_hash, hash_string_equal);
@@ -895,7 +874,7 @@ static hash_pt read_dictionary_file(model_pt m, FILE *f, int cs)
     {
       array_pt tgs=NULL;
       char *s, *w=tokenizer(l, " \t");
-      int wc=0;
+      size_t wc=0;
       
       if (!w) { continue; }
       if (!cs) { w=lowercase(w); tgs=hash_get(d, w); }
@@ -903,18 +882,14 @@ static hash_pt read_dictionary_file(model_pt m, FILE *f, int cs)
 	{ tgs=array_new(8); hash_put(d, (void *)register_string(w), (void *)tgs); }
       for (s=tokenizer(NULL, " \t"); s; s=tokenizer(NULL, " \t"))
 	{
-	  int ti=find_tag(s, m->outcomes);
+	  ptrdiff_t ti=find_tag(s, m->outcomes);
 
 	  if (ti<0) { error("unknown tag \"%s\"\n", s); }
-#ifdef SYS64BIT
-          array_add(tgs, (void *)(long int)ti);
-#else
 	  array_add(tgs, (void *)ti);
-#endif
 	  s=tokenizer(NULL, " \t");
 	  if (!s)
 	    { error("can't find tag count in line %d (old lexicon format?)\n", lno); }
-	  if (1!=sscanf(s, "%d", &ti))
+	  if (1!=sscanf(s, "%td", &ti))
 	    { error("can't read tag count in line %d (old format?)\n", lno); }
 	  wc+=ti;
 	}
@@ -927,11 +902,7 @@ static hash_pt read_dictionary_file(model_pt m, FILE *f, int cs)
 /* ------------------------------------------------------------ */
 static void count_words(void *p, void *data)
 {
-#ifdef SYS64BIT
-  int c=(int)(long int)p;
-#else
-  int c=(int)p;
-#endif
+  ptrdiff_t c=(ptrdiff_t)p;
   int *wc=(int *)data;
   wc[0]++;
   wc[1]+=c;
@@ -941,7 +912,7 @@ static void count_words(void *p, void *data)
 }
 
 /* ------------------------------------------------------------ */
-static void training(FILE *mf, FILE *df, FILE *rf, int mi, double dt, int fmin)
+static void training(FILE *mf, FILE *df, FILE *rf, size_t mi, double dt, size_t fmin)
 {
   array_pt tgs=array_new(25);
   array_pt wds=array_new(1000);
@@ -952,10 +923,10 @@ static void training(FILE *mf, FILE *df, FILE *rf, int mi, double dt, int fmin)
   array_pt pds=array_new(1000);
   array_pt sms=array_new(5000);
   model_pt md=new_model(tgs, pds);
-  int no_sts=read_samples(rf, sms, wds, wtgs, wcs, wh, tgs);
+  size_t no_sts=read_samples(rf, sms, wds, wtgs, wcs, wh, tgs);
   double a=0.0;
   int wc[4]={0, 0, 0, 0};
-  int i, no_sms=array_count(sms);
+  size_t i, no_sms=array_count(sms);
   
   md->no_ocs=array_count(tgs);
   array_map_with(wcs, count_words, wc);
@@ -1008,7 +979,7 @@ static int mycompare(const void *ip, const void *jp)
 
 #if 0
 /* ------------------------------------------------------------ */
-static int predicate_matches_context(hash_pt d, predicate_pt pd, int t[], char *w[], int cs)
+static int predicate_matches_context(hash_pt d, predicate_pt pd, int t[], char *w[], size_t cs)
 {
   predinfo_pt pi=pd->data;
   char *s=pi->w;
@@ -1036,7 +1007,7 @@ static int predicate_matches_context(hash_pt d, predicate_pt pd, int t[], char *
 #endif
 
 /* ------------------------------------------------------------ */
-static void add_matching_predicates(array_pt pds, model_pt m, hash_pt d, int t[], char *w[], int cs)
+static void add_matching_predicates(array_pt pds, model_pt m, hash_pt d, int t[], char *w[], size_t cs)
 {
   predindex_pt idx=(predindex_pt)m->userdata;
   predicate_pt pd;
@@ -1049,8 +1020,8 @@ static void add_matching_predicates(array_pt pds, model_pt m, hash_pt d, int t[]
     { pd=hash_get(idx->word, s); ARRAY_ADD_IF_NONNULL(pds, pd); }
   else
     {
-      int cl=strlen(w[2]);
-      int i;
+      size_t cl=strlen(w[2]);
+      size_t i;
       for (i=1; i<5 && i<cl; i++)
 	{
 	  pd=hash_get(idx->prefix, substr(w[2], 0, i)); ARRAY_ADD_IF_NONNULL(pds, pd);
@@ -1103,14 +1074,14 @@ static void print_context(FILE *f, int t[], char *w[], array_pt tgs)
 
 
 /* ------------------------------------------------------------ */
-static void tag_probabilities(model_pt m, hash_pt d, int cs, int t[], char *w[], double p[], int s[])
+static void tag_probabilities(model_pt m, hash_pt d, size_t cs, int t[], char *w[], double p[], int s[])
 {
   /* ok, some memory is wasted, but we avoid repetitive allocation */
   static array_pt mypds=NULL;
   array_pt tgs=m->outcomes;
   array_pt a;
-  int no_ocs=array_count(tgs);
-  int i;
+  size_t no_ocs=array_count(tgs);
+  size_t i;
 
   if (!mypds) { mypds=array_new(8); }
   
@@ -1185,10 +1156,10 @@ static int tag_in_context(model_pt m, hash_pt d, int t[], char *w[], double pt, 
   array_pt tgs=m->outcomes;
   array_pt pds=m->predicates;
   array_pt mypds=array_new(8);
-  int no_ocs=array_count(tgs);
+  size_t no_ocs=array_count(tgs);
   double p[m->no_ocs];
   int sorter[m->no_ocs];
-  int i;
+  size_t i;
   
   /* hack to let the sorting function of qsort have access to p */
   dp=p;
@@ -1206,7 +1177,7 @@ static int tag_in_context(model_pt m, hash_pt d, int t[], char *w[], double pt, 
   fprintf(stdout, "%-30s", w[2]);
   for (i=0; i==0 || (pt>0.0 && p[sorter[i]]>=pt); i++)
     {
-      int si=sorter[i];
+      size_t si=sorter[i];
       fprintf(stdout, " %8s %7.5f", (char *)array_get(tgs, si), p[si]);
     }
   fprintf(stdout, "\n");
@@ -1216,9 +1187,9 @@ static int tag_in_context(model_pt m, hash_pt d, int t[], char *w[], double pt, 
 #endif
 
 /* ------------------------------------------------------------ */
-static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, int beam)
+static void viterbi(model_pt m, hash_pt d, size_t cs, int t[], char *w[], size_t wno, size_t beam)
 {
-  int not=array_count(m->outcomes);
+  size_t not=array_count(m->outcomes);
   int tgs[2]={-1, -1};
   char *wds[5]={0, 0, 0, 0, 0};
   double p[not];
@@ -1227,8 +1198,8 @@ static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, 
   int b[wno+2][not+1][not+1];
   double max_a;
   double b_a=-1.0;
-  int b_i=1, b_j=1;
-  int i;
+  size_t b_i=1, b_j=1;
+  size_t i;
 
 #define DEBUG_VITERBI 0
   memset(a, 0, (wno+2)*(not+1)*(not+1)*sizeof(double));
@@ -1236,7 +1207,7 @@ static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, 
   max_a=1.0;
   for (i=0; i<wno; i++)
     {
-      int j;
+      size_t j;
       double max_a_new=0.0;
 
       if (beam==0) { max_a=0.0; } else { max_a/=(double)beam; }
@@ -1245,12 +1216,12 @@ static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, 
       for (j=3; j<5; j++) { wds[j]= i+j-2<wno ? w[i+j-2] : NULL; }
       for (j=0; j<=not; j++)
 	{
-	  int tj=j-1;
-	  int k;
+	  ptrdiff_t tj=j-1;
+	  ptrdiff_t k;
 	  for (k=0; k<=not; k++)
 	    {
-	      int tk=k-1;
-	      int l;
+	      ptrdiff_t tk=k-1;
+	      size_t l;
 	      if (a[i][j][k]<max_a) { continue; }
 	      tgs[0]=tj; 
 	      tgs[1]=tk; 
@@ -1258,7 +1229,7 @@ static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, 
 #if DEBUG_VITERBI
 	      {
 		double sum=0.0;
-		int k;
+		size_t k;
 		report(-1, "[%8s %8s]",
 		       tgs[0]<0 ? "NULL" : (char *)array_get(m->outcomes, tgs[0]),
 		       tgs[1]<0 ? "NULL" : (char *)array_get(m->outcomes, tgs[1]));
@@ -1290,7 +1261,7 @@ static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, 
   /* find highest prob in last column */
   for (i=0; i<=not; i++)
     {
-      int j;
+      size_t j;
       for (j=0; j<=not; j++)
 	{ if (a[wno][i][j]>=b_a) { b_a=a[wno][i][j]; b_i=i; b_j=j; } }
     }
@@ -1311,7 +1282,7 @@ static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, 
 }
 
 /* ------------------------------------------------------------ */
-static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, int bw)
+static void tag_sentence(model_pt m, hash_pt d, size_t cs, int t[], char *w[], size_t wno, size_t bw)
 {
   int tgs[2]={-1, -1};
   char *wds[5]={0, 0, 0, 0, 0};
@@ -1322,7 +1293,7 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
   int tnew[bw];
   double p[m->no_ocs];
   int s[m->no_ocs];
-  int i;
+  size_t i;
 
 #define DEBUG_TAG_SENTENCE 0
 #if DEBUG_TAG_SENTENCE
@@ -1334,7 +1305,7 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
   for (i=0; i<bw; i++) { pseq[i]=1.0; }
   for (i=0; i<wno; i++)
     {
-      int j;
+      size_t j;
       int tmp[bw][wno];
       for (j=0; j<2; j++) { wds[j]= i+j-2>=0 ? w[i+j-2] : NULL; }
       wds[2]=w[i];
@@ -1348,7 +1319,7 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
       for (j=0; j<bw; j++) { pnew[j]=0.0; snew[j]=0; tnew[j]=0; }
       for (j=0; j<bw; j++)
 	{
-	  int k;
+	  size_t k;
 
 	  /* if pseq[j]<pnew[bw-1] the jth sequence is already worse
 	     (before adding this tag) than the worst in our n-best
@@ -1380,7 +1351,7 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
 	    {
 	      int ti=s[k];
 	      double pcombined=pseq[j]*p[ti];
-	      int l;
+	      ptrdiff_t l;
 	      if (pcombined<=pnew[bw-1]) { continue; }
 	      for (l=bw-2; l>=0 && pcombined>pnew[l]; l--)
 		{ pnew[l+1]=pnew[l]; snew[l+1]=snew[l]; tnew[l+1]=tnew[l]; }
@@ -1393,7 +1364,7 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
 	}
       for (j=0; j<bw; j++)
 	{
-	  int k;
+	  size_t k;
 	  for (k=0; k<i; k++) { tmp[j][k]=seq[snew[j]][k]; }
 	  tmp[j][i]=tnew[j];
 	  pseq[j]=pnew[j];
@@ -1402,7 +1373,7 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
 #if DEBUG_TAG_SENTENCE
       for (j=0; j<bw && pseq[j]>0.0; j++)
 	{
-	  int k;
+	  size_t k;
 	  report(-1, "%d: %9.8e ", j, pseq[j]);
 	  for (k=0; k<=i; k++)
 	    { report(-1, " %8s", (char *)array_get(m->outcomes, seq[j][k])); }
@@ -1415,25 +1386,25 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
 }
 
 /* ------------------------------------------------------------ */
-static void tagging(FILE *mf, FILE *df, FILE *rf, double pt, int bw, int cs, int nbest)
+static void tagging(FILE *mf, FILE *df, FILE *rf, double pt, size_t bw, size_t cs, size_t nbest)
 {
   model_pt m=read_model_file(mf);
   hash_pt dic=read_dictionary_file(m, df, cs);
   char *w, *l;
-  int wcount=32;
+  size_t wcount=32;
   char **ws=mem_malloc(sizeof(char *)*wcount);
   int *ts=mem_malloc(sizeof(int)*wcount);
 
   memset(ws, 0, sizeof(char *)*wcount);
   for (l=ftokenizer(rf, "\n"); l; l=ftokenizer(NULL, "\n"))
     {
-      int i, wdc;
+      size_t i, wdc;
 
       for (wdc=0, w=strtok(l, " \t"); w; wdc++, w=strtok(NULL, " \t"))
 	{
 	  if (wdc>=wcount)
 	    {
-	      int oldcount=wcount;
+	      size_t oldcount=wcount;
 	      wcount*=2;
 	      ws=mem_realloc(ws, sizeof(char *)*wcount);
 	      memset(&ws[oldcount], 0, sizeof(char *)*(wcount-oldcount));
@@ -1458,11 +1429,11 @@ static void tagging(FILE *mf, FILE *df, FILE *rf, double pt, int bw, int cs, int
 }
 
 /* ------------------------------------------------------------ */
-static void testing(FILE *mf, FILE *df, FILE *rf, double pt, int bw, int cs, int nbest)
+static void testing(FILE *mf, FILE *df, FILE *rf, double pt, size_t bw, size_t cs, size_t nbest)
 {
   model_pt m=read_model_file(mf);
   hash_pt dic=read_dictionary_file(m, df, cs);
-  int wcount=32, pos=0, neg=0, lno, no_sts=0;
+  size_t wcount=32, pos=0, neg=0, lno, no_sts=0;
   char **ws=mem_malloc(sizeof(char *)*wcount);
   int *ts=mem_malloc(sizeof(int)*wcount);
   int *tref=mem_malloc(sizeof(int)*wcount);
@@ -1472,13 +1443,13 @@ static void testing(FILE *mf, FILE *df, FILE *rf, double pt, int bw, int cs, int
   for (lno=1, s=ftokenizer(rf, "\n"); s; lno++, s=ftokenizer(NULL, "\n"))
     {
       char *w, *t;
-      int wdc, i;
+      size_t wdc, i;
       
       for (wdc=0, w=strtok(s, " \t"); w; wdc++, w=strtok(NULL, " \t"))
 	{
 	  if (wdc>=wcount)
 	    {
-	      int oldcount=wcount;
+	      size_t oldcount=wcount;
 	      wcount*=2;
 	      ws=mem_realloc(ws, sizeof(char *)*wcount);
 	      memset(&ws[oldcount], 0, sizeof(char *)*(wcount-oldcount));
@@ -1539,11 +1510,11 @@ extern int main(int argc, char **argv)
   FILE *df=NULL;
   char *dictfile=NULL;
   FILE *rf=stdin;
-  int mi=100;
+  size_t mi=100;
   double dt=0.0;
   double pt=-1.0;
   int oldnice=nice(0), newnice=19;
-  int fmin=5, bw=-1, cs=0, nbest=0, mode;
+  ptrdiff_t fmin=5, bw=-1, cs=0, nbest=0, mode;
   
   cmd=strdup(basename(argv[0], NULL));
   if (oldnice<0) { error("can't get priority class\n"); }
@@ -1558,7 +1529,7 @@ extern int main(int argc, char **argv)
       switch (c)
 	{
 	case 'b':
-	  if (1!=sscanf(optarg, "%d", &bw))
+	  if (1!=sscanf(optarg, "%td", &bw))
 	    { error("invalid beam factor / n-best width \"%s\"\n", optarg); }
 	  else
 	    { report(1, "using %d as beam width\n", bw); }
@@ -1572,7 +1543,7 @@ extern int main(int argc, char **argv)
 	  report(1, "using %s as dictionary file\n", dictfile);
 	  break;
 	case 'f':
-	  if (1!=sscanf(optarg, "%d", &fmin))
+	  if (1!=sscanf(optarg, "%td", &fmin))
 	    { error("invalid feature count threshold \"%s\"\n", optarg); }
 	  else
 	    { report(1, "using %d as feature count threshold\n", fmin); }
@@ -1582,7 +1553,7 @@ extern int main(int argc, char **argv)
 	  exit(0);
 	  break;
 	case 'i':
-	  if (1!=sscanf(optarg, "%d", &mi))
+	  if (1!=sscanf(optarg, "%zd", &mi))
 	    { error("invalid max number of iterations \"%s\"\n", optarg); }
 	  else
 	    { report(1, "using %d as max number of iterations\n", mi); }

@@ -2,7 +2,7 @@
 
 CC=gcc
 
-CFLAGS  = -Wall -ansi -O2
+CFLAGS  = -Wall -std=c99 -O2
 
 # default is double
 CFLAGS += -DT3_PROB_IS_FLOAT

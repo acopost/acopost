@@ -24,6 +24,7 @@
 */
 
 /* ------------------------------------------------------------ */
+#include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <getopt.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -87,9 +88,9 @@ typedef option_t *option_pt;
 
 typedef struct feature_s
 {
-  int type;          /* type of feature, 0 WORD, 1 TAG ... */
-  int arg1;          /* 1st para, e. g., WORD[-1] */
-  int arg2;          /* 2nd para, e. g., LETTER[0,-1] */
+  ptrdiff_t type;          /* type of feature, 0 WORD, 1 TAG ... */
+  ptrdiff_t arg1;          /* 1st para, e. g., WORD[-1] */
+  ptrdiff_t arg2;          /* 2nd para, e. g., LETTER[0,-1] */
   char *string;
   double weight;     /* weight */
   hash_pt v2i;       /* string -> index+1 */
@@ -100,14 +101,14 @@ typedef feature_t *feature_pt;
 typedef struct value_s
 {
   char *string;      /* literal value */
-  int count;         /* how often have we seen this */
+  size_t count;      /* how often have we seen this */
   int *tagcount;     /* array of ints */
 } value_t;
 typedef value_t *value_pt;
 
 typedef struct wtree_s
 {
-  int defaulttag;     /* tag with largest tagcount[] */
+  ptrdiff_t defaulttag;     /* tag with largest tagcount[] */
   int *tagcount;      /* index -> count */
   char *id;
   feature_pt feature; /* feature corresponding to node */
@@ -118,8 +119,8 @@ typedef wtree_t *wtree_pt;
 typedef struct word_s
 {
   char *string;      /* grapheme */
-  int count;         /* total number of occurances */
-  int defaulttag;    /* most frequent tag index */
+  size_t count;      /* total number of occurances */
+  ptrdiff_t defaulttag;    /* most frequent tag index */
   int *tagcount;     /* maps tag index -> no. of occurances */
   char *aclass;      /* ambiguity class */
 } word_t;
@@ -185,7 +186,7 @@ static model_pt new_model()
 }
 
 /* ------------------------------------------------------------ */
-static word_pt new_word(char *s, int not)
+static word_pt new_word(char *s, size_t not)
 {
   word_pt w=(word_pt)mem_malloc(sizeof(word_t));
   
@@ -221,7 +222,7 @@ static feature_pt new_feature(void)
 static wtree_pt new_wtree(model_pt m)
 {
   static char *foo42="foo42";
-  int not=array_count(m->tags);
+  size_t not=array_count(m->tags);
   wtree_pt t=(wtree_pt)mem_malloc(sizeof(wtree_t));
   memset(t, 0, sizeof(wtree_t));
 
@@ -236,7 +237,7 @@ static wtree_pt new_wtree(model_pt m)
 /* ------------------------------------------------------------ */
 static void usage(void)
 {
-  int i;
+  size_t i;
   report(-1, "\n%s\n\n", banner);
   report(-1, "Usage: %s OPTIONS knownwtree unknownwtree dictionary [inputfile]\n", g->cmd);
   report(-1, "where OPTIONS can be\n\n");
@@ -277,29 +278,21 @@ static void get_options(globals_pt g, int argc, char **argv)
 
 /* ------------------------------------------------------------ */
 /* previously inlined */
-static int find_tag(model_pt m, char *t)
+static ptrdiff_t find_tag(model_pt m, char *t)
 {
-#ifdef SYS64BIT
-  return (int)(long int)hash_get(m->taghash, t)-1;
-#else
-  return (int)hash_get(m->taghash, t)-1;
-#endif
+  return ((ptrdiff_t) hash_get(m->taghash, t))-1;
 }
 
 /* ------------------------------------------------------------ */
-static int register_tag(model_pt m, char *t)
+static ptrdiff_t register_tag(model_pt m, char *t)
 {
-  int i=find_tag(m, t);
+  ptrdiff_t i=find_tag(m, t);
  
   if (i<0) 
     { 
       t=strdup(t); 
       i=array_add(m->tags, t);
-#ifdef SYS64BIT
-      hash_put(m->taghash, t, (void *)(long int)(i+1));
-#else
       hash_put(m->taghash, t, (void *)(i+1));
-#endif
     }
   return i;
 }
@@ -311,7 +304,7 @@ static void read_dictionary_file(model_pt m)
   char *s;
 #define BLEN 8000
   char b[BLEN];
-  int lno, not, no_token=0;
+  size_t lno, not, no_token=0;
   
   m->dictionary=hash_new(5000, .5, hash_string_hash, hash_string_equal);
   /* first pass through file: just get the tag */
@@ -330,32 +323,32 @@ static void read_dictionary_file(model_pt m)
   /* second pass through file: collect details */
   for (lno=1, s=freadline(f); s; lno++, s=freadline(f)) 
     {
-      int cnt;
+      size_t cnt;
       word_pt wd, old;
       
       s=strtok(s, " \t");
-      if (!s) { report(1, "can't find word (%s:%d)\n", g->df, lno); continue; }
+      if (!s) { report(1, "can't find word (%s:%zd)\n", g->df, lno); continue; }
       s=register_string(s);
       wd=new_word(s, not);
       old=hash_put(m->dictionary, s, wd);
       if (old)
 	{
-	  report(1, "duplicate dictionary entry \"%s\" (%s:%d)\n", s, g->df, lno);
+	  report(1, "duplicate dictionary entry \"%s\" (%s:%zd)\n", s, g->df, lno);
 	  delete_word(old);
 	}
       wd->defaulttag=-1;
       for (b[0]='*', b[1]='\0', s=strtok(NULL, " \t"); s;  s=strtok(NULL, " \t"))
 	{
-	  int ti=find_tag(m, s);
+	  ptrdiff_t ti=find_tag(m, s);
 	  
 	  if (ti<0)
-	    { error("invalid tag \"%s\" (%s:%d)\n", s, g->df, lno); }
+	    { error("invalid tag \"%s\" (%s:%zd)\n", s, g->df, lno); }
 	  if (strlen(b)+strlen(s)+2>BLEN)
-	    { error("oops, ambiguity class too long (%s:%d)\n", g->df, lno); }
+	    { error("oops, ambiguity class too long (%s:%zd)\n", g->df, lno); }
 	  strcat(b, s); strcat(b, "*");
 	  s=strtok(NULL, " \t");
-	  if (!s || 1!=sscanf(s, "%d", &cnt))
-	    { error("can't find tag count (%s:%d)\n", g->df, lno); }
+	  if (!s || 1!=sscanf(s, "%zd", &cnt))
+	    { error("can't find tag count (%s:%zd)\n", g->df, lno); }
 	  wd->tagcount[ti]=cnt;
 	  wd->count+=cnt;
 	  if (wd->defaulttag<0) { wd->defaulttag=ti; }
@@ -363,7 +356,7 @@ static void read_dictionary_file(model_pt m)
       wd->aclass=register_string(b);
       no_token+=wd->count;
     }
-  report(2, "read %d/%d entries (type/token) from dictionary\n",
+  report(2, "read %zd/%zd entries (type/token) from dictionary\n",
 	 hash_size(m->dictionary), no_token);
 }
 
@@ -380,65 +373,57 @@ static feature_pt parse_feature(model_pt m, char *t)
   if (1!=sscanf(t, "%lf", &f->weight)) { return NULL; }
 
   f->type=f->arg1=f->arg2=-1;
-  if (1==sscanf(f->string, "TAG[%d]=", &f->arg1))
+  if (1==sscanf(f->string, "TAG[%td]=", &f->arg1))
     { f->type=FT_TAG; }
-  else if (1==sscanf(f->string, "CLASS[%d]=", &f->arg1))
+  else if (1==sscanf(f->string, "CLASS[%td]=", &f->arg1))
     { f->type=FT_CLASS; }
-  else if (1==sscanf(f->string, "WORD[%d]=", &f->arg1))
+  else if (1==sscanf(f->string, "WORD[%td]=", &f->arg1))
     { f->type=FT_WORD; }
-  else if (2==sscanf(f->string, "LETTER[%d,%d]=", &f->arg1, &f->arg2))
+  else if (2==sscanf(f->string, "LETTER[%td,%td]=", &f->arg1, &f->arg2))
     { f->type=FT_LETTER; }
-  else if (1==sscanf(f->string, "CAP[%d]=", &f->arg1))
+  else if (1==sscanf(f->string, "CAP[%td]=", &f->arg1))
     { f->type=FT_CAP; }
-  else if (1==sscanf(f->string, "HYPHEN[%d]=", &f->arg1))
+  else if (1==sscanf(f->string, "HYPHEN[%td]=", &f->arg1))
     { f->type=FT_HYPHEN; }
-  else if (1==sscanf(f->string, "NUMBER[%d]=", &f->arg1))
+  else if (1==sscanf(f->string, "NUMBER[%td]=", &f->arg1))
     { f->type=FT_NUMBER; }
-  else if (1==sscanf(f->string, "INTER[%d]=", &f->arg1))
+  else if (1==sscanf(f->string, "INTER[%td]=", &f->arg1))
     { f->type=FT_INTER; }
   else { error("can't parse feature \"%s\"!\n", f->string); }
 
-/*   report(0, "found feature %s type %d arg1 %d arg2 %d\n", f->string, f->type, f->arg1, f->arg2); */
+/*   report(0, "found feature %s type %td arg1 %td arg2 %td\n", f->string, f->type, f->arg1, f->arg2); */
   return f;
 }
 
 /* ------------------------------------------------------------ */
-static int find_feature_value(feature_pt f, char *s)
+static ptrdiff_t find_feature_value(feature_pt f, char *s)
 {
-#ifdef SYS64BIT
-  int fi=(int)(long int)hash_get(f->v2i, s)-1;
-#else
-  int fi=(int)hash_get(f->v2i, s)-1;
-#endif
-  DEBUG(3, "find_feature_value %s %s ==> %d\n", f->string, s, fi); 
+  ptrdiff_t fi=((ptrdiff_t)hash_get(f->v2i, s))-1;
+  DEBUG(3, "find_feature_value %s %s ==> %td\n", f->string, s, fi); 
   return fi;
 }
 
 /* ------------------------------------------------------------ */
-static int register_feature_value(feature_pt f, char *s)
+static size_t register_feature_value(feature_pt f, char *s)
 {
-  int i=find_feature_value(f, s);
+  ptrdiff_t i=find_feature_value(f, s);
   if (i<0)
     {
       s=register_string(s);
       i=array_add(f->values, s);
-#ifdef SYS64BIT
-      hash_put(f->v2i, s, (void *)(long int)i+1);
-#else
       hash_put(f->v2i, s, (void *)i+1);
-#endif
     }
 
   return i;
 }
 
 /* ------------------------------------------------------------ */
-static int find_feature_value_from_sentence(model_pt m, feature_pt f, char **ws, int *ts, int i, int wno)
+static size_t find_feature_value_from_sentence(model_pt m, feature_pt f, char **ws, int *ts, ptrdiff_t i, size_t wno)
 {
-  int rp=i+f->arg1;  
+  ptrdiff_t rp=i+f->arg1;  
   word_pt w;
 
-  DEBUG(2, "find_feature_value_from_sentence: f=%s rp=%d i=%d arg1=%d arg2=%d\n", f->string, rp, i, f->arg1, f->arg2);
+  DEBUG(2, "find_feature_value_from_sentence: f=%s rp=%td i=%td arg1=%td arg2=%td\n", f->string, rp, i, f->arg1, f->arg2);
   
   if (rp<0 || rp>=wno) { return find_feature_value(f, "*BOUNDARY*"); }
 
@@ -451,12 +436,12 @@ static int find_feature_value_from_sentence(model_pt m, feature_pt f, char **ws,
       return !w ? -1 : find_feature_value(f, w->aclass);
     case FT_WORD:
       {
-	int fi=find_feature_value(f, ws[rp]);
+	size_t fi=find_feature_value(f, ws[rp]);
 	return fi<0 ? find_feature_value(f, "*RARE*") : fi;
       }
     case FT_LETTER:
       {
-	int slen=strlen(ws[rp]);
+	size_t slen=strlen(ws[rp]);
 	if (slen<abs(f->arg2)) { return find_feature_value(f, "*NONE*"); }
 	else if (f->arg2<0) { return find_feature_value(f, substr(ws[rp], slen+f->arg2, -1)); }
 	else { return find_feature_value(f, substr(ws[rp], f->arg2-1, 1)); }
@@ -464,8 +449,8 @@ static int find_feature_value_from_sentence(model_pt m, feature_pt f, char **ws,
     case FT_CAP:
       {
 	char tmp[2]="X";
-	int slen=strlen(ws[rp]);
-	int clen=strspn(ws[rp], "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ");
+	size_t slen=strlen(ws[rp]);
+	size_t clen=strspn(ws[rp], "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ");
 	tmp[0]= slen==clen ? '2' : (clen>0 ? '1' : '0');
 	return find_feature_value(f, tmp);
       }
@@ -478,10 +463,10 @@ static int find_feature_value_from_sentence(model_pt m, feature_pt f, char **ws,
     case FT_NUMBER:
       {
 	char tmp[2]="X";
-	int slen=strlen(ws[rp]);
+	size_t slen=strlen(ws[rp]);
 	char *dindex=strpbrk(ws[rp], "0123456789");
-	int clen=strspn(ws[rp], "0123456789,.");
-	int dlen=strspn(ws[rp], "0123456789");
+	size_t clen=strspn(ws[rp], "0123456789,.");
+	size_t dlen=strspn(ws[rp], "0123456789");
 	tmp[0]= slen==dlen ? '3' : ( slen==clen ? '2' : (dindex ? '1' : '0'));
 	return find_feature_value(f, tmp);
       }
@@ -492,7 +477,7 @@ static int find_feature_value_from_sentence(model_pt m, feature_pt f, char **ws,
 	return find_feature_value(f, tmp);
       }
     default:
-      error("unknown feature type %d\n", f->type);
+      error("unknown feature type %td\n", f->type);
     }
   return -1;
 }
@@ -500,14 +485,14 @@ static int find_feature_value_from_sentence(model_pt m, feature_pt f, char **ws,
 /* ------------------------------------------------------------ */
 static void prune_wtree(model_pt m, wtree_pt t)
 {
-  int i;
-  int not=array_count(m->tags);
+  size_t i;
+  size_t not=array_count(m->tags);
 
   if (!t) { return; }
   for (i=0; i<array_count(t->children); i++)
     {
       wtree_pt child=array_get(t->children, i);
-      int j;
+      size_t j;
       if (!child) { continue; }
       for (j=0; j<not; j++)
 	{
@@ -522,7 +507,7 @@ static void prune_wtree(model_pt m, wtree_pt t)
 static wtree_pt read_wtree(model_pt m, char *fname)
 {
   char *s;
-  int lno, fno, cl=0, non=1, fos=array_count(m->features);
+  size_t lno, fno, cl=0, non=1, fos=array_count(m->features);
   FILE *f=try_to_open(fname, "r");
   wtree_pt root=new_wtree(m);
   wtree_pt *ns;
@@ -535,16 +520,16 @@ static wtree_pt read_wtree(model_pt m, char *fname)
   for (/* nada */; s && *s; lno++, s=freadline(f))
     {
       feature_pt ft=parse_feature(m, s);
-      if (!ft) { error("%s:%d: can't parse feature \"%s\"\n", fname, lno, s); }
+      if (!ft) { error("%s:%zd: can't parse feature \"%s\"\n", fname, lno, s); }
       array_add(m->features, ft);
     }
 
   fno=array_count(m->features)-fos;
-  if (fno<=0) { error("%s:%d: no features found\n", fname, lno); }
+  if (fno<=0) { error("%s:%zd: no features found\n", fname, lno); }
   root->feature=array_get(m->features, fos);
   
   /* this is the separating blank line */
-  if (!s) { error("%s:%d: format error\n", fname, lno); }
+  if (!s) { error("%s:%zd: format error\n", fname, lno); }
 
   ns=(wtree_pt *)mem_malloc((fno+1)*sizeof(wtree_pt));
   memset(ns, 0, (fno+1)*sizeof(wtree_pt));
@@ -554,26 +539,26 @@ static wtree_pt read_wtree(model_pt m, char *fname)
   for (cl=1, lno++, s=freadline(f); s; lno++, s=freadline(f))
     {
       char *t;
-      int i, l;
+      size_t i, l;
       wtree_pt mom, wt;
       
       if (!*s) { continue; }
       for (l=1; *s=='\t'; s++, l++) { /* nada */ }
       if (l>cl+1)
-	{ error("%s:%d: skip of level %d>%d+1\n", fname, lno, l, cl); }
+	{ error("%s:%zd: skip of level %zd>%zd+1\n", fname, lno, l, cl); }
       for (i=cl; i>=l; i--) { prune_wtree(m, ns[i]); }
       cl=l;
       mom=ns[l-1];
 
       t=strtok(s, " \t");
-      if (!t) { error("%s:%d: can't read value\n", fname, lno); }
+      if (!t) { error("%s:%zd: can't read value\n", fname, lno); }
 
       i=register_feature_value(mom->feature, t);
       /* i is index of value, wt is current node */
-/*       report(-1, "t=%s l=%d cl=%d mom->feature=%s i=%d\n", t, l, cl, mom->feature->string, i); */
+/*       report(-1, "t=%s l=%zd cl=%zd mom->feature=%s i=%zd\n", t, l, cl, mom->feature->string, i); */
       
       if (i<array_count(mom->children) && array_get(mom->children, i))
-	{ error("%s:%d: duplicate feature value %d %d\n", fname, lno, i, array_count(mom->children)); }
+	{ error("%s:%zd: duplicate feature value %zd %zd\n", fname, lno, i, array_count(mom->children)); }
 
       wt=new_wtree(m);
       non++;
@@ -581,13 +566,13 @@ static wtree_pt read_wtree(model_pt m, char *fname)
       array_set(mom->children, i, wt);
       for (t=strtok(NULL, " \t"); t; t=strtok(NULL, " \t"))
 	{
-	  int c, ti=register_tag(m, t);
+	  size_t c, ti=register_tag(m, t);
 
 	  /* leaf node */
 	  t=strtok(NULL, " \t");
-	  if (!t) { error("%s:%d: can't find tag count\n", fname, lno); }
-	  if (1!=sscanf(t, "%d", &c))
-	    { error("%s:%d: tag count not a number\n", fname, lno); }
+	  if (!t) { error("%s:%zd: can't find tag count\n", fname, lno); }
+	  if (1!=sscanf(t, "%zd", &c))
+	    { error("%s:%zd: tag count not a number\n", fname, lno); }
 	  wt->tagcount[ti]=c;
 	  if (c>wt->tagcount[wt->defaulttag]) { wt->defaulttag=ti; }
 	}
@@ -596,7 +581,7 @@ static wtree_pt read_wtree(model_pt m, char *fname)
   for (fno=cl; fno>=0; fno--) { prune_wtree(m, ns[fno]); }
   mem_free(ns);
 
-  report(1, "read wtree with %d nodes from \"%s\"\n", non, fname);
+  report(1, "read wtree with %zd nodes from \"%s\"\n", non, fname);
   
   return root;
 }
@@ -613,13 +598,13 @@ static void read_unknown_wtree(model_pt m)
 void print_wtree(wtree_pt t, int indent)
 {
   feature_pt f=t->feature;
-  int i;
+  size_t i;
   
   for (i=0; i<array_count(t->children); i++)
     {
       wtree_pt son=(wtree_pt)array_get(t->children, i);
       char *v=(char *)array_get(f->values, i);
-      int j;
+      size_t j;
       if (!son) { continue; }
       for (j=0; j<indent; j++) { report(-1, " "); }
       report(-1, "%s\n", v);
@@ -630,7 +615,7 @@ void print_wtree(wtree_pt t, int indent)
 /* ------------------------------------------------------------ */
 static void tagging(model_pt m)
 {
-  int not=array_count(m->tags), nop=0;
+  size_t not=array_count(m->tags), nop=0;
   FILE *f= g->rf ? try_to_open(g->rf, "r") : stdin;
   char **words=NULL;
   int *tags=NULL;
@@ -639,7 +624,7 @@ static void tagging(model_pt m)
   for (s=freadline(f); s; s=freadline(f))
     {
       char *t;
-      int i, wno;
+      size_t i, wno;
       DEBUG(2, "GOT %s\n", s);
       for (wno=0, t=strtok(s, " \t"); t; wno++, t=strtok(NULL, " \t"))
 	{
@@ -650,7 +635,7 @@ static void tagging(model_pt m)
 	      words=(char **)mem_realloc(words, nop*sizeof(char *));
 	      tags=(int *)mem_realloc(tags, nop*sizeof(int));
 	    }
- 	  report(4, "word %d %s\n", wno, t);
+ 	  report(4, "word %zd %s\n", wno, t);
 	  words[wno]=t;
 	}
       /* Now we have the sentence available. */
@@ -665,20 +650,20 @@ static void tagging(model_pt m)
 	    {
 	      feature_pt f=tree->feature;
 	      wtree_pt next;
-	      int fi;
+	      size_t fi;
 
 	      if (!f) { report(4, "leaf node reached, breaking out\n"); break; }
 
 	      fi=find_feature_value_from_sentence(m, f, words, tags, i, wno);
 	      if (fi<0) { report(4, "can't find value, breaking out\n"); break; }
 	      if (fi>=array_count(tree->children))
-		{ report(4, "can't find child %d>=%d, breaking out\n", fi, array_count(tree->children)); break; }
+		{ report(4, "can't find child %zd>=%zd, breaking out\n", fi, array_count(tree->children)); break; }
 	      next=(wtree_pt)array_get(tree->children, fi);
-	      if (!next) { report(4, "can't find child for %d, breaking out\n", fi); break; }
+	      if (!next) { report(4, "can't find child for %zd, breaking out\n", fi); break; }
 	      tree=next;
 	      {
-		int j;
-		report(4, "  current node %p %d %s :::",
+		size_t j;
+		report(4, "  current node %p %td %s :::",
 		       tree, tree->defaulttag, (char *)array_get(m->tags, tree->defaulttag));
 		for (j=0; j<not; j++)
 		  {
@@ -703,7 +688,7 @@ static void tagging(model_pt m)
 void testing(model_pt m)
 {
   char s[4000];
-  int not=array_count(m->tags), i;
+  size_t not=array_count(m->tags), i;
   
   report(-1, "Enter word followed by features values.\n");
   while (fgets(s, 1000, stdin))
@@ -711,15 +696,15 @@ void testing(model_pt m)
       char *w=strtok(s, " \t\n");
       word_pt wd=hash_get(m->dictionary, w);
       wtree_pt t= wd ? m->known : m->unknown;
-      if (wd) { report(-1, "word %s defaulttag %d %s\n", w, wd->defaulttag, (char *)array_get(m->tags, wd->defaulttag)); }
+      if (wd) { report(-1, "word %s defaulttag %td %s\n", w, wd->defaulttag, (char *)array_get(m->tags, wd->defaulttag)); }
       while ((w=strtok(NULL, " \t\n")))
 	{
 	  feature_pt f=t->feature;
-	  int fi=find_feature_value(f, w);
+	  size_t fi=find_feature_value(f, w);
 	  if (fi<0) { report(1, "can't find \"%s\", breaking out\n", w); break; }
 	  t=(wtree_pt)array_get(t->children, fi);
-	  if (!t) { report(1, "can't find child for %d, breaking out\n", fi); break; }
-	  report(1, "current node %p %d %s :::",
+	  if (!t) { report(1, "can't find child for %zd, breaking out\n", fi); break; }
+	  report(1, "current node %p %td %s :::",
 		 t, t->defaulttag, (char *)array_get(m->tags, t->defaulttag));
 	  for (i=0; i<not; i++)
 	    {

@@ -44,18 +44,18 @@ struct hash_entry_s {
 };
 
 struct hash_s {
-  int count;                       /* number of entries in hashtable */
-  int threshold;                   /* limit when table is rehashed */
-  int capacity;                    /* capacity of table */
+  size_t count;                    /* number of entries in hashtable */
+  size_t threshold;                /* limit when table is rehashed */
+  size_t capacity;                 /* capacity of table */
   double loadfactor;               /* ratio when to rehash */
   int (*equal)(void *, void *);    /* equality function for key */
-  int (*hash)(void *);             /* hash function */
+  size_t (*hash)(void *);          /* hash function */
   hash_entry_pt *entries;          /* table of entries */
 };
 
 struct hash_iterator_s {
   hash_pt hashtable;               /* where do we belong to? */
-  int index;                       /* index of ``entry'' */
+  size_t index;                    /* index of ``entry'' */
   hash_entry_pt entry;             /* determines _next_ hash_entry_pt */
 };
 
@@ -66,8 +66,8 @@ void rehash(hash_pt ht)
 {
   hash_entry_pt *newEntries;
   hash_entry_pt entry, old;
-  int i, index;
-  int newCapacity = primes_next(ht->capacity * 2, PRIME_TESTS);
+  size_t i, index;
+  size_t newCapacity = primes_next(ht->capacity * 2, PRIME_TESTS);
 
 #ifdef DEBUG
   printf("DEBUG: rehashhash_pt %d --> %d...", ht->capacity, newCapacity);
@@ -87,7 +87,7 @@ void rehash(hash_pt ht)
       newEntries[index] = entry;
     }
 
-  ht->threshold = (int)(newCapacity * ht->loadfactor);
+  ht->threshold = (newCapacity * ht->loadfactor);
   ht->capacity = newCapacity;
   mem_free(ht->entries);
   ht->entries = newEntries;
@@ -103,10 +103,10 @@ void rehash(hash_pt ht)
  * cp - initial capacity
  * lf - load factor (ratio when to rehash)
  */
-hash_pt hash_new (int cp, double lf, int (*hash)(void *), int (*equal)(void *, void *))
+hash_pt hash_new (size_t cp, double lf, size_t (*hash)(void *), int (*equal)(void *, void *))
 {
   hash_pt ht;
-  int i;
+  size_t i;
 
   /* guarantees a minimum capacity of 3 -- TODO: why? */
   if (cp < 3) cp = 3;
@@ -115,7 +115,7 @@ hash_pt hash_new (int cp, double lf, int (*hash)(void *), int (*equal)(void *, v
   ht = (hash_pt)mem_malloc(sizeof(hash_s));
   ht->count = 0;
   ht->capacity = primes_next(cp, PRIME_TESTS);
-  ht->threshold = (int)(ht->capacity * lf);
+  ht->threshold = (ht->capacity * lf);
   ht->loadfactor = lf;
   ht->equal = equal;
   ht->hash = hash;
@@ -135,7 +135,7 @@ hash_pt hash_new (int cp, double lf, int (*hash)(void *), int (*equal)(void *, v
 void *hash_put (hash_pt ht, void *key, void *value)
 {
   hash_entry_pt entry;
-  int index;
+  size_t index;
   void *p;
 
   if (ht == NULL || key == NULL || value == NULL) {
@@ -180,7 +180,7 @@ void *hash_put (hash_pt ht, void *key, void *value)
 void *hash_get (hash_pt ht, void *key)
 {
   hash_entry_pt entry;
-  int index;
+  size_t index;
 
   if (!ht || !key)
     {
@@ -202,7 +202,7 @@ void *hash_get (hash_pt ht, void *key)
 void *hash_remove(hash_pt ht, void *key)
 {
   hash_entry_pt entry, prev;
-  int index;
+  size_t index;
   void *value;
 
   index=(((*ht->hash)(key)) & 0x7fffffff) % ht->capacity;
@@ -226,7 +226,7 @@ void *hash_remove(hash_pt ht, void *key)
  */
 void hash_clear(hash_pt ht)
 {
-  int i;
+  size_t i;
 
   for (i=0; i<ht->capacity; i++)
     {
@@ -240,7 +240,7 @@ void hash_clear(hash_pt ht)
 /* ----------------------------------------------------------------------
  * returns number of entries in hashtable
  */
-int hash_size(hash_pt ht)
+size_t hash_size(hash_pt ht)
 {
   if (!ht)
     {
@@ -270,7 +270,7 @@ int hash_is_empty(hash_pt ht)
 int hash_contains_key(hash_pt ht, void *key)
 {
   hash_entry_pt entry;
-  int index;
+  size_t index;
 
   if (ht == NULL || key == NULL) {
     fprintf(stderr, "ERROR: hash_constains_key: arguments must not be NULL\n");
@@ -291,7 +291,7 @@ int hash_contains_key(hash_pt ht, void *key)
 int hash_contains_value(hash_pt ht, void *value) 
 {
   hash_entry_pt entry;
-  int i;
+  size_t i;
 
   if (ht == NULL || value == NULL) {
     fprintf(stderr, "ERROR: hash_constains_value: arguments must not be NULL\n");
@@ -322,7 +322,7 @@ void hash_delete(hash_pt ht)
 void hash_map(hash_pt ht, void (*f)(void *, void *))
 {
    hash_entry_pt entry;
-   int i;
+   size_t i;
 
    for (i = 0; i < ht->capacity; i++) {
      for (entry = ht->entries[i]; entry != NULL; entry = entry->next) {
@@ -337,7 +337,7 @@ void hash_map(hash_pt ht, void (*f)(void *, void *))
 void hash_map1(hash_pt ht, void (*f)(void *, void *, void*), void *d)
 {
    hash_entry_pt entry;
-   int i;
+   size_t i;
 
    for (i = 0; i < ht->capacity; i++) {
      for (entry = ht->entries[i]; entry != NULL; entry = entry->next) {
@@ -352,7 +352,7 @@ void hash_map1(hash_pt ht, void (*f)(void *, void *, void*), void *d)
 void hash_map2(hash_pt ht, void (*f)(void *, void *, void*, void*), void *d1, void *d2)
 {
    hash_entry_pt entry;
-   int i;
+   size_t i;
 
    for (i = 0; i < ht->capacity; i++) {
      for (entry = ht->entries[i]; entry != NULL; entry = entry->next) {
@@ -367,7 +367,7 @@ void hash_map2(hash_pt ht, void (*f)(void *, void *, void*, void*), void *d1, vo
 void hash_filter(hash_pt ht, int (*f)(void *, void *))
 {
   hash_entry_pt he, prev, next;
-  int i;
+  size_t i;
   
   for (i=0; i<ht->capacity; i++)
     {
@@ -391,7 +391,7 @@ void hash_filter(hash_pt ht, int (*f)(void *, void *))
 void hash_map_free(hash_pt ht, void (*f)(void *, void *))
 {
    hash_entry_pt entry, next;
-   int i;
+   size_t i;
 
    for (i = 0; i < ht->capacity; i++) {
       for (entry = ht->entries[i]; entry != NULL; entry = next) {
@@ -492,14 +492,14 @@ void hash_iterator_delete(hash_iterator_pt hi)
  * - try different hash functions
  * - strlen should go out -> supply length of key
  */
-int hash_string_hash(void *p)
+size_t hash_string_hash(void *p)
 {
   register char *s=(char *)p;
   register size_t l=strlen(s);
-  register int v;
+  register size_t v;
 
   /* rotating ala knuth */
-  v=(int)l;
+  v=l;
   while(l) { v=(v<<5)^(v>>27)^s[--l]; }
   return v;
 }

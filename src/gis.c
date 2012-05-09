@@ -266,20 +266,12 @@ void redistribute_probabilities(model_pt m, array_pt keep, double p[])
 
   for (i=0; i<array_count(keep); i++)
     {
-#ifdef SYS64BIT
-      int j=(int)(long int)array_get(keep, i);
-#else
-      int j=(int)array_get(keep, i);
-#endif
+      size_t j=(size_t)array_get(keep, i);
       psum+=tmp[j];      
     }
   for (i=0; i<array_count(keep); i++)
     {
-#ifdef SYS64BIT
-      int j=(int)(long int)array_get(keep, i);
-#else
-      int j=(int)array_get(keep, i);
-#endif
+      size_t j=(size_t)array_get(keep, i);
       p[j]=tmp[j]/psum;
     }
 }

@@ -27,7 +27,7 @@
 
 /* ------------------------------------------------------------ */
 /* creates and returns a new array                              */
-array_pt array_new (unsigned int size)
+array_pt array_new (size_t size)
 {
   array_pt arr = (array_pt)mem_malloc(sizeof(array_t));
 
@@ -43,7 +43,7 @@ array_pt array_new (unsigned int size)
 /* fills an array with a given value                            */
 void array_fill (array_pt arr, void *p)
 {
-  int i;
+  size_t i;
 
   for (i=0; i < arr->size; i++)
     arr->v[i] = p;
@@ -51,7 +51,7 @@ void array_fill (array_pt arr, void *p)
 
 /* ------------------------------------------------------------ */
 /* creates and returns a new array filled with a given value    */
-array_pt array_new_fill (unsigned int size, void *p)
+array_pt array_new_fill (size_t size, void *p)
 {
   array_pt arr = array_new(size);
 
@@ -92,7 +92,7 @@ array_pt array_clone (array_pt arr)
 
 /* ------------------------------------------------------------ */
 /* adds a given value to an array                               */
-unsigned int array_add (array_pt arr, void *p)
+size_t array_add (array_pt arr, void *p)
 {
   /* TODO: allocation starts at 8 and then goes *2, perhaps it would be
    * better to use a sequence fibonacci-like or prime-like */
@@ -116,9 +116,9 @@ unsigned int array_add (array_pt arr, void *p)
 /* ------------------------------------------------------------ */
 /* adds a given value to an array only if the value is not
    already present                                              */
-unsigned int array_add_unique (array_pt arr, void *p)
+size_t array_add_unique (array_pt arr, void *p)
 {
-  unsigned int k;
+  size_t k;
 
   for (k = 0; k < arr->count; k++)
     if (arr->v[k] == p)
@@ -131,7 +131,7 @@ unsigned int array_add_unique (array_pt arr, void *p)
 /* deletes all occurences of a value from an array              */
 void array_delete_item (array_pt arr, void *p)
 {
-  int i, j, oldcount = arr->count;
+  size_t i, j, oldcount = arr->count;
 
   for (i = 0, j = 0; i < oldcount; i++)
     {
@@ -149,7 +149,7 @@ void array_delete_item (array_pt arr, void *p)
 /* TODO: guarantee that it is safe */
 void array_delete_duplicates (array_pt arr)
 {
-  int i, j, k, oldcount;
+  size_t i, j, k, oldcount;
 
   for (k = 0; k < arr->count; k++)
     {
@@ -170,10 +170,10 @@ void array_delete_duplicates (array_pt arr)
 /* deletes the element at a given index of the array, shifting
  * the following elements to the left */
 /* TODO: guarantee that it is safe */
-void *array_delete_index (array_pt arr, unsigned int idx)
+void *array_delete_index (array_pt arr, size_t idx)
 {
   void *p = arr->v[idx];
-  int i;
+  size_t i;
 
   for (i = idx+1; i < arr->count; i++)
     arr->v[i-1] = arr->v[i];
@@ -199,8 +199,8 @@ void array_trim (array_pt arr)
 /* ------------------------------------------------------------ */
 void array_filter_with (array_pt arr, int (*func)(void *, void *), void *data)
 {
-  int i, j;
-  int oldcount = arr->count;
+  size_t i, j;
+  size_t oldcount = arr->count;
 
   for (i = 0, j = 0; i < oldcount; i++)
     {
@@ -216,8 +216,8 @@ void array_filter_with (array_pt arr, int (*func)(void *, void *), void *data)
 /* ------------------------------------------------------------ */
 void array_filter (array_pt arr, int (*func)(void *))
 {
-  int i, j;
-  int oldcount = arr->count;
+  size_t i, j;
+  size_t oldcount = arr->count;
 
   for (i  =0, j = 0; i < oldcount; i++)
     {
@@ -233,7 +233,7 @@ void array_filter (array_pt arr, int (*func)(void *))
 /* ------------------------------------------------------------ */
 void array_map (array_pt arr, void (*func)(void *))
 {
-  int i;
+  size_t i;
 
   for (i = 0; i < arr->count; i++)
     func(arr->v[i]);
@@ -242,7 +242,7 @@ void array_map (array_pt arr, void (*func)(void *))
 /* ------------------------------------------------------------ */
 void array_map1 (array_pt arr, void (*func)(void *, void *), void *p)
 {
-  int i;
+  size_t i;
 
   for (i = 0; i < arr->count; i++)
     func(arr->v[i], p);
@@ -251,14 +251,14 @@ void array_map1 (array_pt arr, void (*func)(void *, void *), void *p)
 /* ------------------------------------------------------------ */
 void array_map2 (array_pt arr, void (*func)(void *, void *, void *), void *p1, void *p2)
 {
-  int i;
+  size_t i;
 
   for (i = 0; i < arr->count; i++)
     func(arr->v[i], p1, p2);
 }
 
 /* ------------------------------------------------------------ */
-void *array_set (array_pt arr, int i, void *p)
+void *array_set (array_pt arr, size_t i, void *p)
 {
   void *old;
 
@@ -285,14 +285,14 @@ void *array_set (array_pt arr, int i, void *p)
 
 /* returns the size of the array */
 /* TODO: remove function? */
-int array_size (array_pt arr)
+size_t array_size (array_pt arr)
 {
     return arr->size;
 }
 
 /* returns the count of the array */
 /* TODO: remove function? */
-int array_count (array_pt arr)
+size_t array_count (array_pt arr)
 {
     return arr->count;
 }
@@ -300,7 +300,7 @@ int array_count (array_pt arr)
 /* returns element 'i' from the array */
 /* TODO: could be made safe by checking if it is in limits,
    otherwise the programmer can access directly the array */
-void *array_get (array_pt arr, int i)
+void *array_get (array_pt arr, size_t i)
 {
     return arr->v[i];
 }
