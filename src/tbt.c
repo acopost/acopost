@@ -34,8 +34,8 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <strings.h> /* strdup/Solaris */
 #include <string.h> /* strdup/Linux */
+#include <strings.h> /* strdup/Solaris */
 #include <ctype.h> /* islower */
 #include <math.h> /* sqrt */
 #include <errno.h>
@@ -45,10 +45,10 @@
 #include "util.h"
 #include "mem.h"
 
-char *strdup(const char *); /* not part of ANSI C */
-int snprintf(char *str, size_t size, const char *format, ...); /* not part of ANSI C */
+/* char *strdup(const char *); */ /* not part of ANSI C */
+/* int snprintf(char *str, size_t size, const char *format, ...); */ /* not part of ANSI C */
 
-void srand48(long int seedval); /* not part of ANSI C */
+/* void srand48(long int seedval); */ /* not part of ANSI C */
 
 /* ------------------------------------------------------------ */
 #ifndef MIN

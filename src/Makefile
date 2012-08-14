@@ -2,7 +2,7 @@
 
 CC=gcc
 
-CFLAGS  = -Wall -std=c99 -O2
+CFLAGS  = -Wall -std=c99 -O2 -D_USE_BSD
 
 # default is double
 CFLAGS += -DT3_PROB_IS_FLOAT

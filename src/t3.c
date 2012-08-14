@@ -43,7 +43,11 @@
 #include <string.h> /* strdup/Linux */
 #include <ctype.h> /* islower */
 #include <math.h> /* sqrt */
-#include <values.h> /* MAXDOUBLE, MAXFLOAT */
+#ifdef __APPLE__
+#include <limits.h> /* MAXDOUBLE, MAXFLOAT/MacOSX */
+#else
+#include <values.h> /* MAXDOUBLE, MAXFLOAT/Linux */
+#endif
 #include <errno.h> 
 #include <getopt.h>
 #include <string.h> /* strerror */
