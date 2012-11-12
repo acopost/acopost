@@ -1,0 +1,52 @@
+#
+# acopost.spec made from acopost.spec.in 
+# via the configure script
+#
+%define ver          @VERSION@
+%define rel          1%{?dist}
+%define prefix       @prefix@
+
+Summary: ACOPOST - A collection of part of speech taggers
+Name: acopost
+Version: %{ver}
+Release: %{rel}
+License: GPL
+Group: Science
+URL: http://acopost.sourceforge.net/
+Source0: %{name}-%{version}.tar.gz
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+
+%description
+Part-of-speech tagging is the task of assigning symbols from a particular set to words in a natural language text. ACOPOST implements and extends well-known machine learning techniques and provides a uniform environment for testing.
+
+%prep
+%setup -q
+
+%build
+CFLAGS="$RPM_OPT_FLAGS $CFLAGS"
+CXXFLAGS="$RPM_OPT_FLAGS $CXXFLAGS"
+export CFLAGS CXXFLAGS
+./configure --prefix=%{prefix}
+make
+
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make install prefix=%{buildroot}%{prefix}
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+
+%files
+%defattr(-,root,root,-)
+%{prefix}/bin/*
+%{prefix}/share/acopost/
+%doc %{prefix}/share/doc/acopost/
+
+
+
+%changelog
+* Mon Nov 12 2012 Ulrik Sandborg-Petersen <ulrikp@users.sourceforge.net> - 
+- Initial build.
+
