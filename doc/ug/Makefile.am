@@ -1,6 +1,6 @@
 BUILT_SOURCES = acopost-users-guide.ps acopost-users-guide.pdf
 
-EXTRA_DIST = $(BUILT_SOURCES)
+EXTRA_DIST = $(BUILT_SOURCES) ug.tex ug.bib
 
 CLEANFILES = *~ $(BUILT_SOURCES) ug.ps ug.pdf \
              ug.dvi ug.log ug.bbl ug.toc ug.blg ug.aux
