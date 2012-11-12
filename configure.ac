@@ -2,13 +2,14 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([FULL-PACKAGE-NAME], [VERSION], [BUG-REPORT-ADDRESS])
-AC_CONFIG_SRCDIR([src/util.h])
+AC_INIT([acopost], [1.8.7], [ulrikp@users.sourceforge.net])
+AM_INIT_AUTOMAKE([-Wall])
+AC_CONFIG_SRCDIR([src/t3.c])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_LEX
+# AC_PROG_LEX
 
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lm':
@@ -27,6 +28,11 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([floor memmove memset sqrt strchr strcspn strdup strerror strpbrk strrchr strspn strstr])
 
-AC_CONFIG_FILES([doc/ug/Makefile
-                 src/Makefile])
+AC_CONFIG_FILES([doc/Makefile
+                 doc/ug/Makefile
+                 language-models/Makefile
+                 language-models/t3/Makefile
+                 bin/Makefile
+                 src/Makefile
+                 Makefile])
 AC_OUTPUT

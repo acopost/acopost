@@ -1,0 +1,15 @@
+This is ACOPOST, "A COllection of POS Taggers".  
+
+Part-of-speech tagging is the task of assigning symbols from a
+particular set to words in a natural language text. ACOPOST implements
+and extends well-known machine learning techniques and provides a
+uniform environment for testing.
+
+Originally written by Ingo Schröder, ACOPOST is now maintained by a
+team of developers, and has a home at:
+
+http://acopost.sourceforge.net/
+
+Enjoy!
+
+- The maintainenance team
