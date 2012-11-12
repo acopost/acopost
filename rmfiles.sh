@@ -17,4 +17,5 @@ rm -f compile
 rm -f `find . -name Makefile.in`
 rm -f `find . -name Makefile`
 rm -rf autom4te.cache/
+rm -f acopost.spec
 rm -f *~

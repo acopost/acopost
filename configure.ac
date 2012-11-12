@@ -34,5 +34,6 @@ AC_CONFIG_FILES([doc/Makefile
                  language-models/t3/Makefile
                  bin/Makefile
                  src/Makefile
-                 Makefile])
+                 Makefile
+                 acopost.spec])
 AC_OUTPUT
