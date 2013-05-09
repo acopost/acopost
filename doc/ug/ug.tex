@@ -4,9 +4,10 @@
 \usepackage{natbib}
 \usepackage{fancyhdr}
 \usepackage{comment}
-\usepackage{url}
+\usepackage{hyperref}
 \usepackage{xspace}
 
+\hypersetup{colorlinks=false,pdfborder=0 0 0}
 %%\hyphenation{}
 
 % Allow the new placement directive H for tables and figures.
@@ -164,7 +165,7 @@
   \acopost: User manual
 
   \LARGE
-  Version 1.8.4
+  Version 1.8.6
 
   \normalsize\normalfont
   Ingo Schröder \\
@@ -220,11 +221,11 @@ archive which unpacks into a new directory acopost-$x.y.z$:
 
 \begin{quote}
 \begin{verbatim}
-PROMPT> gunzip -c acopost-1.8.4.tar.gz | tar fxv -
-acopost-1.8.4/
-acopost-1.8.4/src/
-acopost-1.8.4/src/Makefile
-acopost-1.8.4/src/array.c
+PROMPT> gunzip -c acopost-1.8.6.tar.gz | tar fxv -
+acopost-1.8.6/
+acopost-1.8.6/src/
+acopost-1.8.6/src/Makefile
+acopost-1.8.6/src/array.c
 ...
 \end{verbatim}
 \end{quote}
@@ -241,7 +242,7 @@ directories:
 \item 
   Directory \verb+src+ which contains the C files.
 \item 
-  Directory \verb+docs+ which contains the documentation, this user
+  Directory \verb+doc+ which contains the documentation, this user
   guide and a technical report \citep{Schroeder:2002b}.
 \item 
   Directory \verb+examples+ which contains some example files.

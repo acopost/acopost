@@ -8,17 +8,14 @@ CLEANFILES = *~ $(BUILT_SOURCES) ug.ps ug.pdf \
 dist_doc_DATA = $(BUILT_SOURCES)
 
 
-ug.dvi: ug.tex
-	latex ug.tex
+ug.pdf: ug.tex
+	pdflatex ug.tex
 	bibtex ug
-	latex ug.tex
-	latex ug.tex
+	pdflatex ug.tex
+	pdflatex ug.tex
 
-ug.ps: ug.dvi
-	dvips -o ug.ps ug.dvi
-
-ug.pdf: ug.ps
-	ps2pdf14 ug.ps
+ug.ps: ug.pdf ug.tex
+	pdf2ps ug.pdf
 
 acopost-users-guide.ps: ug.ps
 	cp -fp $< $@
