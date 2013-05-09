@@ -8,22 +8,43 @@
 
 use FileHandle;
 
-require "getopts.pl";
-
-&Getopts('hm:p:v');
-
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
+$Usage="Usage: $cmd [-h] [-m modulo] [-p prefix] [-v] [corpusfile]\n";
 
-die "Usage: $cmd [-h] [-m modulo] [-p prefix] [-v] [corpusfile]\n"
-  if defined($opt_h) || defined($opt_h) || $#ARGV>0;
+use Getopt::Long;
+Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
+
+sub usage
+{
+    print $Usage;
+}
+
+$p = "";
+$m = 10;
+$opt_v = 0;
+GetOptions
+(
+ 'p=s' => \$p,
+ 'm=i' => \$m,
+ 'v' => \$opt_v,
+ 'h|help'        => sub { usage (); exit },
+);
+
+die $Usage if  $#ARGV>0;
 
 if ($#ARGV==0) {
   open(STDIN, "<$ARGV[0]") || die "$cmd: can't open corpus file \"$ARGV[0]\": $!\n";
   $ARGV[0]=~s/.cooked$//;
+  if($p eq "")
+  {
+    $p = $ARGV[0];
+  }
 }
-$m=defined($opt_m) ? $opt_m : 10;
-$p=defined($opt_p) ? $opt_p : $#ARGV==0 ? $ARGV[0] : "pre";
+if($p eq "")
+{
+  $p = "pre";
+}
 
 for ($i=0; $i<$m; $i++) {
   my $fh=new FileHandle;

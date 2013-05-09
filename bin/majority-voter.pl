@@ -4,14 +4,26 @@
 # Ingo Schröder, ingo.schroeder@nats.informatik.uni-hamburg.de
 #
 
-require "getopts.pl";
-
-&Getopts('h');
-
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
+$Usage="Usage: $cmd [-h] reference a b ...\n";
 
-die "Usage: $cmd [-h] reference a b ...\n" if defined($opt_h) || $#ARGV<2;
+use Getopt::Long;
+Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
+
+sub usage
+{
+    print $Usage;
+}
+
+$opt_q = 0;
+GetOptions
+(
+ 'q'             => \$opt_q,
+ 'h|help'        => sub { usage (); exit },
+);
+
+die $Usage if $#ARGV<2;
 
 $lno=0;
 open(R, "<$ARGV[0]") || die "can't open \"reference\" file: $!\n";
@@ -35,7 +47,7 @@ while (!eof(R)) {
     chomp($l[$i]);
   }
   $lno++;
-  printf STDERR "%12d sentences\r", $lno unless defined($opt_q);
+  printf STDERR "%12d sentences\r", $lno unless $opt_q;
   @rs=split(/\s+/, $r);
   for ($i=0; $i<=$#rs; $i+=2) {
     my $nc=0;

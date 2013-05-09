@@ -8,30 +8,44 @@
 
 #use strict;
 
-require "getopts.pl";
-
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
+$Usage="Usage: $cmd [-a min] [-b max] [-d] [-h] [-w mfw] featurefile\n";
+
+use Getopt::Long;
+Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
+
+sub usage
+{
+    print $Usage;
+}
+
+$minc = -1;
+$maxc = -1;
+$exclude="";
+$include="";
+$debug=0;
+$rwt = 0;
+$mfw = 100;
+GetOptions
+(
+ 'a=i' => \$minc,
+ 'b=i' => \$maxc,
+ 'd' => \$debug,
+ 'e=s' => \$exclude,
+ 'i=s' => \$include,
+ 'r=i' => \$rwt,
+ 'w=i' => \$mfw,
+ 'h|help'        => sub { usage (); exit },
+);
+
+die $Usage if $#ARGV!=0;
 
 printf "##\n## Call (quotes inserted): %s", $cmd;
 foreach my $o (@ARGV) {
   printf " \"%s\"", $o;
 }
 printf "\n";
-
-&Getopts('a:b:de:i:dhr:w:');
-
-$minc=defined($opt_a) ? $opt_a : -1;
-$maxc=defined($opt_b) ? $opt_b : -1;
-$debug=defined($opt_d) || defined($opt_d) ? 1 : 0;
-$exclude=defined($opt_e) ? $opt_e : "";
-$include=defined($opt_i) ? $opt_i : "";
-$rwt=defined($opt_r) ? $opt_r : 0;
-$mfw=defined($opt_w) ? $opt_w : 100;
-
-
-die "Usage: $cmd [-a min] [-b max] [-d] [-h] [-w mfw] featurefile\n"
-  if defined($opt_h) || defined($opt_h) || $#ARGV!=0;
 
 my $user = getlogin() eq "" ? $< : getlogin();
 @pw=getpwnam($user);
@@ -87,7 +101,7 @@ $now=$lno=0;
 while ($l=<STDIN>) {
   $lno++;
   printf STDERR "%d\r", $lno
-    if $debug>0 && $lno%100==0;
+    if $debug && $lno%100==0;
   chomp($l);
   push(@s, $l);
   my @ls=split(/\s+/, $l);

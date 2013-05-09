@@ -8,15 +8,26 @@
 
 use FileHandle;
 
-require "getopts.pl";
-
-&Getopts('hv');
-
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
+$Usage="Usage: $cmd [-h] [-v] lexicon\n";
 
-die "Usage: $cmd [-h] [-v] lexicon\n"
-  if defined($opt_h) || defined($opt_h) || $#ARGV!=0;
+use Getopt::Long;
+Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
+
+sub usage
+{
+    print $Usage;
+}
+
+$opt_v = 0;
+GetOptions
+(
+ 'v' => \$opt_v,
+ 'h|help'        => sub { usage (); exit },
+);
+
+die $Usage if $#ARGV!=0;
 
 $nle=0;
 open(F, "<$ARGV[0]") || die "can't open lexicon \"$ARGV[0]\": $!\n";
@@ -33,17 +44,17 @@ while ($l=<F>) {
   }
 }
 close(F);
-printf STDERR "%d lexical entries read\n", $nle if defined($opt_v);
+printf STDERR "%d lexical entries read\n", $nle if $opt_v;
 @tags=sort { $tc{$b} <=> $tc{$a} } keys %tc;
 $mft=$tags[0];
-printf STDERR "most frequent tag %s\n", $mft if defined($opt_v);
+printf STDERR "most frequent tag %s\n", $mft if $opt_v;
 
 $nos=0;
 LINE:
 while ($l=<STDIN>) {
   next LINE if $l=~m/^\s*$/;
   $nos++;
-  printf STDERR "%d sentences read\r", $nos if defined($opt_v) && $nos%41==0;
+  printf STDERR "%d sentences read\r", $nos if $opt_v && $nos%41==0;
   chomp($l);
   my @as=split(/\s+/, $l);
   for (my $i=0; $i<=$#as; $i+=2) {
@@ -53,4 +64,4 @@ while ($l=<STDIN>) {
   }
   printf "\n";
 }
-printf STDERR "%d sentences read\n", $nos if defined($opt_v);
+printf STDERR "%d sentences read\n", $nos if $opt_v;

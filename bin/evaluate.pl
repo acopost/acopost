@@ -8,23 +8,38 @@
 
 use FileHandle;
 
-require "getopts.pl";
-
-&Getopts('hil:v');
-
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
+$Usage="Usage: $cmd [-h] [[-i] -l lexicon] [-v] reference t1 ...\n";
 
-die "Usage: $cmd [-h] [[-i] -l lexicon] [-v] reference t1 ...\n"
-  if defined($opt_h) || defined($opt_h) || $#ARGV<1;
+use Getopt::Long;
+Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
 
-if (defined($opt_l)) {
+sub usage
+{
+    print $Usage;
+}
+
+$lexicon = "";
+$opt_i = 0;
+$opt_v = 0;
+GetOptions
+(
+ 'l=s' => \$lexicon,
+ 'i' => \$opt_i,
+ 'v' => \$opt_v,
+ 'h|help'        => sub { usage (); exit },
+);
+
+die $Usage if $#ARGV<1;
+
+if ($lexicon) {
   $nle=0;
-  open(F, "<$opt_l") || die "can't open lexicon \"$opt_l\": $!\n";
+  open(F, "<$lexicon") || die "can't open lexicon \"$lexicon\": $!\n";
   while ($l=<F>) {
     if ($l=~m/^(\S+)\s+(.+)$/) {
       my $w=$1;
-      $w=~tr/A-ZÄÖÜ/a-zäöü/ if defined($opt_i);
+      $w=~tr/A-ZÄÖÜ/a-zäöü/ if $opt_i;
       my @vs=split(/\s+/, $2);
       $lexicon{$w}=$vs[0];
       for (my $i=0; $i<=$#vs; $i+=2) {
@@ -34,10 +49,10 @@ if (defined($opt_l)) {
     }
   }
   close(F);
-  printf "%d lexicon entries read\n", $nle if defined($opt_v);
+  printf "%d lexicon entries read\n", $nle if $opt_v;
   @tags=sort { $tc{$b} <=> $tc{$a} } keys %tc;
   $mft=$tags[0];
-  printf "most frequent tag %s\n", $mft if defined($opt_v);
+  printf "most frequent tag %s\n", $mft if $opt_v;
 }
 
 open(R, "<$ARGV[0]") || die "can't open reference file \"$ARGV[0]\": $!\n";
@@ -56,7 +71,7 @@ $lno=0;
 while ($r=<R>) {
   chomp($r);
   $lno++;
-  printf STDERR "%12d sentences read\r", $lno if defined($opt_v);
+  printf STDERR "%12d sentences read\r", $lno if $opt_v;
   @rs=split(/\s+/, $r);
   for ($i=0; $i<=$#fhs; $i++) {
     my $bnoe=$noe=0;
@@ -65,7 +80,7 @@ while ($r=<R>) {
     die "$fns[$i]:$lno: different number of words $#rs != $#ts\n" if $#rs!=$#ts;
     for ($j=0; $j<$#rs; $j+=2) {
       my $pos=$j/2;
-      if (defined($opt_i)) {
+      if ($opt_i) {
 	$rs[$j]=~tr/A-ZÄÖÜ/a-zäöü/;
 	$ts[$j]=~tr/A-ZÄÖÜ/a-zäöü/;
       }
@@ -103,13 +118,13 @@ while ($r=<R>) {
     $sc[$i]++ if $noe==0;
   }
 }
-printf STDERR "\n" if defined($opt_v);
+printf STDERR "\n" if $opt_v;
 $nos=$lno;
 
 printf "%d sentences\n", $nos;
 printf "%d words == %d (%7.3f%%) known %d (%7.3f%%) unknown\n",
   $known+$unknown, $known, 100*$known/($known+$unknown), $unknown, 100*$unknown/($known+$unknown)
-  if defined($opt_v);
+  if $opt_v;
 
 for ($i=0; $i<=$#fhs; $i++) {
   die "not at end of file \"$fns[$i]\"\n" if !eof($fh[$i]);
@@ -122,8 +137,8 @@ for ($i=0; $i<=$#fhs; $i++) {
   my $lp=$lpos[$i];
   my $n=$neg[$i];
   my $ln=$lneg[$i];
-  if (defined($opt_l)) {
-    if ($i==0 && defined($opt_v)) {
+  if ($lexicon) {
+    if ($i==0 && $opt_v) {
       printf "%20s|%26s|%26s\n", "", "Sentence", "Word";
       printf "%20s|%26s|%26s %26s %26s\n", "Name", "all", "all", "known", "unknown";
       printf "%s\n", "-" x 128;

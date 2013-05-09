@@ -4,16 +4,25 @@
 # Ingo Schröder
 #
 
-require "getopts.pl";
-
-&Getopts('hr:');
-
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
+$Usage="Usage: $cmd [-h] [-r rwt] lexfile\n";
 
-die "Usage: $cmd [-h] [-r rwt] lexfile\n" if defined($opt_h) || $#ARGV!=0;
+use Getopt::Long;
+Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
 
-$rwt=defined($opt_r) ? $opt_r : 5;
+sub usage
+{
+    print $Usage;
+}
+
+$rwt = 5;
+(
+ 'r=i' => \$rwt,
+ 'h|help'        => sub { usage (); exit },
+);
+
+die $Usage if $#ARGV!=0;
 
 open(F, "<$ARGV[0]") || die "can't open \"$ARGV[0]\": $!\n";
 LINE:

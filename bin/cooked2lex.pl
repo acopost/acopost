@@ -4,14 +4,26 @@
 # Ingo Schröder
 #
 
-require "getopts.pl";
-
-&Getopts('ch');
-
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
+$Usage="Usage: $cmd [-c] [-h]\n";
 
-die "Usage: $cmd [-c] [-h]\n" if defined($opt_h) || $#ARGV!=-1;
+use Getopt::Long;
+Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
+
+sub usage
+{
+    print $Usage;
+}
+
+$opt_c = 0;
+GetOptions
+(
+ 'c' => \$opt_c,
+ 'h|help'        => sub { usage (); exit },
+);
+
+die $Usage if $#ARGV!=-1;
 
 $now=$lno=0;
 while ($l=<STDIN>) {
@@ -33,7 +45,7 @@ $maxx=-1;
 #$wa=0.0;
 foreach $w (@words) {
   printf "%s", $w;
-  printf " %d", $wc{$w} if defined($opt_c);
+  printf " %d", $wc{$w} if $opt_c;
   my $x=0;
   my $wc=$wc{$w};
  TAG:

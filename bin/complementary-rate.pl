@@ -4,14 +4,28 @@
 # Ingo Schröder
 #
 
-require "getopts.pl";
-
-&Getopts('hqv');
-
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
+$Usage="Usage: $cmd [-h] reference a b\n";
 
-die "Usage: $cmd [-h] reference a b\n" if defined($opt_h) || $#ARGV!=2;
+use Getopt::Long;
+Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
+
+sub usage
+{
+    print $Usage;
+}
+
+$opt_q = 0;
+$opt_v = 0;
+GetOptions
+(
+ 'q' => \$opt_q,
+ 'v' => \$opt_v,
+ 'h|help'        => sub { usage (); exit },
+);
+
+die $Usage if $#ARGV!=2;
 
 $pos=$neg=$lno=0;
 open(R, "<$ARGV[0]") || die "can't open \"reference\" file: $!\n";
@@ -23,7 +37,7 @@ while (!eof(R) && !eof(A) && !eof(B)) {
   $b=<B>;
   #if ($t ne $r) { printf STDERR "%s%s", $t, $r; }
   $lno++;
-  printf STDERR "%12d %12d %12d\r", $lno, $pos, $neg unless defined($opt_q);
+  printf STDERR "%12d %12d %12d\r", $lno, $pos, $neg unless $opt_q;
   chomp($r); chomp($b); chomp($b); 
   @rs=split(/\s+/, $r);
   @as=split(/\s+/, $a);

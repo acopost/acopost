@@ -4,14 +4,24 @@
 # Ingo Schröder
 #
 
-require "getopts.pl";
-
-&Getopts('h');
-
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
+$Usage="Usage: $cmd [-h]\n";
 
-die "Usage: $cmd [-h]\n" if defined($opt_h);
+use Getopt::Long;
+Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
+
+sub usage
+{
+    print $Usage;
+}
+
+GetOptions
+(
+ 'h|help'        => sub { usage (); exit },
+);
+
+die $Usage if $#ARGV!=-1;
 
 $lno=0;
 while ($l=<STDIN>) {

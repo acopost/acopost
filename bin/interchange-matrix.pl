@@ -4,14 +4,28 @@
 # Ingo Schröder
 #
 
-require "getopts.pl";
-
-&Getopts('hqv');
-
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
+$Usage="Usage: $cmd [-h] tagged reference\n";
 
-die "Usage: $cmd [-h] tagged reference\n" if defined($opt_h) || $#ARGV!=1;
+use Getopt::Long;
+Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
+
+sub usage
+{
+    print $Usage;
+}
+
+$opt_q = 0;
+$opt_v = 0;
+GetOptions
+(
+ 'q' => \$opt_q,
+ 'v' => \$opt_v,
+ 'h|help'        => sub { usage (); exit },
+);
+
+die $Usage if $#ARGV!=1;
 
 $pos=$neg=$lno=0;
 open(T, "<$ARGV[0]") || die "can't open \"tagged\" file: $!\n";
@@ -20,7 +34,7 @@ while (!eof(T) && !eof(R)) {
   $t=<T>;
   $r=<R>;
   $lno++;
-  printf STDERR "%12d %12d %12d\r", $lno, $pos, $neg unless defined($opt_q);
+  printf STDERR "%12d %12d %12d\r", $lno, $pos, $neg unless $opt_q;
   chomp($t); chomp($r);
   @ts=split(/\s+/, $t);
   @rs=split(/\s+/, $r);
