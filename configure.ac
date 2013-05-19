@@ -27,6 +27,22 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([floor memmove memset sqrt strchr strcspn strdup strerror strpbrk strrchr strspn strstr])
 
+# Check for presence of LaTeX tools
+AC_CHECK_PROG(PDFLATEX, pdflatex, pdflatex)
+AM_CONDITIONAL([HAVE_PDFLATEX], test -n "$PDFLATEX")
+AC_CHECK_PROG(LATEX, latex, latex)
+AM_CONDITIONAL([HAVE_LATEX], test -n "$LATEX")
+AC_CHECK_PROG(BIBTEX, bibtex, bibtex)
+AM_CONDITIONAL([HAVE_BIBTEX], test -n "$BIBTEX")
+AC_CHECK_PROG(DVIPS, dvips, dvips)
+AM_CONDITIONAL([HAVE_DVIPS], test -n "$DVIPS")
+AC_CHECK_PROG(PDF2PS, pdf2ps, pdf2ps)
+AM_CONDITIONAL([HAVE_PDF2PS], test -n "$PDF2PS")
+AC_CHECK_PROG(PS2PDF, ps2pdf, ps2pdf)
+AM_CONDITIONAL([HAVE_PS2PDF], test -n "$PS2PDF")
+
+
+
 AC_CONFIG_FILES([doc/Makefile
                  doc/ug/Makefile
                  language-models/Makefile
