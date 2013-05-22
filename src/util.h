@@ -71,7 +71,7 @@ extern FILE *try_to_open(char *name, char *mode);
    (if specified)
    not reentrant
 */
-char *basename(char *name, char *suffix);
+char *acopost_basename(char *name, char *suffix);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    successively returns tokens separated by one or more chars

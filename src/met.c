@@ -1516,7 +1516,7 @@ extern int main(int argc, char **argv)
   int oldnice=nice(0), newnice=19;
   ptrdiff_t fmin=5, bw=-1, cs=0, nbest=0, mode;
   
-  cmd=strdup(basename(argv[0], NULL));
+  cmd=strdup(acopost_basename(argv[0], NULL));
   if (oldnice<0) { error("can't get priority class\n"); }
 
   for (mode=0; ivs[mode].cmd; mode++)

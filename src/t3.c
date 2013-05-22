@@ -1406,7 +1406,7 @@ int main(int argc, char **argv)
   model_pt m=new_model();
   
   g=new_globals(NULL);
-  g->cmd=strdup(basename(argv[0], NULL));
+  g->cmd=strdup(acopost_basename(argv[0], NULL));
   get_options(g, argc, argv);
 
   report(1, "\n");
