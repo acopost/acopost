@@ -24,22 +24,23 @@
 */
 
 /* ------------------------------------------------------------ */
+#include "config.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <getopt.h>
 #include <time.h>
-#include <strings.h>
-#include <string.h> /* Linux: strpbrk */
+#include <string.h>
+#ifdef HAVE_STRINGS_H
+#include <strings.h> /* strtok */
+#endif
 #include <stdarg.h>
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>
-/* #include <limits.h>  NZERO */
 #include <ctype.h>
-#include "config.h"
 #include "mem.h"
 #include "array.h"
 #include "hash.h"

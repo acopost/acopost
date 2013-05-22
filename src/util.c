@@ -19,10 +19,13 @@
 */
 
 /* ------------------------------------------------------------ */
+#include "config.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#ifdef HAVE_STRINGS_H
 #include <strings.h>
-#include <string.h> /* Linux: strpbrk */
+#endif
 #include <stdarg.h>
 #include <errno.h>
 #include <sys/time.h>

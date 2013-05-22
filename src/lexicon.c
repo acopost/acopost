@@ -24,11 +24,14 @@
 */
 
 /* ------------------------------------------------------------ */
+#include "config.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <strings.h> /* strdup/Solaris */
-#include <string.h> /* strdup/Linux */
+#include <string.h>
+#ifdef HAVE_STRINGS_H
+#include <strings.h> /* strtok */
+#endif
 #include <ctype.h> /* islower */
 #include <errno.h> 
 #include <string.h> /* strerror */

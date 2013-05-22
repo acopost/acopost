@@ -24,6 +24,7 @@
 */
 
 /* ------------------------------------------------------------ */
+#include "config.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <getopt.h>
 #include <unistd.h>
@@ -33,8 +34,9 @@
 #include <math.h>
 #include <errno.h>
 #include <string.h>
+#ifdef HAVE_STRINGS_H
 #include <strings.h> /* strtok */
-#include "config.h"
+#endif
 #include "mem.h"
 #include "array.h"
 #include "hash.h"

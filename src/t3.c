@@ -35,12 +35,15 @@
 */
 
 /* ------------------------------------------------------------ */
+#include "config.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
 #include <stdio.h>
 /*#include <unistd.h>*/
-#include <strings.h> /* strdup/Solaris */
-#include <string.h> /* strdup/Linux */
+#include <string.h>
+#ifdef HAVE_STRINGS_H
+#include <strings.h> /* strtok */
+#endif
 #include <ctype.h> /* islower */
 #include <math.h> /* sqrt */
 #ifdef __APPLE__
@@ -51,7 +54,6 @@
 #include <errno.h> 
 #include <getopt.h>
 #include <string.h> /* strerror */
-#include "config.h"
 #include "hash.h"
 #include "array.h"
 #include "util.h"
