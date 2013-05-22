@@ -556,13 +556,13 @@ static void read_precondition_into_rule(model_pt m, rule_pt r, size_t n, char *s
   if (1==sscanf(s, "tag[%d]=", &r->pc[n].pos))
     {
       r->pc[n].type=PRE_TAG;
-      s=index(s, '='); s++;
+      s=strchr(s, '='); s++;
       r->pc[n].u.tag=(tf && !strcmp(s, g->joker)) ? -1 : register_tag(m, REGISTER_STRING(s));
     }
   else if (1==sscanf(s, "word[%d]=", &r->pc[n].pos))
     {
       r->pc[n].type=PRE_WORD;
-      s=index(s, '='); s++;
+      s=strchr(s, '='); s++;
       r->pc[n].u.word=(tf && !strcmp(s, g->joker)) ? NULL : REGISTER_STRING(s);
     }
   else if (tf && 2==sscanf(s, "prefix[%d]=%zd", &r->pc[n].pos, &r->pc[n].u.prefix.length))
@@ -573,7 +573,7 @@ static void read_precondition_into_rule(model_pt m, rule_pt r, size_t n, char *s
   else if (1==sscanf(s, "prefix[%d]=", &r->pc[n].pos))
     {
       r->pc[n].type=PRE_PREFIX;
-      s=index(s, '='); s++;
+      s=strchr(s, '='); s++;
       r->pc[n].u.prefix.prefix=REGISTER_STRING(s);
       r->pc[n].u.prefix.length=strlen(s);
     }
@@ -585,7 +585,7 @@ static void read_precondition_into_rule(model_pt m, rule_pt r, size_t n, char *s
   else if (1==sscanf(s, "suffix[%d]=", &r->pc[n].pos))
     {
       r->pc[n].type=PRE_SUFFIX;
-      s=index(s, '='); s++;
+      s=strchr(s, '='); s++;
       r->pc[n].u.suffix.suffix=REGISTER_STRING(s);
       r->pc[n].u.suffix.length=strlen(s);
     }
@@ -596,7 +596,7 @@ static void read_precondition_into_rule(model_pt m, rule_pt r, size_t n, char *s
   else if (1==sscanf(s, "digit[%d]=", &r->pc[n].pos))
     {
       r->pc[n].type=PRE_DIGIT;
-      s=index(s, '='); s++;
+      s=strchr(s, '='); s++;
       if (!strcmp(s, "no")) { r->pc[n].u.digit=PRE_NO; }
       else if (!strcmp(s, "some")) { r->pc[n].u.digit=PRE_SOME; }
       else if (!strcmp(s, "all")) { r->pc[n].u.digit=PRE_ALL; }
@@ -606,7 +606,7 @@ static void read_precondition_into_rule(model_pt m, rule_pt r, size_t n, char *s
   else if (1==sscanf(s, "cap[%d]=", &r->pc[n].pos))
     {
       r->pc[n].type=PRE_CAP;
-      s=index(s, '='); s++;
+      s=strchr(s, '='); s++;
       if (!strcmp(s, "no")) { r->pc[n].u.cap=PRE_NO; }
       else if (!strcmp(s, "some")) { r->pc[n].u.cap=PRE_SOME; }
       else if (!strcmp(s, "all")) { r->pc[n].u.cap=PRE_ALL; }

@@ -457,7 +457,7 @@ static size_t find_feature_value_from_sentence(model_pt m, feature_pt f, char **
     case FT_HYPHEN:
       {
 	char tmp[2]="0";
-	if (index(ws[rp], '-')) { tmp[0]='1'; }
+	if (strchr(ws[rp], '-')) { tmp[0]='1'; }
 	return find_feature_value(f, tmp);
       }
     case FT_NUMBER:
