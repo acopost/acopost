@@ -47,10 +47,10 @@
 #include "util.h"
 #include "mem.h"
 
-/* char *strdup(const char *); */ /* not part of ANSI C */
+char *strdup(const char *); /* not part of ANSI C */
 /* int snprintf(char *str, size_t size, const char *format, ...); */ /* not part of ANSI C */
 
-/* void srand48(long int seedval); */ /* not part of ANSI C */
+void srand48(long int seedval); /* not part of ANSI C */
 
 /* ------------------------------------------------------------ */
 #ifndef MIN
@@ -1076,7 +1076,7 @@ precondition_from_template(model_pt m, array_pt sps, int pos, rule_pt t, rule_pt
   precondition_pt rpc=&r->pc[r->nop];
   precondition_pt tpc=&t->pc[r->nop];
   int rp=pos+tpc->pos;
-  sample_pt sp;
+  sample_pt sp = NULL;
 
   if (tpc->type!=PRE_BOS && tpc->type!=PRE_EOS)
     {
