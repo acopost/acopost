@@ -19,7 +19,7 @@
 */
 
 /* ------------------------------------------------------------ */
-#include "config.h"
+#include "config-common.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -29,12 +29,12 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <sys/time.h>
+#ifdef HAVE_SYS_RESOURCES_H
 #include <sys/resource.h>
+#endif
 #include "hash.h"
 #include "util.h"
 #include "mem.h"
-
-char *strdup(const char *); /* not part of ANSI C */
 
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
@@ -45,6 +45,7 @@ int verbosity=1;
 /* ------------------------------------------------------------ */
 unsigned long used_ms()
 {
+#ifdef HAVE_SYS_RESOURCES_H
   struct rusage ru;
 
   if (getrusage(RUSAGE_SELF, &ru)) { report(0, "Can't get rusage: %s\n", strerror(errno)); }
@@ -52,6 +53,10 @@ unsigned long used_ms()
   return 
     (ru.ru_utime.tv_sec+ru.ru_stime.tv_sec)*1000+
     (ru.ru_utime.tv_usec+ru.ru_stime.tv_usec)/1000;
+#else
+  fprintf(stderr, "used_ms() implementation missing, returning 0ms.\n");
+  return 0;
+#endif
 }
 
 /* ------------------------------------------------------------ */
