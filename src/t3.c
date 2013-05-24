@@ -35,7 +35,7 @@
 */
 
 /* ------------------------------------------------------------ */
-#include "config.h"
+#include "config-common.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
 #include <stdio.h>
@@ -49,7 +49,9 @@
 #ifdef __APPLE__
 #include <limits.h> /* MAXDOUBLE, MAXFLOAT/MacOSX */
 #else
+#ifdef HAVE_VALUES_H
 #include <values.h> /* MAXDOUBLE, MAXFLOAT/Linux */
+#endif
 #endif
 #include <errno.h> 
 #include <getopt.h>
@@ -58,8 +60,6 @@
 #include "array.h"
 #include "util.h"
 #include "mem.h"
-
-char *strdup(const char *); /* not part of ANSI C */
 
 /* on 64-bit systems, sizeof(void*) is different from
  * sizeof(int) so to make it compile silently we need to
