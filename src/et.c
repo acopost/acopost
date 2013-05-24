@@ -24,7 +24,7 @@
 */
 
 /* ------------------------------------------------------------ */
-#include "config.h"
+#include "config-common.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <getopt.h>
 #include <unistd.h>
@@ -41,8 +41,6 @@
 #include "array.h"
 #include "hash.h"
 #include "util.h"
-
-char *strdup(const char *); /* not part of ANSI C */
 
 /* ------------------------------------------------------------ */
 
