@@ -24,7 +24,7 @@
 */
 
 /* ------------------------------------------------------------ */
-#include "config.h"
+#include "config-common.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
 #include <stdio.h>
@@ -38,7 +38,6 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <sys/time.h>
-#include <sys/resource.h>
 #include <unistd.h>
 #include <ctype.h>
 #include "mem.h"
@@ -46,9 +45,6 @@
 #include "hash.h"
 #include "util.h"
 #include "gis.h"
-
-char *strdup(const char *); /* not part of ANSI C */
-extern int nice (int __inc); /* not part of ANSI C */
 
 /* ------------------------------------------------------------ */
 typedef struct sample_s
