@@ -29,7 +29,7 @@
 */
 
 /* ------------------------------------------------------------ */
-#include "config.h"
+#include "config-common.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
 #include <getopt.h>
@@ -46,11 +46,6 @@
 #include "array.h"
 #include "util.h"
 #include "mem.h"
-
-char *strdup(const char *); /* not part of ANSI C */
-/* int snprintf(char *str, size_t size, const char *format, ...); */ /* not part of ANSI C */
-
-void srand48(long int seedval); /* not part of ANSI C */
 
 /* ------------------------------------------------------------ */
 #ifndef MIN
