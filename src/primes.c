@@ -21,14 +21,12 @@
 */
 
 /* ------------------------------------------------------------ */
+#include "config-common.h"
 #include <stdlib.h>
 #include <math.h>
 #include <sys/types.h>
 #include <time.h>
 #include "primes.h"
-
-double drand48(void);           /* declared here, as it is not part of ANSI C */
-void srand48(long int seedval); /* declared here, as it is not part of ANSI C */
 
 /* ------------------------------------------------------------ */
 /*typedef unsigned long ulong;*/
