@@ -23,7 +23,7 @@ ltest_SOURCES = lexicon.c ltest.c array.c mem.c util.c hash.c primes.c
 ltest_LDFLAGS = -lm
 
 
-noinst_HEADERS = array.h config.h gis.h hash.h lexicon.h mem.h primes.h util.h
+noinst_HEADERS = array.h config-common.h gis.h hash.h lexicon.h mem.h primes.h util.h
 
 
 CLEANFILES = *.o $(bin_PROGRAMS) $(noinst_PROGRAMS) *~ core
