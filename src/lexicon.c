@@ -24,7 +24,7 @@
 */
 
 /* ------------------------------------------------------------ */
-#include "config.h"
+#include "config-common.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -40,8 +40,6 @@
 #include "array.h"
 #include "util.h"
 #include "mem.h"
-
-char *strdup(const char *); /* not part of ANSI C */
 
 /* ------------------------------------------------------------ */
 
