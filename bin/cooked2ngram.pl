@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Ingo Schröder
+# Ingo SchrÃ¶der
 #
 
 $cmd=$0;

@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Ingo Schröder
+# Ingo SchrÃ¶der
 #
 # see http://nats-www.informatik.uni-hamburg.de/~ingo/icopost/
 #
@@ -39,7 +39,7 @@ if ($lexicon) {
   while ($l=<F>) {
     if ($l=~m/^(\S+)\s+(.+)$/) {
       my $w=$1;
-      $w=~tr/A-ZÄÖÜ/a-zäöü/ if $opt_i;
+      $w=~tr/A-ZÃ„Ã–Ãœ/a-zÃ¤Ã¶Ã¼/ if $opt_i;
       my @vs=split(/\s+/, $2);
       $lexicon{$w}=$vs[0];
       for (my $i=0; $i<=$#vs; $i+=2) {
@@ -81,8 +81,8 @@ while ($r=<R>) {
     for ($j=0; $j<$#rs; $j+=2) {
       my $pos=$j/2;
       if ($opt_i) {
-	$rs[$j]=~tr/A-ZÄÖÜ/a-zäöü/;
-	$ts[$j]=~tr/A-ZÄÖÜ/a-zäöü/;
+	$rs[$j]=~tr/A-ZÃ„Ã–Ãœ/a-zÃ¤Ã¶Ã¼/;
+	$ts[$j]=~tr/A-ZÃ„Ã–Ãœ/a-zÃ¤Ã¶Ã¼/;
       }
       die "$fns[$i]:$lno: different words at pos $pos\n" if $rs[$j] ne $ts[$j];
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Ingo Schröder
+# Ingo SchrÃ¶der
 #
 
 $cmd=$0;
@@ -37,7 +37,7 @@ while ($l=<STDIN>) {
  WORD:
   for ($i=0; $i<=$#ws; $i++) {
     my $w=$ws[$i];
-    next WORD unless $w=~m/^[A-ZÄÖÜa-zäöüß\-]+$/;
+    next WORD unless $w=~m/^[A-ZÃ„Ã–Ãœa-zÃ¤Ã¶Ã¼ÃŸ\-]+$/;
     #printf "%s ", $w;
     $wc++;
     #$w=~s/[.?!;,:]+$//;
