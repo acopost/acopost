@@ -1,7 +1,7 @@
 /*
   Lexicon data structure
 
-  Copyright (C) 2001, 2002 Ingo Schröder
+  Copyright (C) 2001, 2002 Ingo SchrÃ¶der
 
   Contact info:
   

@@ -1,7 +1,7 @@
 /*
   Generalized Iterative Scaling
   
-  Copyright (C) 2001 Ingo Schröder, ingo@nats.informatik.uni-hamburg.de
+  Copyright (C) 2001 Ingo SchrÃ¶der, ingo@nats.informatik.uni-hamburg.de
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by

@@ -1,7 +1,7 @@
 /*
   Example-based Tagger
 
-  Copyright (C) 2001 Ingo Schröder
+  Copyright (C) 2001 Ingo SchrÃ¶der
 
   Contact info:
   
@@ -145,7 +145,7 @@ typedef model_t *model_pt;
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 char *banner=
-"Example-based Tagger (c) Ingo Schröder, schroeder@informatik.uni-hamburg.de";
+"Example-based Tagger (c) Ingo SchrÃ¶der, schroeder@informatik.uni-hamburg.de";
 
 globals_pt g;
 

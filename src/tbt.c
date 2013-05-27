@@ -1,7 +1,7 @@
 /*
   Transformation-based tagger
 
-  Copyright (C) 2001, 2002 Ingo Schröder
+  Copyright (C) 2001, 2002 Ingo SchrÃ¶der
 
   Contact info:
   
@@ -197,7 +197,7 @@ typedef option_t *option_pt;
 
 /* ------------------------------------------------------------ */
 char *banner=
-"Transformation-based Tagger (c) Ingo Schröder, ingo@nats.informatik.uni-hamburg.de";
+"Transformation-based Tagger (c) Ingo SchrÃ¶der, ingo@nats.informatik.uni-hamburg.de";
 
 globals_pt g;
 
