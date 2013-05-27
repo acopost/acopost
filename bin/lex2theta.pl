@@ -30,9 +30,9 @@ while ($l=<F>) {
   chomp($l);
   next LINE if $l=~m/^%%/;
   next LINE if $l=~m/^@/;
-  if ($l=~m/^\S+\s+(\d+)\s+(.*)$/) {
+  if ($l=~m/^\S+\s+(.*\s+\d+)+\s*$/) {
     if ($1<=$rwt) {
-      @as=split(/\s+/, $2);
+      @as=split(/\s+/, $1);
       for (my $i=0; $i<=$#as; $i+=2) {
 	$count{$as[$i]}+=$as[$i+1];
       }
@@ -44,5 +44,5 @@ while ($l=<F>) {
 close(F);
 
 foreach $t (keys %count) {
-  printf "%d\n", $count{$t};
+  printf "%s\t%d\n", $t, $count{$t};
 }
