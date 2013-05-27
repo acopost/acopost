@@ -2,7 +2,7 @@
 #include "config.h"
 #else
 #define HAVE_NICE 1
-#define HAVE_SYS_RESOURCES_H 1
+#define HAVE_SYS_RESOURCE_H 1
 #define HAVE_DRAND48 1
 #define HAVE_SRAND48 1
 #endif
