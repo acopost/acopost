@@ -42,6 +42,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{prefix}/bin/*
 %{prefix}/share/acopost/
+%{prefix}/share/man/man7/*
 %doc %{prefix}/share/doc/acopost/
 
 
