@@ -1,0 +1,45 @@
+* tag[0]=*
+* bos[-1] tag[0]=*
+* tag[-1]=* tag[0]=*
+* tag[0]=* eos[1]
+* tag[0]=* tag[1]=*
+* bos[-2] tag[0]=*
+* tag[-2]=* tag[0]=*
+* tag[0]=* eos[2]
+* tag[0]=* tag[2]=*
+* tag[-2]=* tag[-1]=* tag[0]=*
+* tag[-1]=* tag[0]=* tag[1]=*
+* tag[0]=* tag[1]=* tag[2]=*
+* word[0]=*
+* word[-1]=* 
+* word[-2]=*
+* word[1]=* 
+* word[-1]=* word[0]=*
+* word[0]=* word[1]=*
+* word[-2]=* word[0]=*
+* tag[-1]=* word[0]=*
+* word[0]=* tag[1]=*
+* rare[0] suffix[0]=1
+* rare[0] suffix[0]=2
+* rare[0] suffix[0]=3
+* rare[0] suffix[0]=4
+* rare[0] suffix[0]=5
+* rare[0] tag[-1]=* suffix[0]=1
+* rare[0] tag[-1]=* suffix[0]=2
+* rare[0] tag[-1]=* suffix[0]=3
+* rare[0] tag[-1]=* suffix[0]=4
+* rare[0] tag[-1]=* suffix[0]=5
+* rare[0] tag[0]=* suffix[0]=1
+* rare[0] tag[0]=* suffix[0]=2
+* rare[0] tag[0]=* suffix[0]=3
+* rare[0] tag[0]=* suffix[0]=4
+* rare[0] tag[0]=* suffix[0]=5
+* rare[0] tag[1]=* suffix[0]=1
+* rare[0] tag[1]=* suffix[0]=2
+* rare[0] tag[1]=* suffix[0]=3
+* rare[0] tag[1]=* suffix[0]=4
+* rare[0] tag[1]=* suffix[0]=5
+* rare[0] tag[0]=* cap[0]=*
+* rare[0] bos[-1] cap[0]=*
+* rare[0] tag[-1]=* cap[0]=*
+* rare[0] digit[0]=*
