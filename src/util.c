@@ -29,7 +29,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <sys/time.h>
-#ifdef HAVE_SYS_RESOURCES_H
+#ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
 #include "hash.h"
@@ -45,7 +45,7 @@ int verbosity=1;
 /* ------------------------------------------------------------ */
 unsigned long used_ms()
 {
-#ifdef HAVE_SYS_RESOURCES_H
+#ifdef HAVE_SYS_RESOURCE_H
   struct rusage ru;
 
   if (getrusage(RUSAGE_SELF, &ru)) { report(0, "Can't get rusage: %s\n", strerror(errno)); }
