@@ -15,7 +15,7 @@ AC_PROG_CC
 AC_CHECK_LIB([m], [log])
 
 # Checks for header files.
-AC_CHECK_HEADERS([limits.h stddef.h stdint.h stdlib.h string.h strings.h sys/time.h unistd.h values.h string.h math.h locale.h sys/resources.h])
+AC_CHECK_HEADERS([limits.h stddef.h stdint.h stdlib.h string.h strings.h sys/time.h unistd.h values.h string.h math.h locale.h sys/resource.h])
 # Checks for functions.
 AC_CHECK_FUNCS(nice srand48 drand48 strdup)
 
