@@ -7,31 +7,45 @@
 #include "primes.h"
 #include "util.h"
 
+int mem_test ()
+{
+    void *p;
+
+    /* Allocates 10Mb of memory, reallocates it to 1Mb,
+     * reallocates it to 25Mb and then frees it */
+    printf("Testing 'mem_malloc()'...\n");
+    p = mem_malloc(1048576 * 10);
+
+    printf("Testing 'mem_realloc()' with smaller size...\n");
+    p = mem_realloc(p, 1048576);
+
+    printf("Testing 'mem_realloc()' with bigger size...\n");
+    p = mem_realloc(p, 1048576 * 25);
+
+    printf("Testing 'mem_free()'...\n");
+    mem_free(p);
+
+    return 0;
+}
+
+int array_test ()
+{
+    array_pt arr;
+
+    printf("Testing 'array_new()'...\n");
+    arr = array_new(1000);
+
+    printf("Testing 'array_free()'...\n");
+    array_free(arr);
+
+    return 0;
+}
+
 int main (int argc, char *argv[])
 {
-  int a = 13, b=14;
-  int *ptr = &a, *ptr2 = &b;
-  int *temp;
+     mem_test();
+     array_test();
 
-  hash_pt myhash = hash_new(100, .7, hash_string_hash, hash_string_equal);
-
-  char *str = "este é um teste";
-
-  array_pt array = array_new(10);
-  array_pt array_str = array_new(10);
-  array_add(array, ptr);
-  array_add(array_str, str);
-
-  temp = (int*)array_get(array, 0);
-
-  printf("prova 1: %i\n", *temp);
-  printf("prova 2: %i\n", *((int *)array_get(array, 0)) );
-
-  printf("prova 3: %s\n", (char *)array_get(array_str, 0) );
-
-  hash_put(myhash, ptr, ptr2);
-  printf("%i\n", *((int *)hash_get(myhash, ptr)) );
-
-  return 0;
+     return 0;
 }
 
