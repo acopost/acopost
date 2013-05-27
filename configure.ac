@@ -48,6 +48,7 @@ AM_CONDITIONAL([HAVE_PS2PDF], test -n "$PS2PDF")
 
 AC_CONFIG_FILES([doc/Makefile
                  doc/ug/Makefile
+                 examples/Makefile
                  language-models/Makefile
                  language-models/t3/Makefile
                  bin/Makefile

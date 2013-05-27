@@ -1,4 +1,4 @@
-SUBDIRS = doc language-models bin src
+SUBDIRS = doc examples language-models bin src
 
 CLEANFILES = *~
 
