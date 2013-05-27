@@ -13,7 +13,7 @@ int main(int argc, char **argv)
   lexicon_pt l=read_lexicon_file(argv[1]);
   char s[4000];
   
-  printf("Read %ld lexical entries.\n", hash_size(l->words));
+  printf("Read %ld lexical entries.\n", (long int)hash_size(l->words));
   while (fgets(s, 1000, stdin))
     {
       word_pt w;
