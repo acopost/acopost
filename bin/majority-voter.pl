@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Ingo Schröder, ingo.schroeder@nats.informatik.uni-hamburg.de
+# Ingo SchrÃ¶der, ingo.schroeder@nats.informatik.uni-hamburg.de
 #
 
 $cmd=$0;

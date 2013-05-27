@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Ingo Schröder
+# Ingo SchrÃ¶der
 #
 # see http://nats-www.informatik.uni-hamburg.de/~ingo/icopost/
 #

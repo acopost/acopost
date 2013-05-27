@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Ingo Schrˆder, schroeder@informatik.uni-hamburg.de
+# Ingo Schr√∂der, schroeder@informatik.uni-hamburg.de
 #
 # see http://nats-www.informatik.uni-hamburg.de/~ingo/icopost/
 #
@@ -226,7 +226,7 @@ for (my $i=0; $i<=$#s; $i++) {
 	if ($pos<0 || $pos>$#ls) { $tmp="*BOUNDARY*"; }
 	else {
 	  my $w=$ls[$pos];
-	  $tmp= $w=~m/^[A-Z÷‹ƒ]/ ? $w=~m/^[A-Z÷‹ƒ]+$/ ? 2 : 1 : 0;
+	  $tmp= $w=~m/^[A-Z√ñ√ú√Ñ]/ ? $w=~m/^[A-Z√ñ√ú√Ñ]+$/ ? 2 : 1 : 0;
 	}
       } elsif ($f=~m/^HYPHEN\[(-?\d+)\]$/) {
 	my $rp=$1;
