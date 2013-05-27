@@ -1,0 +1,256 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH ACOPOST 1 "May 27, 2013"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+acopost \- a collection of pos-taggers 
+.SH SYNOPSIS
+.B t3
+.RI [ options ] 
+.br
+.B tbt
+.RI [ options ] 
+.br
+.B met
+.RI [ options ] 
+.br
+.B et
+.RI [ options ] 
+.br
+.SH DESCRIPTION
+\fBAcopost\fP is a collection of part of speech taggers with
+concomitant scripts for processing data to and from the formats
+required by the part of speech taggers.
+
+Part of speech tagging is the process of assigning a "tag" to each
+word in a given text, where the "tag" is supposed to express something
+meaningful about the "part of speech" of the word, and possibly also
+some of its grammatical features (i.e., morphology).  For example, in
+English, the word "collection" is a singular noun, so it might get the
+part of speech tag "NN", whereas the word "collections" is a plural
+noun, so it might get the part of speech tag "NNS".
+
+The set of tags applied by a part of speech tagger is called its "tag
+set".  The tag set is up to the user to decide upon.  A commonly used
+tagset for Engish is the one used by the Penn Treebank project (Google
+is your friend).
+
+\fBAcopost\fP is useful because it has four different part of speech
+taggers.  The user can then apply more than one part of speech tagger
+to the same input text, thereby getting "a second opinion" on the part
+of speech tagging, and even a "third opinion" or "fourth opinion".
+These opinions can then be weighted against each other.  If two or
+more agree, that tag could be chosen against a tag which was produced
+by only one part of speech tagger.
+
+
+Four part of speech taggers are provided in \fBAcopost\fP. Although
+each has its own separate manual page, they are briefly described
+below.
+
+
+.B t3(1) 
+is a hidden-markov-model-based part of speech tagger inspired by the
+famous "Trigrams 'n Tags" (TnT) tagger by Thorsten Brants [2000].
+
+.B met(1)
+is a maximum entry tagger. uses an iterative procedure to successively
+improve parameters for a set of features that help to distinguish
+between relevant contexts. It's based on a framework suggested by
+Ratnaparkhi [1997].
+
+.B tbt(1) 
+is an error-driven transformation-based tagger. Transformation rules
+are learned from an annotated corpus which change the currently
+assigned tag depending on triggering context conditions. The general
+approach as well as the application to POS tagging has been proposed
+by Brill [1993].
+
+.B et(1) 
+is an example-based tagger. Example-based models (also called
+memory-based, instance-based or distance-based) rest on the assumption
+that cognitive behavior can be achieved by looking at past experiences
+that resemble the current problem rather than learning and applying
+abstract rules. They have been suggested for NLP by Daelemans et
+al. [1996].
+
+A number of scripts are also available, which are described briefly
+below, and also each on its own manual page.
+
+.B cooked2lex.pl(1)
+A script to produce an ACOPOST lexicon from a file in cooked format.
+All four taggers need a lexicon in this format.
+
+.B cooked2wtree.pl(1)
+A script to produce a weighted tree from a file in cooked format. The
+purpose is to train the \fBet(1)\fP tagger.
+ 
+.B cooked2ngram.pl(1)
+A script to produce an N-gram representation of the cooked input file
+that is suitable for use with the \fBt3(1)\fP tagger.
+ 
+.B cooked2raw.pl(1)
+A script to convert from cooked to raw format.
+
+.B raw2tntraw.pl(1)
+A script to convert from raw format of ACOPOST to the raw format
+expected by the TnT tagger of Thorsten Brants.
+ 
+.B cooked2tt.pl(1)
+A script to convert from ACOPOST cooked format to the tt format
+expected by the TnT tagger of Thorsten Brants.
+ 
+.B tt2cooked.pl(1)
+A script to convert from the tt format expected by the TnT tagger of
+Thorsten Brants to the cooked format expected by ACOPOST.
+
+.B cooked2fntbl.pl(1)
+A script to add information from a lexicon to a file in cooked format.
+ 
+.B wsj2cooked.pl(1)
+A script to convert a file in Penn Treebank format to cooked format.
+ 
+.B evaluate.pl(1)
+A script to report tagging accuracy on sentence level, for unknown,
+known and all words.
+
+.B complementary-rate.pl(1)
+A script to compute the accuracy and complementary rate of the output
+of two part of speech taggers with respect to a "gold standard"
+reference.
+
+.B majority-voter.pl(1)
+A script to report how often a number of different taggers have
+tagged words correctly.
+
+.B lex2theta.pl(1)
+A script to find the pos-tags in a lexicon and report the sum of the
+weights given to each pos-tag in the lexicon.  The output is suitable
+for input into the \fBmean-and-sd.pl(1)\fP script.
+
+.B mean-and-sd.pl(1)
+A script to read a list of numbers and report the mean, the variance,
+and the standard deviation, as well as an optional count.
+ 
+.B split-corpus.pl(1)
+A script to split a corpus in either raw or cooked format into a given
+number of parts.  This is useful if you want to split a corpus into
+two or more parts for e.g., training the taggers on one set of parts,
+then evaluating it on another set of parts.
+ 
+.B interchange-matrix.pl(1)
+A script to calculate an interchange matrix of tags between two
+corpora in cooked format.
+ 
+.B unknown-word-ratio.pl(1)
+A script to calculate the ratio of "known" words to "unknown" words in
+a raw file.  Here, "known" means "recognizable by a regular expression
+which works well for German".
+ 
+
+
+
+.SH FILE FORMATS
+
+Acopost uses three input file formats:
+
+.TP
+.B raw
+Each sentence is on a line by itself, with each token separated from
+the next token by a single space.
+.TP
+.B cooked
+Each sentence is on a line by itself, with each token followed by a
+single space, then the pos-tag of the given token, and then a single
+space.
+.TP
+.B tt
+Each token is on a line by itself, with each sentence being separated
+from the next by an empty line. Each non-empty line starts with the
+token, then it has a single tab character (ASCII 0x09), followed by
+the part of speech tag, followed by a newline (ASCII 0x0a).
+.br
+
+Various other file formats are described under the manual page(s)
+where their description is pertinent.
+
+.SH SEE ALSO
+.BR majority-voter.pl(1), 
+.BR split-corpus.pl(1), 
+.BR cooked2fntbl.pl(1), 
+.BR cooked2lex.pl(1), 
+.BR cooked2ngram.pl(1), 
+.BR cooked2raw.pl(1), 
+.BR raw2tntraw.pl(1), 
+.BR cooked2tt.pl(1), 
+.BR tt2cooked.pl(1), 
+.BR cooked2wtree.pl(1), 
+.BR wsj2cooked.pl(1), 
+.BR complementary-rate.pl(1), 
+.BR evaluate.pl(1), 
+.BR lex2theta.pl(1), 
+.BR interchange-matrix.pl(1), 
+.BR mean-and-sd.pl(1), 
+.BR unknown-word-ratio.pl(1), 
+.br
+
+The "ACOPOST User's Guide" is helpful in addition to the manual pages.
+It should be installed as "acopost-users-guide.pdf" on your system
+along with the acopost tools.
+
+The technical report by Ingo Schröder from 2002 referenced below
+should also be installed on your system as "schroder2002.pdf".  It
+gives a rationale for ACOPOST, and explains some of the inner workings
+of the various taggers.
+
+See also the Acopost website: <http://acopost.sourceforge.net/>.
+
+\fBThorsten Brants. 2000.\fP TnT - a statistical part-of-speech
+tagger. In \fIProceedings of the Sixth Applied Natural Language
+Processing Conference (ANLP-2000)\fP, Seattle, WA, USA.
+
+\fBEric Brill. 1993.\fP Automatic grammar induction and parsing free
+text: A transformation-based appraoch. In \fIProceedings of the 31st
+Annual Meeting of the ACL\fP.
+
+\fBWalter Daelemans, Jakub Zavrel, Peter Berck and Steven
+Gillis. 1996.\fP MBT: A memory-based part of speech tagger-generator.
+In Eva Ejerhed and Ido Dagan, ed., \fIProceedings of the Fourth
+Workshop on Very Large Corpora\fP, pages 14-27.
+
+\fBIngo Schröder. 2002.\fP A Case Study in Part-of-Speech tagging
+Using the ICOPOST Toolkit.  Technical report
+FBI-HH-M-314/02. Department of Computer Science, University of
+Hamburg.
+
+\fBLawrence R. Rabiner. 1990.\fP A tutorial on hidden markov models
+and selected applications in speech recognition.  In Alex Waibel and
+Kai-Fu Lee, ed., \fIReadings in Speech Recognition\fP. Morgan
+Kaufmann, San Mateo, CA, USA, pages 267-290. See also Errata.
+
+\fBAdwait Ratnaparkhi. 1998.\fP \fIMaximum Entropy Models for Natural
+Language Ambiguity Resolution\fP. Ph.D. thesis, University of
+Pennsylvania.
+
+
+
+.SH AUTHORS
+The Acopost programs were originally written by Ingo Schröder. Other
+authors are listed in the AUTHORS file.
+
+This manual page was originally written by Ulrik Sandborg-Petersen
+<ulrikp@users.sourceforge.net>.
+
