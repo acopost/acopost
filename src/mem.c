@@ -36,7 +36,7 @@ void *mem_malloc (size_t size)
 {
   void *p = malloc(size);
   if (!p) {
-    fprintf(stderr, "Error: no memory left, aborting [mem_alloc].\n");
+    fprintf(stderr, "Error: no memory left, aborting [mem_malloc].\n");
     exit(1);
   }
 
