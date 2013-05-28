@@ -1,7 +1,11 @@
-AM_CFLAGS = -Wall -std=c99 -O2 -D_USE_BSD
+if DEBUG
+AM_CFLAGS = -O0 -g3
+else
+AM_CFLAGS = -O2
+endif
 
 # default is double
-AM_CFLAGS += -DT3_PROB_IS_FLOAT
+AM_CFLAGS += -Wall -std=c99 -D_USE_BSD -DT3_PROB_IS_FLOAT
 
 
 bin_PROGRAMS = et met t3 tbt
