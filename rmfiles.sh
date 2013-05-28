@@ -24,3 +24,4 @@ rm -rf autom4te.cache/
 rm -f acopost.spec
 rm -f *~
 rm -rf src/.deps
+rm -r tests/*.test
