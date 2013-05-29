@@ -84,7 +84,9 @@ array_pt array_clone (array_pt arr)
 
   arr_clone->size = arr->size;
   arr_clone->count = arr->count;
-  arr_clone->v = (void **)mem_malloc(arr_clone->size*sizeof(void *));
+  /* NOT necessary, since we already did that in array_new.
+    arr_clone->v = (void **)mem_malloc(arr->size*sizeof(void *));
+  */
   (void)memcpy(arr_clone->v, arr->v, arr_clone->size*sizeof(void *));
 
   return arr_clone;
