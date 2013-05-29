@@ -80,13 +80,9 @@ void array_clear (array_pt arr)
 /* returns a copy of a given array                              */
 array_pt array_clone (array_pt arr)
 {
+  /* array_new() does the memory allocation and sets arr_clone->size */
   array_pt arr_clone = array_new(arr->size);
-
-  arr_clone->size = arr->size;
   arr_clone->count = arr->count;
-  /* NOT necessary, since we already did that in array_new.
-    arr_clone->v = (void **)mem_malloc(arr->size*sizeof(void *));
-  */
   (void)memcpy(arr_clone->v, arr->v, arr_clone->size*sizeof(void *));
 
   return arr_clone;
