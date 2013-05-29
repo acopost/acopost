@@ -113,6 +113,9 @@ int array_test ()
     array_trim(arr4);
     printf(" to %zu\n", arr4->size);
 
+    printf("Testing 'array_get()'...\n");
+    array_get(arr4, 0);
+
     printf("Testing 'array_free()'...\n");
     array_free(arr1);
     array_free(arr2);
