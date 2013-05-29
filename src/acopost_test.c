@@ -1,6 +1,11 @@
+#include "config-common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <math.h>
+/* #include <sys/types.h> */
+#include <time.h>
+
 #include "array.h"
 #include "hash.h"
 #include "mem.h"
@@ -125,11 +130,72 @@ int array_test ()
     return 0;
 }
 
+
+int primes_test ()
+{
+#define PRIME_TEST (10)
+#define NO_OF_KNOWN_PRIMES (8)
+    int i, n, n_next;
+    int known_primes[NO_OF_KNOWN_PRIMES] = {
+	3,
+	5,
+	7,
+	11,
+	13,
+	17,
+	19,
+	23
+    };
+
+    srand48(time(NULL));
+  
+    
+    printf("Testing 'primes_rabin()'...\n");
+
+    for (i = 0;
+	 i < NO_OF_KNOWN_PRIMES;
+	 ++i) {
+	n = known_primes[i];
+	printf("Now testing wither %d is prime...\n", n);
+	if (!primes_rabin((unsigned long) n, PRIME_TEST)) {
+	    printf("Error: %d is prime", n);
+	    return 1;
+	}
+    }
+
+    printf("Testing 'primes_next()'...\n");
+    for (i = 0;
+	 i < NO_OF_KNOWN_PRIMES-1;
+	 ++i) {
+	n = known_primes[i];
+	n_next = known_primes[i+1];
+	printf("Now finding next prime after %d is prime...\n", n);
+
+	unsigned long next_prime = primes_next(n, PRIME_TEST);
+	if (next_prime != (unsigned long) n_next) {
+	    printf("Error: The next prime after %d is not %d but %d\n", n, (int) next_prime, n_next);
+	    return 1;
+	}
+    }
+
+    return 0;
+}
+
+
 int main (int argc, char *argv[])
 {
-     mem_test();
-     array_test();
+    int bContinue;
 
-     return 0;
+    bContinue = !mem_test();
+    bContinue = bContinue ? !array_test() : 0;
+    bContinue = bContinue ? !primes_test() : 0;
+
+    if (bContinue) {
+	printf("SUCCESS: All tests succeeded.\n");
+	return 0;
+    } else {
+	printf("ERROR: At least one test failed.\n");
+	return 1;
+    }
 }
 
