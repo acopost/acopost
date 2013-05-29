@@ -95,6 +95,8 @@ ulong primes_next (ulong number, ulong times)
 {
   srand48(time(NULL));
 
+  ++number;
+
   while (!primes_rabin(number, times))
     number++;
   return number;
