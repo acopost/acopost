@@ -1,5 +1,5 @@
 if DEBUG
-AM_CFLAGS = -O0 -g3
+AM_CFLAGS = -O0 -g3 -DDEVELOPMENT_CHECKS
 else
 AM_CFLAGS = -O2
 endif
