@@ -25,3 +25,4 @@ rm -f acopost.spec
 rm -f *~
 rm -rf src/.deps
 rm -rf tests/*.test
+rm -f valgrind.out.txt out.txt
