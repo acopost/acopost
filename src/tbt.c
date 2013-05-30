@@ -1549,6 +1549,9 @@ int main(int argc, char **argv)
   
   report(1, "done\n");
   
+  /* Free the memory held by util.c. */
+  util_teardown();
+  
   exit(0);
 }
 

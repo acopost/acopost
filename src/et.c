@@ -741,6 +741,9 @@ int main(int argc, char **argv)
     case MODE_TEST: testing(m); break;
     default: error("unknown mode of operation %d\n", g->mode);
     }
+
+  /* Free the memory held by util.c. */
+  util_teardown();
   
   exit(0);
 }

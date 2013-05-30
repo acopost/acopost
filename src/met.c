@@ -1624,6 +1624,9 @@ extern int main(int argc, char **argv)
       else { error("don't know what to do (\"%s\")\n", cmd); }
     }
 
+  /* Free the memory held by util.c. */
+  util_teardown();
+  
   exit(0);
 }
 

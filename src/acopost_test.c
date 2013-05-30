@@ -193,6 +193,9 @@ int main (int argc, char *argv[])
     bContinue = bContinue ? !array_test() : 0;
     bContinue = bContinue ? !primes_test() : 0;
 
+    /* Free the memory held by util.c. */
+    util_teardown();
+
     if (bContinue) {
 	printf("SUCCESS: All tests succeeded.\n");
 	return 0;
