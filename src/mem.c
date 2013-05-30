@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "mem.h"
+#include "util.h"
 
 /* ------------------------------------------------------------ */
 void mem_free (void *p)
