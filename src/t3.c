@@ -243,13 +243,28 @@ trie_pt new_trie(model_pt m, trie_pt mother)
 }
 
 /* ------------------------------------------------------------ */
-trie_pt trie_get_daughter(trie_pt tr, unsigned char c)
+void delete_trie(trie_pt tr)
 {
-  if (tr->children==1)
-    { if (tr->unarychar==c) { return (trie_pt)tr->unarynext; } }
-  else if (tr->next && tr->next[c]) { return tr->next[c]; }
-  return NULL;
+  if (tr == NULL)
+    return;
+
+  if (tr->children==0) { /* nothing to do */ }
+  else if (tr->children==1)
+    { delete_trie((trie_pt)tr->unarynext); }
+  else if (tr->next)
+    {
+      size_t i;
+      for (i=0; i<256; i++)
+	{ if (tr->next[i]) { delete_trie(tr->next[i]); } }
+    }
+  else
+    { error("tr %p neither a leave, nor unary nor next\n", tr); }
+  mem_free(tr->lp);
+  mem_free(tr->tagcount);
+  mem_free(tr->next);
+  mem_free(tr);
 }
+
 
 /* ------------------------------------------------------------ */
 void trie_add_daughter(trie_pt tr, unsigned char c, trie_pt daughter)
@@ -263,7 +278,7 @@ void trie_add_daughter(trie_pt tr, unsigned char c, trie_pt daughter)
 	  tr->next=(trie_pt *)mem_malloc(256*sizeof(trie_pt));
 	  memset(tr->next, 0, 256*sizeof(trie_pt));
 	}
-      if (tr->children==1) { tr->next[tr->unarychar]=(trie_pt)tr->unarynext; }
+      if (tr->children==1) { tr->next[tr->unarychar]=(trie_pt)tr->unarynext; tr->unarynext=NULL; tr->unarychar='\0';}
       if (tr->next[c])
 	{ report(1, "WARNING: tr %p c %c exists, although it shouldn't\n", tr, c); }
       tr->next[c]=daughter;
@@ -279,6 +294,15 @@ void add_word_info_to_trie_node(model_pt m, trie_pt tr, word_pt wd)
   tr->count += wd->count;
   for (i = 0; i < not; i++)
     tr->tagcount[i] += wd->tagcount[i];
+}
+
+/* ------------------------------------------------------------ */
+trie_pt trie_get_daughter(trie_pt tr, unsigned char c)
+{
+  if (tr->children==1)
+    { if (tr->unarychar==c) { return (trie_pt)tr->unarynext; } }
+  else if (tr->next && tr->next[c]) { return tr->next[c]; }
+  return NULL;
 }
 
 /* ------------------------------------------------------------ */
@@ -309,6 +333,9 @@ void add_word_to_trie(void *key, void *value, void *data)
       add_word_info_to_trie_node(m, tr, wd);
     }
 }
+
+
+
 
 /* ------------------------------------------------------------ */
 void usage(void)
@@ -421,9 +448,9 @@ ptrdiff_t register_tag(model_pt m, char *t)
 
   if (i<0) 
     { 
-      t=strdup(t); 
-      i=array_add(m->tags, t);
-      hash_put(m->taghash, t, (void *)(i+1));
+      char *rt=strdup(t); 
+      i=array_add(m->tags, rt);
+      hash_put(m->taghash, rt, (void *)(i+1));
     }
   return i;
 }
@@ -454,7 +481,7 @@ void read_ngram_file(model_pt m)
   
   m->tags=array_new(64);
   /* tag 0 is special: begin of sentence & end of sentence */
-  array_add(m->tags, "*BOUNDARY*");
+  array_add(m->tags, strdup("*BOUNDARY*"));
   m->taghash=hash_new(100, .7, hash_string_hash, hash_string_equal);
   for (lno=0, s=freadline(f); s; lno++, s=freadline(f))
     {
@@ -498,6 +525,7 @@ void read_ngram_file(model_pt m)
     }
   report(2, "read %d/%d uni-, %d/%d bi-, and %d/%d trigram count (type/token)\n",
 	 m->type[0], m->token[0], m->type[1], m->token[1], m->type[2], m->token[2]);
+  fclose(f);
 }
 
 /* ------------------------------------------------------------ */
@@ -821,7 +849,7 @@ void compute_transition_probs(model_pt m)
 void read_dictionary_file(model_pt m)
 {
   FILE *f=try_to_open(g->df, "r");
-  char *s;
+  char *s, *rs;
   size_t lno, no_token=0;
   size_t not=array_count(m->tags);
   
@@ -833,9 +861,9 @@ void read_dictionary_file(model_pt m)
       
       s=tokenizer(s, " \t");
       if (!s) { report(1, "can't find word (%s:%d)\n", g->df, lno); continue; }
-      s=register_string(s);
-      wd=new_word(s, 0, not);
-      old=hash_put(m->dictionary, s, wd);
+      rs=register_string(s);
+      wd=new_word(rs, 0, not);
+      old=hash_put(m->dictionary, rs, wd);
       if (old)
 	{
 	  report(1, "duplicate dictionary entry \"%s\" (%s:%d)\n", s, g->df, lno);
@@ -861,6 +889,7 @@ void read_dictionary_file(model_pt m)
     }
   report(2, "read %d/%d entries (type/token) from dictionary\n",
 	 hash_size(m->dictionary), no_token);
+  fclose(f);
 }
 
 /* ------------------------------------------------------------ */
@@ -1345,6 +1374,9 @@ void tagging(model_pt m)
   for (l=freadline(f); l; l=freadline(f))
     { tag_sentence(m, words, tags, l); }
   array_free(words); array_free(tags);
+  if (g->rf) {
+    fclose(f);
+  }
 }
 
 /* ------------------------------------------------------------ */
@@ -1402,6 +1434,70 @@ void testing(model_pt m)
 	 pos+neg, pos, neg, 100.0*(double)pos/(double)(pos+neg));
 }
 
+
+
+/* ------------------------------------------------------------ */
+void delete_model(model_pt m)
+{
+  hash_iterator_pt hi;
+  void *key;
+  size_t i;
+
+  /* Delete the count array. */
+  for (i = 0; i < 3; ++i) {
+    mem_free(m->count[i]);
+  }
+
+  /* Delete the taghash hash map. */
+  hash_delete(m->taghash);
+
+  /* Delete the tags array. */
+  size_t not=array_count(m->tags);
+  for (i = 0; i < not; ++i) {
+    /* Free the string in m->tags.
+     * Do NOT use mem_free, since the memory has been obtained with strdup.
+     */
+    free(array_get(m->tags, i));
+  }
+
+  array_free(m->tags);
+
+  /* Delete the probabilities. */
+  mem_free(m->tp);
+
+  /* Delete all words in dictionary. */
+  hi = hash_iterator_new(m->dictionary);
+  while (NULL != (key = hash_iterator_next_key(hi))) {
+    word_pt wd = (word_pt) hash_get(m->dictionary, key);
+    if (wd != NULL) {
+      delete_word(wd);
+    }
+  }
+  hash_iterator_delete(hi);
+
+  /* Delete the dictionary hash map. */
+  hash_delete(m->dictionary);
+
+  /* Delete the tries. */
+  delete_trie(m->lower_trie);
+  delete_trie(m->upper_trie);
+
+  /* Delete the model itself. */
+  mem_free(m);
+}
+
+
+void delete_globals()
+{
+  free(g->cmd);
+  free(g->mf);
+  free(g->df);
+  free(g->rf);
+  mem_free(g);
+}
+
+
+
 /* ------------------------------------------------------------ */
 int main(int argc, char **argv)
 {
@@ -1439,6 +1535,12 @@ int main(int argc, char **argv)
     }
 
   report(1, "done\n");
+
+  delete_model(m);
+  delete_globals();
+
+  /* Free the memory held by util.c. */
+  util_teardown();
   
   exit(0);
 }
