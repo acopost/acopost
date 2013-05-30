@@ -24,6 +24,7 @@
 #include <string.h>
 #include "array.h"
 #include "mem.h"
+#include "util.h"
 
 /* ------------------------------------------------------------ */
 /* creates and returns a new array                              */
