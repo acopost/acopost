@@ -35,10 +35,8 @@ void mem_free (void *p)
 void *mem_malloc (size_t size)
 {
   void *p = malloc(size);
-  if (!p) {
-    fprintf(stderr, "Error: no memory left, aborting [mem_malloc].\n");
-    exit(1);
-  }
+  if (!p)
+      error("memory allocation failed (no memory left?) [mem_malloc]\n");
 
   return p;
 }
@@ -47,10 +45,8 @@ void *mem_malloc (size_t size)
 void *mem_realloc (void *p, unsigned int size)
 {
   p = realloc(p, size);
-  if (!p) {
-    fprintf(stderr, "Error: no memory left, aborting [mem_realloc].\n");
-    exit(1);
-  }
+  if (!p)
+      error("memory allocation failed (no memory left?) [mem_realloc]\n");
 
   return p;
 }
