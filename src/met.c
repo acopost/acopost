@@ -142,7 +142,7 @@ option_t ops[]={
 };
 
 char *banner=
-"Maximum Entropy Tagger\n(c) Ingo Schröder, schroeder@informatik.uni-hamburg.de\n";
+"Maximum Entropy Tagger (c) Ingo SchrÃ¶der and others, http://acopost.sf.net/";
 
 /* threshold for rare words */
 unsigned int rwt=5;

@@ -197,7 +197,7 @@ typedef option_t *option_pt;
 
 /* ------------------------------------------------------------ */
 char *banner=
-"Transformation-based Tagger (c) Ingo Schröder, ingo@nats.informatik.uni-hamburg.de";
+"Transformation-based Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
 
 globals_pt g;
 

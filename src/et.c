@@ -145,7 +145,7 @@ typedef model_t *model_pt;
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 char *banner=
-"Example-based Tagger (c) Ingo Schröder, schroeder@informatik.uni-hamburg.de";
+"Example-based Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
 
 globals_pt g;
 

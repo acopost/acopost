@@ -146,7 +146,7 @@ typedef model_t *model_pt;
 
 /* ------------------------------------------------------------ */
 char *banner=
-"Trigram POS Tagger (c) Ingo Schröder, schroeder@informatik.uni-hamburg.de";
+"Trigram POS Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
 
 globals_pt g;
 
