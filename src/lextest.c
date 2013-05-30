@@ -33,4 +33,6 @@ int main(int argc, char **argv)
 
   /* Free the memory held by util.c. */
   util_teardown();
+
+  return 0;
 }
