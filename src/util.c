@@ -70,12 +70,12 @@ void error(char *format, ...)
 {
   va_list ap;
 
-  fprintf(stderr, "[%9ld ms::%d] ", used_ms(), verbosity); 
+  fprintf(stderr, "[%9ld ms::%d] ", used_ms(), verbosity);
   fprintf(stderr, "ERROR: ");
   va_start(ap, format);
   vfprintf(stderr, format, ap);
   va_end(ap);
-  exit(0);
+  exit(1);
 }
 
 /* ------------------------------------------------------------ */
