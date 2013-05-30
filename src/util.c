@@ -2,6 +2,7 @@
   Some utility functions
   
   Copyright (C) 2001 Ingo Schröder
+  Copyright (C) 2013 Ulrik Sandborg-Petersen
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -35,6 +36,11 @@
 #include "hash.h"
 #include "util.h"
 #include "mem.h"
+
+/* ------------------------------------------------------------ */
+static hash_pt g_table=NULL;
+static char *g_buffer=NULL;
+
 
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
@@ -226,48 +232,48 @@ char *reverse(char *s)
 char *freadline(FILE *f)
 {
   static int csize=5;
-  static char *b=NULL;
   char *s;
   int sl;
 
-  if (!b) { b=(char *)mem_malloc(csize); }
+  if (!g_buffer) { g_buffer=(char *)mem_malloc(csize); }
 
-  s=fgets(b, csize, f);
+  s=fgets(g_buffer, csize, f);
   if (!s) { return NULL; }
   sl=strlen(s);
-/*   fprintf(stderr, ">> csize=%d sl=%d s[sl-1]=%d s=\"%s\" %p b=\"%s\"\n",  */
-/* 	  csize, sl, s[sl-1], s, s, b); */
+/*   fprintf(stderr, ">> csize=%d sl=%d s[sl-1]=%d s=\"%s\" %p g_buffer=\"%s\"\n",  */
+/* 	  csize, sl, s[sl-1], s, s, g_buffer); */
   while (s[sl-1]!='\n')
     {
       int oldsize=csize;
       csize*=2;
-      b=(char *)mem_realloc(b, csize);
-/*       fprintf(stderr, ">> fgets at %d %d\n", oldsize-1, b[oldsize-1]); */
-      s=fgets(b+oldsize-1, oldsize+1, f);
-      if (!s) { return b; }
+      g_buffer=(char *)mem_realloc(g_buffer, csize);
+/*       fprintf(stderr, ">> fgets at %d %d\n", oldsize-1, g_buffer[oldsize-1]); */
+      s=fgets(g_buffer+oldsize-1, oldsize+1, f);
+      if (!s) { return g_buffer; }
       sl=strlen(s);
-/*       fprintf(stderr, ">> csize=%d sl=%d s[sl-1]=%d s=\"%s\" %p b=\"%s\"\n",  */
-/* 	      csize, sl, s[sl-1], s, s, b); */
+/*       fprintf(stderr, ">> csize=%d sl=%d s[sl-1]=%d s=\"%s\" %p g_buffer=\"%s\"\n",  */
+/* 	      csize, sl, s[sl-1], s, s, g_buffer); */
     }
   s[sl-1]='\0';
-  return b;
+  return g_buffer;
 }
 
 /* ------------------------------------------------------------ */
 char *register_string(char *s)
 {
-  static hash_pt table=NULL;
   char *t=NULL;
 
   if (!s) { return s; } 
-  if (!table) 
-    { table=hash_new(1000, 0.6, hash_string_hash, hash_string_equal); }
-  else { t=hash_get(table, s); if (t) { return t; } }
+  if (!g_table) 
+    { g_table=hash_new(1000, 0.6, hash_string_hash, hash_string_equal); }
+  else { t=hash_get(g_table, s); if (t) { return t; } }
 
   t=strdup(s);
-  hash_put(table, t, t);
+  hash_put(g_table, t, t);
   return t;
 }
+
+
 
 /* ------------------------------------------------------------ */
 char *substr(char *s, int pos, int length)
@@ -336,6 +342,27 @@ int common_suffix_length(char *s, char *t)
   while (a>=s && b>=t && *a==*b) { a--; b--; c++; }
 
   return c;
+}
+
+void util_free_g_table_entry(void *key, void *value)
+{
+  /* Don't free key; it points to the same memory as value. */
+  /* Don't use mem_free; the memory was obtained with strdup,
+   * in register_string. 
+   */
+  free(value);
+}
+
+/* ------------------------------------------------------------ */
+void util_teardown()
+{
+  if (g_table) {
+    hash_map_free(g_table, util_free_g_table_entry);
+  }
+
+  if (g_buffer) {
+    mem_free(g_buffer);
+  }
 }
 
 /* ------------------------------------------------------------ */

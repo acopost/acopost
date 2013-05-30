@@ -2,6 +2,7 @@
   Some utility functions
   
   Copyright (C) 2001 Ingo Schröder
+  Copyright (C) 2013 Ulrik Sandborg-Petersen
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -142,6 +143,11 @@ int common_prefix_length(char *, char *);
    returns length of common suffix
 */
 int common_suffix_length(char *, char *);
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   frees the memory held by util.c.
+*/
+void util_teardown();
 
 /* ------------------------------------------------------------ */
 #endif
