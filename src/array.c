@@ -20,7 +20,6 @@
 */
 
 /* ------------------------------------------------------------ */
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "array.h"
@@ -302,11 +301,9 @@ size_t array_count (array_pt arr)
 void *array_get (array_pt arr, size_t i)
 {
 #ifdef DEVELOPMENT_CHECKS
-    if (i < 0 || i > ((arr->size)-1)) {
-        printf("ERROR: requested an element with outside boundaries index (%i, max %i)\n",
+    if (i < 0 || i > ((arr->size)-1))
+        error("in array_get(), requested an element outside boundaries (index %i, max is %i)",
             i, arr->size);
-        exit(1);
-    }
 #endif
 
     return arr->v[i];
