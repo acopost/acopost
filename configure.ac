@@ -62,7 +62,7 @@ AC_CONFIG_FILES([doc/Makefile
                  examples/Makefile
                  language-models/Makefile
                  language-models/t3/Makefile
-                 bin/Makefile
+                 src/scripts/Makefile
                  src/Makefile
 		 tests/Makefile
 		 tests/data/Makefile

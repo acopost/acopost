@@ -1,3 +1,5 @@
+SUBDIRS = scripts
+
 if DEBUG
 AM_CFLAGS = -O0 -g3 -DDEVELOPMENT_CHECKS
 else
