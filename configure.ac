@@ -59,7 +59,7 @@ AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
 AC_CONFIG_FILES([doc/Makefile
                  doc/ug/Makefile
-                 examples/Makefile
+                 data/Makefile
                  language-models/Makefile
                  language-models/t3/Makefile
                  src/scripts/Makefile
