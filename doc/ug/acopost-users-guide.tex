@@ -305,9 +305,9 @@ marks should be separated from preceding words.
 
 The \acopost program suite contains Perl scripts which convert from
 and into different formats, \eg
-\verb+wsj2cooked.pl+ (cf.\ Section~\ref{S:wsj2cooked.pl}),
-\verb+tt2cooked.pl+ (cf.\ Section~\ref{S:tt2cooked.pl}) and
-\verb+cooked2tt.pl+ (cf.\ Section~\ref{S:cooked2tt.pl}).
+\verb+wsj2cooked+ (cf.\ Section~\ref{S:wsj2cooked}),
+\verb+tt2cooked+ (cf.\ Section~\ref{S:tt2cooked}) and
+\verb+cooked2tt+ (cf.\ Section~\ref{S:cooked2tt}).
 
 The individual taggers use additional data formats to store the model
 information. These formats have been chosen to be human-readable but
@@ -345,8 +345,8 @@ here. This may be the case due to one of the following reasons.
 \end{itemize}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-\subsection{complementary-rate.pl}
-\label{S:complementary-rate.pl}
+\subsection{complementary-rate}
+\label{S:complementary-rate}
 
 \subsubsection{Purpose}
 
@@ -355,7 +355,7 @@ of a tagged corpus.
 
 \subsubsection{Usage}
 
-\verb+complementary-rate.pl [-h] ref a b+
+\verb+complementary-rate [-h] ref a b+
 
 \begin{tabular}{lp{15cm}}
 \verb+-h+ &
@@ -374,7 +374,7 @@ second tagged corpus in cooked format
 \subsubsection{Example}
 
 \begin{verbatim}
-PROMPT> ~/acopost/bin/complementary-rate.pl 0.ref 0.t3 0.tnt
+PROMPT> ~/acopost/bin/complementary-rate 0.ref 0.t3 0.tnt
 accuracy A  96.221% 16651 654        0
 accuracy B  96.689% 16732 573
 comp(A,B)   22.783% 505 654
@@ -383,8 +383,8 @@ PROMPT>
 \end{verbatim}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-\subsection{cooked2lex.pl}
-\label{S:cooked2lex.pl}
+\subsection{cooked2lex}
+\label{S:cooked2lex}
 
 \subsubsection{Purpose}
 
@@ -392,7 +392,7 @@ Convert a corpus in cooked format to a lexicon.
 
 \subsubsection{Usage}
 
-\verb+cooked2lex.pl [-h] [-c] < in.cooked > out.lex+
+\verb+cooked2lex [-h] [-c] < in.cooked > out.lex+
 
 \begin{tabular}{lp{15cm}}
 \verb+-h+ & display a short help text and exit \\
@@ -403,7 +403,7 @@ Convert a corpus in cooked format to a lexicon.
 \subsubsection{Example}
 
 \begin{verbatim}
-PROMPT> cooked2lex.pl < negra.cooked > negra.lex
+PROMPT> cooked2lex < negra.cooked > negra.lex
 20602 sentences
 55 tags 51272 types 355096 tokens
   1     49189  95.937%    238545  67.178%
@@ -420,8 +420,8 @@ PROMPT>
 \end{verbatim}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-\subsection{cooked2ngram.pl}
-\label{S:cooked2ngram.pl}
+\subsection{cooked2ngram}
+\label{S:cooked2ngram}
 
 \subsubsection{Purpose}
 
@@ -430,7 +430,7 @@ $n$-grams.
 
 \subsubsection{Usage}
 
-\verb+cooked2ngram.pl [-h] < in.cooked > out.ngram+
+\verb+cooked2ngram [-h] < in.cooked > out.ngram+
 
 \begin{tabular}{lp{15cm}}
 \verb+-h+ & 
@@ -440,12 +440,12 @@ display a short help text and exit \\
 \subsubsection{Example}
 
 \begin{verbatim}
-PROMPT> cooked2ngram.pl < corpus.cooked > corpus.ngram
+PROMPT> cooked2ngram < corpus.cooked > corpus.ngram
 \end{verbatim}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-\subsection{cooked2tt.pl}
-\label{S:cooked2tt.pl}
+\subsection{cooked2tt}
+\label{S:cooked2tt}
 
 \subsubsection{Purpose}
 
@@ -455,7 +455,7 @@ Convert a corpus in cooked format to a corpus in the format
 
 \subsubsection{Usage}
 
-\verb+cooked2tt.pl [-h] < in.cooked > out.tt+
+\verb+cooked2tt [-h] < in.cooked > out.tt+
 
 \begin{tabular}{lp{15cm}}
 \verb+-h+ & display a short help text and exit \\
@@ -464,15 +464,15 @@ Convert a corpus in cooked format to a corpus in the format
 \subsubsection{Example}
 
 \begin{verbatim}
-PROMPT> cooked2tt.pl < negra.cooked > negra.tt
+PROMPT> cooked2tt < negra.cooked > negra.tt
 20602 sentences
 PROMPT>
 \end{verbatim}
 
 \begin{comment}
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-\subsection{cooked2wsj.pl}
-\label{S:cooked2wsj.pl}
+\subsection{cooked2wsj}
+\label{S:cooked2wsj}
 
 \subsubsection{Purpose}
 
@@ -482,7 +482,7 @@ used by the Wall Street Journal corpus
 
 \subsubsection{Usage}
 
-\verb+cooked2wsj.pl [-h] < in.cooked > out.wsj+
+\verb+cooked2wsj [-h] < in.cooked > out.wsj+
 
 \begin{tabular}{lp{15cm}}
 \verb+-h+ & display a short help text and exit \\
@@ -498,8 +498,8 @@ PROMPT>
 \end{comment}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-\subsection{cooked2wtree.pl}
-\label{S:cooked2wtree.pl}
+\subsection{cooked2wtree}
+\label{S:cooked2wtree}
 
 \subsubsection{Purpose}
 
@@ -513,7 +513,7 @@ example-based disambiguation.
 
 \subsubsection{Usage}
 
-\verb+cooked2wtree.pl OPTIONS f-file < in.cooked > out.wsj+
+\verb+cooked2wtree OPTIONS f-file < in.cooked > out.wsj+
 
 where \verb+f-file+ is a feature file (see below) and \verb+OPTIONS+
 can be one or more of:
@@ -612,8 +612,8 @@ example-based paradigm
 \citep[Section~5.4]{Schroeder:2002b}.
 
 Note that the learning phase is done by the Perl script 
-\verb+cooked2wtree.pl+ 
-(cf.\ Section~\ref{S:cooked2wtree.pl}).
+\verb+cooked2wtree+ 
+(cf.\ Section~\ref{S:cooked2wtree}).
 
 \subsubsection{Usage}
 
@@ -621,14 +621,14 @@ Note that the learning phase is done by the Perl script
 
 where 
 \verb+knowntree+ is a weighted tree file generated by 
-\verb+cooked2wtree.pl+
-(cf.\ Section~\ref{S:cooked2wtree.pl})
+\verb+cooked2wtree+
+(cf.\ Section~\ref{S:cooked2wtree})
 for known words,
 \verb+unknowntree+ is a weighted tree file for unknown words
 and 
 \verb+lexiconfile+ is a lexicon file generated by
-\verb+cooked2lex.pl+
-(cf.\ Section~\ref{S:cooked2lex.pl}). 
+\verb+cooked2lex+
+(cf.\ Section~\ref{S:cooked2lex}). 
 If the input file
 \verb+in.raw+
 is omitted standard input is used. 
@@ -642,11 +642,11 @@ is omitted standard input is used.
 
 \begin{small}
 \begin{verbatim}
-PROMPT> cooked2lex.pl < train.cooked > train.lex
+PROMPT> cooked2lex < train.cooked > train.lex
 ...
-PROMPT> cooked2wtree.pl -a 3 known.etf < train.cooked > known.wtree
+PROMPT> cooked2wtree -a 3 known.etf < train.cooked > known.wtree
 ...
-PROMPT> cooked2wtree.pl -b 2 unknown.etf -e closed-class-tags < train.cooked > unknown.wtree
+PROMPT> cooked2wtree -b 2 unknown.etf -e closed-class-tags < train.cooked > unknown.wtree
 ...
 PROMPT> et known.wtree unknown.wtree train.lex < test.raw > test.et
 [        0 ms::1]
@@ -655,15 +655,15 @@ PROMPT> et known.wtree unknown.wtree train.lex < test.raw > test.et
 [     2240 ms::1] read wtree with 156173 nodes from "known.wtree"
 [     3580 ms::1] read wtree with 116334 nodes from "unknown.wtree"
 [     3590 ms::1] done
-PROMPT> evaluate.pl test.cooked test.et
+PROMPT> evaluate test.cooked test.et
 2060 sentences
              test.et    33990     1434  95.952%
 \end{verbatim}
 \end{small}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-\subsection{evaluate.pl}
-\label{S:evaluate.pl}
+\subsection{evaluate}
+\label{S:evaluate}
 
 \subsubsection{Purpose}
 
@@ -672,7 +672,7 @@ words.
 
 \subsubsection{Usage}
 
-\verb+evaluate.pl+ [-h] [[-i] -l l] [-v] ref t1 ...
+\verb+evaluate+ [-h] [[-i] -l l] [-v] ref t1 ...
 
 \begin{tabular}{lp{15cm}}
 \verb+-h+ &
@@ -697,7 +697,7 @@ tagged corpus in cooked format
 \subsubsection{Example}
 
 \begin{verbatim}
-PROMPT> evaluate.pl 0.ref 0.t3 0.tnt
+PROMPT> evaluate 0.ref 0.t3 0.tnt
 1002 sentences
                 0.t3    16651      654  96.221%
                0.tnt    16732      573  96.689%
@@ -705,8 +705,8 @@ PROMPT>
 \end{verbatim}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-\subsection{majority-voter.pl}
-\label{S:majority-voter.pl}
+\subsection{majority-voter}
+\label{S:majority-voter}
 
 \subsubsection{Purpose}
 
@@ -721,7 +721,7 @@ emitted tags are counted.
 
 \subsubsection{Usage}
 
-\verb+majority-voter.pl+ [-h] ref t1 t2 ...
+\verb+majority-voter+ [-h] ref t1 t2 ...
 
 \begin{tabular}{lp{15cm}}
 \verb+-h+ &
@@ -740,7 +740,7 @@ second tagged corpus in cooked format
 \subsubsection{Example}
 
 \begin{verbatim}
-PROMPT> majority-voter.pl 0.ref 0.t3 0.tbt 0.et 0.met
+PROMPT> majority-voter 0.ref 0.t3 0.tbt 0.et 0.met
 2061 sentences
 35674 words
 4:  92.928%  92.928% 0.937658
@@ -837,20 +837,20 @@ is extracted from a tag trigram file and a lexicon file.
 
 Note that the learning phase is very easy for HMMs. For that reason,
 the training phase is done by the Perl script 
-\verb+cooked2ngramn.pl+ 
-(cf.\ Section~\ref{S:cooked2ngram.pl}).
+\verb+cooked2ngramn+ 
+(cf.\ Section~\ref{S:cooked2ngram}).
 
 \subsubsection{Usage}
 
 \verb+t3 OPTIONS modelfile lexiconfile [in.raw] > out.cooked+
 
 where \verb+modelfile+ is a tag trigram file generated by 
-\verb+cooked2ngram.pl+
-(cf.\ Section~\ref{S:cooked2ngram.pl})
+\verb+cooked2ngram+
+(cf.\ Section~\ref{S:cooked2ngram})
 and 
 \verb+lexiconfile+ is a lexicon file generated by
-\verb+cooked2lex.pl+
-(cf.\ Section~\ref{S:cooked2lex.pl}). 
+\verb+cooked2lex+
+(cf.\ Section~\ref{S:cooked2lex}). 
 If the input file
 \verb+in.raw+
 is omitted standard input is used. 
@@ -909,9 +909,9 @@ use zero probability for unseen transition probabilities
 
 \begin{small}
 \begin{verbatim}
-PROMPT> cooked2lex.pl < train.cooked > train.lex
+PROMPT> cooked2lex < train.cooked > train.lex
 ...
-PROMPT> cooked2ngram.pl < train.cooked > train.ngram
+PROMPT> cooked2ngram < train.cooked > train.ngram
 ...
 PROMPT> t3 train.ngram train.lex < test.raw > test.t3
 [        0 ms::1]
@@ -925,7 +925,7 @@ PROMPT> t3 train.ngram train.lex < test.raw > test.t3
 [     2040 ms::1] leaves/single/total UC: 18627 47180 74243
 [     4420 ms::1] suffix probabilities smoothing done [theta 7.489e-02]
 [    21690 ms::1] done
-PROMPT> evaluate.pl test.cooked test.t3
+PROMPT> evaluate test.cooked test.t3
 2061 sentences
          test.t3    34547     1127  96.841%
 \end{verbatim}
@@ -1060,15 +1060,15 @@ PROMPT> tbt -r -l train.lex train.rules < test.raw > test.tbt
 Transformation-based Tagger 
 (c) Ingo Schröder, ingo@nats.informatik.uni-hamburg.de
 done
-PROMPT> evaluate.pl test.cooked test.tbt
+PROMPT> evaluate test.cooked test.tbt
 2061 sentences
         test.tbt    34430     1244  96.513%
 \end{verbatim}
 \end{small}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-\subsection{tt2cooked.pl}
-\label{S:tt2cooked.pl}
+\subsection{tt2cooked}
+\label{S:tt2cooked}
 
 \subsubsection{Purpose}
 
@@ -1077,7 +1077,7 @@ package \citep{Brants:2000a} to a corpus in cooked format.
 
 \subsubsection{Usage}
 
-\verb+tt2cooked.pl [-h] < in.tt > out.cooked+
+\verb+tt2cooked [-h] < in.tt > out.cooked+
 
 \begin{tabular}{lp{15cm}}
 \verb+-h+ & display a short help text and exit \\
@@ -1086,14 +1086,14 @@ package \citep{Brants:2000a} to a corpus in cooked format.
 \subsubsection{Example}
 
 \begin{verbatim}
-PROMPT> tt2cooked.pl < negra.tt > negra.cooked
+PROMPT> tt2cooked < negra.tt > negra.cooked
 396309 lines read
 PROMPT>
 \end{verbatim}
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-\subsection{wsj2cooked.pl}
-\label{S:wsj2cooked.pl}
+\subsection{wsj2cooked}
+\label{S:wsj2cooked}
 
 \subsubsection{Purpose}
 
@@ -1101,12 +1101,12 @@ Convert a corpus in Wall Street Journal format to cooked format.
 
 \subsubsection{Usage}
 
-\verb+wsj2cooked.pl < in.wsj > out.cooked+
+\verb+wsj2cooked < in.wsj > out.cooked+
 
 \subsubsection{Example}
 
 \begin{verbatim}
-PROMPT> wsj2cooked.pl < corpus.wsj > negra.cooked
+PROMPT> wsj2cooked < corpus.wsj > negra.cooked
 PROMPT>
 \end{verbatim}
 
