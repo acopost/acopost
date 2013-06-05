@@ -1,4 +1,4 @@
-SUBDIRS = doc examples language-models src tests
+SUBDIRS = doc data language-models src tests
 
 CLEANFILES = *~
 
