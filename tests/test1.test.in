@@ -2,7 +2,7 @@
 
 set -e;
 
-PATH="@abs_top_srcdir@/"bin/:"@abs_top_builddir@/"src:"$PATH"
+PATH="@abs_top_srcdir@/"src/scripts/:"@abs_top_builddir@/src":"$PATH"
 INPUT_DIR="@abs_top_srcdir@/"tests/data/
 
 OUTPUT_DIR=test1_output/
@@ -15,7 +15,7 @@ mkdir -p "$LOG_DIR"
 cooked2lex.py < "$INPUT_DIR"random_corpus.txt > "$OUTPUT_DIR"random_corpus.lex 2> "$LOG_DIR"test1.log
 LC_ALL=C diff "$INPUT_DIR"random_corpus.lex "$OUTPUT_DIR"random_corpus.lex 2>> "$LOG_DIR"test1.log
 
-cooked2ngram.pl  < "$INPUT_DIR"random_corpus.txt > "$OUTPUT_DIR"random_corpus.ngrams 2>> "$LOG_DIR"test1.log
+cooked2ngram  < "$INPUT_DIR"random_corpus.txt > "$OUTPUT_DIR"random_corpus.ngrams 2>> "$LOG_DIR"test1.log
 LC_ALL=C diff "$INPUT_DIR"random_corpus.ngrams "$OUTPUT_DIR"random_corpus.ngrams 2>> "$LOG_DIR"test1.log
 
 rm -fr "$OUTPUT_DIR"
