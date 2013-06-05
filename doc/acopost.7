@@ -90,72 +90,72 @@ al. [1996].
 A number of scripts are also available, which are described briefly
 below, and also each on its own manual page.
 
-.B cooked2lex.pl(1)
+.B cooked2lex(1)
 A script to produce an ACOPOST lexicon from a file in cooked format.
 All four taggers need a lexicon in this format.
 
-.B cooked2wtree.pl(1)
+.B cooked2wtree(1)
 A script to produce a weighted tree from a file in cooked format. The
 purpose is to train the \fBet(1)\fP tagger.
  
-.B cooked2ngram.pl(1)
+.B cooked2ngram(1)
 A script to produce an N-gram representation of the cooked input file
 that is suitable for use with the \fBt3(1)\fP tagger.
  
-.B cooked2raw.pl(1)
+.B cooked2raw(1)
 A script to convert from cooked to raw format.
 
-.B raw2tntraw.pl(1)
+.B raw2tntraw(1)
 A script to convert from raw format of ACOPOST to the raw format
 expected by the TnT tagger of Thorsten Brants.
  
-.B cooked2tt.pl(1)
+.B cooked2tt(1)
 A script to convert from ACOPOST cooked format to the tt format
 expected by the TnT tagger of Thorsten Brants.
  
-.B tt2cooked.pl(1)
+.B tt2cooked(1)
 A script to convert from the tt format expected by the TnT tagger of
 Thorsten Brants to the cooked format expected by ACOPOST.
 
-.B cooked2fntbl.pl(1)
+.B cooked2fntbl(1)
 A script to add information from a lexicon to a file in cooked format.
  
-.B wsj2cooked.pl(1)
+.B wsj2cooked(1)
 A script to convert a file in Penn Treebank format to cooked format.
  
-.B evaluate.pl(1)
+.B evaluate(1)
 A script to report tagging accuracy on sentence level, for unknown,
 known and all words.
 
-.B complementary-rate.pl(1)
+.B complementary-rate(1)
 A script to compute the accuracy and complementary rate of the output
 of two part of speech taggers with respect to a "gold standard"
 reference.
 
-.B majority-voter.pl(1)
+.B majority-voter(1)
 A script to report how often a number of different taggers have
 tagged words correctly.
 
-.B lex2theta.pl(1)
+.B lex2theta(1)
 A script to find the pos-tags in a lexicon and report the sum of the
 weights given to each pos-tag in the lexicon.  The output is suitable
-for input into the \fBmean-and-sd.pl(1)\fP script.
+for input into the \fBmean-and-sd(1)\fP script.
 
-.B mean-and-sd.pl(1)
+.B mean-and-sd(1)
 A script to read a list of numbers and report the mean, the variance,
 and the standard deviation, as well as an optional count.
  
-.B split-corpus.pl(1)
+.B split-corpus(1)
 A script to split a corpus in either raw or cooked format into a given
 number of parts.  This is useful if you want to split a corpus into
 two or more parts for e.g., training the taggers on one set of parts,
 then evaluating it on another set of parts.
  
-.B interchange-matrix.pl(1)
+.B interchange-matrix(1)
 A script to calculate an interchange matrix of tags between two
 corpora in cooked format.
  
-.B unknown-word-ratio.pl(1)
+.B unknown-word-ratio(1)
 A script to calculate the ratio of "known" words to "unknown" words in
 a raw file.  Here, "known" means "recognizable by a regular expression
 which works well for German".
@@ -188,23 +188,23 @@ Various other file formats are described under the manual page(s)
 where their description is pertinent.
 
 .SH SEE ALSO
-.BR majority-voter.pl(1), 
-.BR split-corpus.pl(1), 
-.BR cooked2fntbl.pl(1), 
-.BR cooked2lex.pl(1), 
-.BR cooked2ngram.pl(1), 
-.BR cooked2raw.pl(1), 
-.BR raw2tntraw.pl(1), 
-.BR cooked2tt.pl(1), 
-.BR tt2cooked.pl(1), 
-.BR cooked2wtree.pl(1), 
-.BR wsj2cooked.pl(1), 
-.BR complementary-rate.pl(1), 
-.BR evaluate.pl(1), 
-.BR lex2theta.pl(1), 
-.BR interchange-matrix.pl(1), 
-.BR mean-and-sd.pl(1), 
-.BR unknown-word-ratio.pl(1), 
+.BR majority-voter(1), 
+.BR split-corpus(1), 
+.BR cooked2fntbl(1), 
+.BR cooked2lex(1), 
+.BR cooked2ngram(1), 
+.BR cooked2raw(1), 
+.BR raw2tntraw(1), 
+.BR cooked2tt(1), 
+.BR tt2cooked(1), 
+.BR cooked2wtree(1), 
+.BR wsj2cooked(1), 
+.BR complementary-rate(1), 
+.BR evaluate(1), 
+.BR lex2theta(1), 
+.BR interchange-matrix(1), 
+.BR mean-and-sd(1), 
+.BR unknown-word-ratio(1), 
 .br
 
 The "ACOPOST User's Guide" is helpful in addition to the manual pages.
