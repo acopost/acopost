@@ -11,8 +11,8 @@ corpus=$1
 
 stem=`echo $corpus | sed -e 's/.cooked//'`
 
-cooked2lex.pl < $corpus > $stem.lex
-split-corpus.pl -p $stem -m 10 < $corpus 
+cooked2lex < $corpus > $stem.lex
+split-corpus -p $stem -m 10 < $corpus 
 for i in $stem-?; do
   mv $i $i.cooked
 done
