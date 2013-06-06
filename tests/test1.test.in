@@ -12,7 +12,7 @@ rm -fr "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
 mkdir -p "$LOG_DIR"
 
-cooked2lex.py < "$INPUT_DIR"random_corpus.txt > "$OUTPUT_DIR"random_corpus.lex 2> "$LOG_DIR"test1.log
+cooked2lex < "$INPUT_DIR"random_corpus.txt > "$OUTPUT_DIR"random_corpus.lex 2> "$LOG_DIR"test1.log
 LC_ALL=C diff "$INPUT_DIR"random_corpus.lex "$OUTPUT_DIR"random_corpus.lex 2>> "$LOG_DIR"test1.log
 
 cooked2ngram  < "$INPUT_DIR"random_corpus.txt > "$OUTPUT_DIR"random_corpus.ngrams 2>> "$LOG_DIR"test1.log
