@@ -49,7 +49,7 @@ foreach $w (@words) {
   my $x=0;
   my $wc=$wc{$w};
  TAG:
-  foreach $t (sort { $wtc{$w}{$b} <=> $wtc{$w}{$a}  } keys(%tc)) {
+  foreach $t (sort { $wtc{$w}{$b} <=> $wtc{$w}{$a} || $a cmp $b  } keys(%tc)) {
     next TAG unless defined($wtc{$w}{$t});
     #$wa+=$wtc{$w}{$t}/$wc{$w};
     $x++;
