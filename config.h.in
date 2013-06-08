@@ -107,6 +107,9 @@
 /* Define to 1 if you have the <values.h> header file. */
 #undef HAVE_VALUES_H
 
+/* Define to 1 if your C compiler doesn't accept -c and -o together. */
+#undef NO_MINUS_C_MINUS_O
+
 /* Name of package */
 #undef PACKAGE
 
