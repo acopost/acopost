@@ -24,5 +24,6 @@ PYTHONPROGS = \
      cooked2lex.py
 
 
-dist_bin_SCRIPTS = $(PERLPROGS) $(PYTHONPROGS)
+dist_bin_SCRIPTS = $(PERLPROGS)
+dist_noinst_SCRIPTS = $(PYTHONPROGS)
 
