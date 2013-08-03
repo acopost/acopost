@@ -1,107 +1,271 @@
 /*
-  Prime number test
+  Prime numbers
 
-  Copyright (C) 1997-2001 The DAWAI Team
-            (C) 2010 Tiago Tresoldi
+  Copyright (c) 2013, ACOPOST Developers Team
+  All rights reserved.
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+   * Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in
+     the documentation and/or other materials provided with the
+     distribution.
+   * Neither the name of the ACOPOST Developers Team nor the names of
+     its contributors may be used to endorse or promote products
+     derived from this software without specific prior written
+     permission.
 
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.
 */
 
-/* ------------------------------------------------------------ */
-#include "config-common.h"
+/*
+  Most of the theory behind these functions can be found on Wikipedia:
+  http://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test
+  https://en.wikipedia.org/wiki/Modular_exponentiation
+
+  The constant numbers in miller_rabin_size_t() were taken from
+  http://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Deterministic_variants_of_the_test
+  and
+  http://miller-rabin.appspot.com/
+*/
+
 #include <stdlib.h>
-#include <math.h>
-#include <sys/types.h>
-#include <time.h>
 #include "primes.h"
 
-/* ------------------------------------------------------------ */
-/*typedef unsigned long ulong;*/
-
-/* ----------------------------------------------------------------------
- * addition in a modulo
- */
-static ulong add_mod (ulong x, ulong y, ulong m)
+static inline size_t modular_addition_size_t_unsafe(size_t x, size_t y, size_t m)
 {
-  return ((x + y) % m);
+	size_t z;
+	z = m-x;
+	if(z > y)
+	{
+		return x+y;
+	}
+	else
+	{
+		return y-z;
+	}
 }
 
-/* ----------------------------------------------------------------------
- * multiplication in a modulo
- */
-static ulong mult_mod (ulong x, ulong y, ulong m)
+static inline size_t modular_product_size_t_unsafe(size_t x, size_t y, size_t m)
 {
-  ulong sum;
-
-  if (x < y)
-    return (mult_mod(y, x, m));
-
-  for (sum = 0; y; y = y >> 1, x = add_mod(x, x, m))
-    if (y & 1)
-      sum = add_mod(sum, x, m);
-
-  return sum;
+	size_t z;
+	if (x < y)
+	{
+		z = x;
+		x = y;
+		y = z;
+	}
+	z = 0;
+	while( y > 0 )
+	{
+		if (y & 1)
+		{
+			z = modular_addition_size_t_unsafe(z, x, m);
+		}
+		y = y >> 1;
+		x = modular_addition_size_t_unsafe(x, x, m);
+	}
+	return z;
 }
 
-/* ----------------------------------------------------------------------
- * exponent in a modulo
- */
-static ulong pow_mod (ulong x, ulong y, ulong m)
+static inline size_t modular_power_size_t_unsafe(size_t x, size_t y, size_t m)
 {
-  ulong prod;
-
-  for (prod = 1; y; y = y >> 1, x = mult_mod(x, x, m))
-    if (y & 1)
-      prod = mult_mod(prod, x, m);
-
-  return prod;
+	size_t z = 1;
+	if( m <= 1 )
+	{
+		return 0;
+	}
+	while( y > 0 )
+	{
+		if (y & 1)
+		{
+			z =  modular_product_size_t_unsafe(z, x, m);
+		}
+		y = y >> 1;
+		x = modular_product_size_t_unsafe(x,x,m);
+	}
+	return z;
 }
 
-/* ----------------------------------------------------------------------
- * rabin's probablistic primetest-algorithm
- * returns true if number is a prime by testing it a few times
- */
-int primes_rabin (ulong n, ulong t)
+size_t modular_addition_size_t(size_t x, size_t y, size_t m)
 {
-  ulong i;
-  int flag;
-  double x;
-
-  for (i = 0, flag = 1; flag && i < t; i++) {
-    x = floor(drand48() * (n - 1)) + 1;
-    flag = (pow_mod((ulong)x, n - 1, n) == 1);
-  }
-
-  return flag;
+	return modular_addition_size_t_unsafe(x%m, y%m, m);
 }
 
-/* ----------------------------------------------------------------------
- * returns the next prime after a given number
- */
-ulong primes_next (ulong number, ulong times)
+size_t modular_product_size_t(size_t x, size_t y, size_t m)
 {
-  srand48(time(NULL));
-
-  ++number;
-
-  while (!primes_rabin(number, times))
-    number++;
-  return number;
+	return modular_product_size_t_unsafe(x%m, y%m, m);
 }
 
-/* --------------------------------------------------------------------- */
-/* --------------------------------------------------------------------- */
+size_t modular_power_size_t(size_t x, size_t y, size_t m)
+{
+	return modular_power_size_t_unsafe(x%m, y, m);
+}
 
+
+static inline int miller_rabin_pass_size_t(size_t x /* x>3, odd, prime to test */, size_t b /* b in [2, x-2] */)
+{
+	size_t y, z;
+	int i;
+	if( b < 2 )
+	{
+		return 1;
+	}
+	i = -1;
+	y = x - 1;
+	while ((y & 1) == 0)
+	{
+		y = y >> 1;
+		i++;
+	}
+	z = modular_power_size_t_unsafe(b, y, x);
+	y = x - 1;
+	if ((z == 1) || (z == y))
+	{
+		return 1;
+	}
+	for(; i>0; i--)
+	{
+		z = modular_product_size_t_unsafe(z, z, x);
+		if (z == 1)
+		{
+			return 0;
+		}
+		else if (z == y)
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static const size_t small_primes[] =
+{
+    3,
+    5,
+    7,
+    11,
+    13,
+    17,
+    19,
+    23,
+    29
+};
+
+int miller_rabin_size_t(size_t x)
+{
+	if(x<4)
+	{
+		if(x>1)
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+	else if( ! ( x & 1 ) )
+	{
+		return 0;
+	}
+	const size_t N = sizeof(small_primes) / sizeof(small_primes[0]);
+	if( x > small_primes[N-1] )
+	{
+		int i;
+		for (i = 0; i < N; ++i)
+		{
+			if( ! ( x % small_primes[i]) )
+			{
+				return 0;
+			}
+		}
+	}
+	if( x < 2047UL )
+	{
+		return 
+			miller_rabin_pass_size_t(x, 2UL);
+	}
+	else if( x < 9080191UL )
+	{
+		return 
+			miller_rabin_pass_size_t(x, 31UL)
+			&& miller_rabin_pass_size_t(x, 73UL);
+	}
+	else if( sizeof(x) == 4 )
+	{
+		if( x < 4294967295UL /*MAX 32bit*/ )
+		{
+			return 
+				miller_rabin_pass_size_t(x, 2UL)
+				&& miller_rabin_pass_size_t(x, 7UL)
+				&& miller_rabin_pass_size_t(x, 61UL);
+		}
+	}
+	else if( x < 4759123141UL )
+	{
+		return 
+			miller_rabin_pass_size_t(x, 2UL)
+			&& miller_rabin_pass_size_t(x, 7UL)
+			&& miller_rabin_pass_size_t(x, 61UL);
+	}
+	else if( x < 75792980677 )
+	{
+		return 
+			miller_rabin_pass_size_t(x, 2UL)
+			&& miller_rabin_pass_size_t(x, 379215UL)
+			&& miller_rabin_pass_size_t(x, 457083754UL);
+	}
+        else if( x < 47636622961201UL )
+	{
+		return 
+			miller_rabin_pass_size_t(x, 2UL)
+			&& miller_rabin_pass_size_t(x, 2570940UL)
+			&& miller_rabin_pass_size_t(x, 211991001UL)
+			&& miller_rabin_pass_size_t(x, 3749873356UL);
+	}
+	else
+	{
+		return 
+			miller_rabin_pass_size_t(x, 2UL)
+			&& miller_rabin_pass_size_t(x, 325UL)
+			&& miller_rabin_pass_size_t(x, 9375UL)
+			&& miller_rabin_pass_size_t(x, 28178UL)
+			&& miller_rabin_pass_size_t(x, 450775UL)
+			&& miller_rabin_pass_size_t(x, 9780504UL)
+			&& miller_rabin_pass_size_t(x, 1795265022UL);
+	}
+}
+
+size_t miller_rabin_next_prime_size_t(size_t n)
+{
+	if(n<2)
+	{
+		return 2;
+	}
+	n |= 1UL;
+	while (!miller_rabin_size_t(n))
+	{
+		if(n==~0UL)
+		{
+			return 0;
+		}
+		n+=2;
+	}
+	return n;
+}
