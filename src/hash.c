@@ -44,7 +44,6 @@
 #include "mem.h"
 
 /* ------------------------------------------------------------ */
-#define PRIME_TESTS 10
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -83,7 +82,7 @@ void rehash(hash_pt ht)
   hash_entry_pt *newEntries;
   hash_entry_pt entry, old;
   size_t i, index;
-  size_t newCapacity = primes_next(ht->capacity * 2, PRIME_TESTS);
+  size_t newCapacity = miller_rabin_next_prime_size_t(ht->capacity * 2);
 
 #ifdef DEBUG
   printf("DEBUG: rehashhash_pt %d --> %d...", ht->capacity, newCapacity);
@@ -130,7 +129,7 @@ hash_pt hash_new (size_t cp, double lf, size_t (*hash)(void *), int (*equal)(voi
   /* creates the hash table */
   ht = (hash_pt)mem_malloc(sizeof(hash_s));
   ht->count = 0;
-  ht->capacity = primes_next(cp, PRIME_TESTS);
+  ht->capacity = miller_rabin_next_prime_size_t(cp);
   ht->threshold = (ht->capacity * lf);
   ht->loadfactor = lf;
   ht->equal = equal;
