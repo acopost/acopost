@@ -194,7 +194,7 @@ int primes_test ()
 	 ++i) {
 	n = known_primes[i];
 	printf("Now testing wither %d is prime...\n", n);
-	if (!primes_rabin((unsigned long) n, PRIME_TEST)) {
+	if (!miller_rabin_size_t((size_t) n)) {
 	    printf("Error: %d is prime", n);
 	    return 1;
 	}
@@ -208,7 +208,7 @@ int primes_test ()
 	n_next = known_primes[i+1];
 	printf("Now finding next prime after %d is prime...\n", n);
 
-	unsigned long next_prime = primes_next(n, PRIME_TEST);
+	unsigned long next_prime = miller_rabin_next_prime_size_t(n+1);
 	if (next_prime != (unsigned long) n_next) {
 	    printf("Error: The next prime after %d is not %d but %d\n", n, (int) next_prime, n_next);
 	    return 1;
