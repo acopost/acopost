@@ -2,26 +2,26 @@ CLEANFILES = *~
 
 
 PERLPROGS = \
-     complementary-rate \
-     cooked2fntbl \
-     cooked2lex \
-     cooked2ngram \
-     cooked2raw \
-     cooked2tt \
-     cooked2wtree \
-     evaluate \
-     interchange-matrix \
-     lex2theta \
-     majority-voter \
-     mean-and-sd \
-     raw2tntraw \
-     split-corpus \
-     tt2cooked \
-     unknown-word-ratio \
-     wsj2cooked 
+     acopost-cooked2fntbl \
+     acopost-cooked2lex \
+     acopost-cooked2ngram \
+     acopost-cooked2raw \
+     acopost-cooked2tt \
+     acopost-cooked2wtree \
+     acopost-lex2theta \
+     acopost-raw2tntraw \
+     acopost-tt2cooked \
+     acopost-wsj2cooked  \
+     acopost-majority-voter \
+     acopost-evaluate \
+     acopost-complementary-rate \
+     acopost-interchange-matrix \
+     acopost-mean-and-sd \
+     acopost-split-corpus \
+     acopost-unknown-word-ratio
 
 PYTHONPROGS = \
-     cooked2lex.py
+     acopost-cooked2lex.py
 
 
 dist_bin_SCRIPTS = $(PERLPROGS)
