@@ -18,16 +18,16 @@
 .SH NAME
 acopost \- a collection of pos-taggers 
 .SH SYNOPSIS
-.B t3
+.B acopost\-t3
 .RI [ options ] 
 .br
-.B tbt
+.B acopost\-tbt
 .RI [ options ] 
 .br
-.B met
+.B acopost\-met
 .RI [ options ] 
 .br
-.B et
+.B acopost\-et
 .RI [ options ] 
 .br
 .SH DESCRIPTION
@@ -62,24 +62,24 @@ each has its own separate manual page, they are briefly described
 below.
 
 
-.B t3(1) 
+.B acopost\-t3(1) 
 is a hidden-markov-model-based part of speech tagger inspired by the
 famous "Trigrams 'n Tags" (TnT) tagger by Thorsten Brants [2000].
 
-.B met(1)
+.B acopost\-met(1)
 is a maximum entry tagger. uses an iterative procedure to successively
 improve parameters for a set of features that help to distinguish
 between relevant contexts. It's based on a framework suggested by
 Ratnaparkhi [1997].
 
-.B tbt(1) 
+.B acopost\-tbt(1) 
 is an error-driven transformation-based tagger. Transformation rules
 are learned from an annotated corpus which change the currently
 assigned tag depending on triggering context conditions. The general
 approach as well as the application to POS tagging has been proposed
 by Brill [1993].
 
-.B et(1) 
+.B acopost\-et(1) 
 is an example-based tagger. Example-based models (also called
 memory-based, instance-based or distance-based) rest on the assumption
 that cognitive behavior can be achieved by looking at past experiences
@@ -90,72 +90,72 @@ al. [1996].
 A number of scripts are also available, which are described briefly
 below, and also each on its own manual page.
 
-.B cooked2lex(1)
+.B acopost\-cooked2lex(1)
 A script to produce an ACOPOST lexicon from a file in cooked format.
 All four taggers need a lexicon in this format.
 
-.B cooked2wtree(1)
+.B acopost\-cooked2wtree(1)
 A script to produce a weighted tree from a file in cooked format. The
-purpose is to train the \fBet(1)\fP tagger.
+purpose is to train the \fBacopost\-et(1)\fP tagger.
  
-.B cooked2ngram(1)
+.B acopost\-cooked2ngram(1)
 A script to produce an N-gram representation of the cooked input file
-that is suitable for use with the \fBt3(1)\fP tagger.
+that is suitable for use with the \fBacopost\-t3(1)\fP tagger.
  
-.B cooked2raw(1)
+.B acopost\-cooked2raw(1)
 A script to convert from cooked to raw format.
 
-.B raw2tntraw(1)
+.B acopost\-raw2tntraw(1)
 A script to convert from raw format of ACOPOST to the raw format
 expected by the TnT tagger of Thorsten Brants.
  
-.B cooked2tt(1)
+.B acopost\-cooked2tt(1)
 A script to convert from ACOPOST cooked format to the tt format
 expected by the TnT tagger of Thorsten Brants.
  
-.B tt2cooked(1)
+.B acopost\-tt2cooked(1)
 A script to convert from the tt format expected by the TnT tagger of
 Thorsten Brants to the cooked format expected by ACOPOST.
 
-.B cooked2fntbl(1)
+.B acopost\-cooked2fntbl(1)
 A script to add information from a lexicon to a file in cooked format.
  
-.B wsj2cooked(1)
+.B acopost\-wsj2cooked(1)
 A script to convert a file in Penn Treebank format to cooked format.
  
-.B evaluate(1)
+.B acopost\-evaluate(1)
 A script to report tagging accuracy on sentence level, for unknown,
 known and all words.
 
-.B complementary-rate(1)
+.B acopost\-complementary-rate(1)
 A script to compute the accuracy and complementary rate of the output
 of two part of speech taggers with respect to a "gold standard"
 reference.
 
-.B majority-voter(1)
+.B acopost\-majority-voter(1)
 A script to report how often a number of different taggers have
 tagged words correctly.
 
-.B lex2theta(1)
+.B acopost\-lex2theta(1)
 A script to find the pos-tags in a lexicon and report the sum of the
 weights given to each pos-tag in the lexicon.  The output is suitable
-for input into the \fBmean-and-sd(1)\fP script.
+for input into the \fBacopost\-mean-and-sd(1)\fP script.
 
-.B mean-and-sd(1)
+.B acopost\-mean-and-sd(1)
 A script to read a list of numbers and report the mean, the variance,
 and the standard deviation, as well as an optional count.
  
-.B split-corpus(1)
+.B acopost\-split-corpus(1)
 A script to split a corpus in either raw or cooked format into a given
 number of parts.  This is useful if you want to split a corpus into
 two or more parts for e.g., training the taggers on one set of parts,
 then evaluating it on another set of parts.
  
-.B interchange-matrix(1)
+.B acopost\-interchange-matrix(1)
 A script to calculate an interchange matrix of tags between two
 corpora in cooked format.
  
-.B unknown-word-ratio(1)
+.B acopost\-unknown-word-ratio(1)
 A script to calculate the ratio of "known" words to "unknown" words in
 a raw file.  Here, "known" means "recognizable by a regular expression
 which works well for German".
@@ -188,23 +188,23 @@ Various other file formats are described under the manual page(s)
 where their description is pertinent.
 
 .SH SEE ALSO
-.BR majority-voter(1), 
-.BR split-corpus(1), 
-.BR cooked2fntbl(1), 
-.BR cooked2lex(1), 
-.BR cooked2ngram(1), 
-.BR cooked2raw(1), 
-.BR raw2tntraw(1), 
-.BR cooked2tt(1), 
-.BR tt2cooked(1), 
-.BR cooked2wtree(1), 
-.BR wsj2cooked(1), 
-.BR complementary-rate(1), 
-.BR evaluate(1), 
-.BR lex2theta(1), 
-.BR interchange-matrix(1), 
-.BR mean-and-sd(1), 
-.BR unknown-word-ratio(1), 
+.BR acopost\-majority-voter(1), 
+.BR acopost\-split-corpus(1), 
+.BR acopost\-cooked2fntbl(1), 
+.BR acopost\-cooked2lex(1), 
+.BR acopost\-cooked2ngram(1), 
+.BR acopost\-cooked2raw(1), 
+.BR acopost\-raw2tntraw(1), 
+.BR acopost\-cooked2tt(1), 
+.BR acopost\-tt2cooked(1), 
+.BR acopost\-cooked2wtree(1), 
+.BR acopost\-wsj2cooked(1), 
+.BR acopost\-complementary-rate(1), 
+.BR acopost\-evaluate(1), 
+.BR acopost\-lex2theta(1), 
+.BR acopost\-interchange-matrix(1), 
+.BR acopost\-mean-and-sd(1), 
+.BR acopost\-unknown-word-ratio(1), 
 .br
 
 The "ACOPOST User's Guide" is helpful in addition to the manual pages.
