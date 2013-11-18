@@ -10,20 +10,20 @@ endif
 AM_CFLAGS += -Wall -std=c99 -D_USE_BSD -DT3_PROB_IS_FLOAT
 
 
-bin_PROGRAMS = et met t3 tbt
+bin_PROGRAMS = acopost-et acopost-met acopost-t3 acopost-tbt
 noinst_PROGRAMS = lextest acopost_test
 
-et_SOURCES = et.c array.c mem.c util.c hash.c primes.c
-et_LDFLAGS = -lm
+acopost_et_SOURCES = et.c array.c mem.c util.c hash.c primes.c
+acopost_et_LDFLAGS = -lm
 
-met_SOURCES = met.c gis.c array.c mem.c util.c hash.c primes.c 
-met_LDFLAGS = -lm
+acopost_met_SOURCES = met.c gis.c array.c mem.c util.c hash.c primes.c 
+acopost_met_LDFLAGS = -lm
 
-t3_SOURCES = t3.c util.c mem.c array.c hash.c primes.c 
-t3_LDFLAGS = -lm
+acopost_t3_SOURCES = t3.c util.c mem.c array.c hash.c primes.c 
+acopost_t3_LDFLAGS = -lm
 
-tbt_SOURCES = tbt.c util.c mem.c array.c hash.c primes.c 
-tbt_LDFLAGS = -lm
+acopost_tbt_SOURCES = tbt.c util.c mem.c array.c hash.c primes.c 
+acopost_tbt_LDFLAGS = -lm
 
 lextest_SOURCES = lexicon.c lextest.c array.c mem.c util.c hash.c primes.c
 lextest_LDFLAGS = -lm
