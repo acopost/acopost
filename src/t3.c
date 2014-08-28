@@ -1049,14 +1049,32 @@ prob_t *get_lexical_probs(model_pt m, char *s)
 */
 void viterbi(model_pt m, array_pt words, array_pt tags)
 {
+  int i, j, k, l, cai, nai=0;
   size_t not=array_count(m->tags);
   size_t wno=array_count(words);
   prob_t a[2][not][not];
-  int b[wno][not][not];
+  array_pt b = array_new(wno);
   prob_t max_a;
   prob_t b_a=-MAXPROB;
   ptrdiff_t b_i=1, b_j=1;
-  int i, j, k, l, cai, nai=0;
+  array_pt arr_b_i;
+  int *arr_b_k;
+  int *intarrs = calloc(not*not, sizeof(int));
+
+  for (i = 0; i < wno; ++i) {
+	  array_pt b2 = array_new(not);
+	  array_set(b, i, (void*) b2);
+	  for (k = 0; k < not; ++k) {
+		  int *arr = (int*)((void*)intarrs + (k * not * sizeof(int)));
+		  array_set(b2, k, arr);
+		  /* The following is not necessary, and so wastes cycles. */
+		  /*
+		  for (l = 0; l < not; ++l) {
+			  arr[l] = 0;
+		  }
+		  */
+	  }
+  }
 
 #define DEBUG_VITERBI 0
   for (j=0; j<not; j++)
@@ -1102,7 +1120,9 @@ void viterbi(model_pt m, array_pt words, array_pt tags)
 		  if (new>a[nai][k][l])
 		    {
 		      a[nai][k][l]=new;
-		      b[i][k][l]=j;
+		      arr_b_i = (array_pt) array_get(b, i);
+		      arr_b_k = (int*) array_get(arr_b_i, k);
+		      arr_b_k[l]=j;
 		      if (new>max_a_new) { max_a_new=new; }
 		    }
 		}
@@ -1147,11 +1167,21 @@ void viterbi(model_pt m, array_pt words, array_pt tags)
   /* best final state is (b_i, b_j) */
   for (i=wno-1; i>=0; i--)
     {
-      size_t tmp=b[i][b_i][b_j];
+	    arr_b_i = (array_pt) array_get(b, i);
+	    arr_b_k = (int*) array_get(arr_b_i, b_i);
+	    size_t tmp=arr_b_k[b_j];
       array_set(tags, i, (void *)b_j);
       b_j=b_i;
       b_i=tmp;
     }
+
+  for (i = 0; i < wno; ++i) {
+	  array_pt b2 = array_get(b, i);
+	  array_free(b2);
+  }
+
+  free(intarrs);
+  array_free(b);
 }
 
 
