@@ -17,12 +17,3 @@ Description: A COlection of POS Taggers (tagging part of speech)
   implements and extends well-known machine learning techniques and
   provides a uniform environment for testing.
 
-Package: acopost-doc
-Architecture: all
-Description: documentation for acopost
-  Part-of-speech tagging is the task of assigning symbols from a
-  particular set to words in a natural language text. ACOPOST
-  implements and extends well-known machine learning techniques and
-  provides a uniform environment for testing. This package contains
-  documentation for ACOPOST.
-
