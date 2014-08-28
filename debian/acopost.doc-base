@@ -1,0 +1,9 @@
+Document: acopost
+Title: ACOPOST Manual
+Author: Ingo Schröder and ACOPOST maintenance team
+Abstract: This manual describes what acopost is
+ and how it can be used.
+Section: text
+
+Format: pdf
+Files: /usr/share/doc/acopost/acopost-users-guide.pdf
