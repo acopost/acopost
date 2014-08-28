@@ -36,11 +36,11 @@ while ($l=<STDIN>) {
   }
 }
 
-foreach $i (keys %uni) {
+foreach $i (sort keys %uni) {
   printf "%s %d\n", $i, $uni{$i};
-  foreach $j (keys %uni) {
+  foreach $j (sort keys %uni) {
     printf "\t%s %d\n", $j, $bi{$i}{$j} if $bi{$i}{$j}>0;
-    foreach $k (keys %uni) {
+    foreach $k (sort keys %uni) {
       printf "\t\t%s %d\n", $k, $tri{$i}{$j}{$k} if $tri{$i}{$j}{$k}>0;
     }
   }
