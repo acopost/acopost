@@ -1,0 +1,5 @@
+acopost (2.0.0.pre01-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Ulrik Sandborg-Petersen <ulrikp@users.sourceforge.net>  Thu, 28 Aug 2014 15:24:10 +0200

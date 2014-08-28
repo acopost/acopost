@@ -11,6 +11,7 @@ endif
 
 if HAVE_LATEX
 CLEANFILES += $(LATEX_MAIN_FILES:.tex=.ps) $(LATEX_MAIN_FILES:.tex=.pdf)
+EXTRA_DIST += $(LATEX_MAIN_FILES:.tex=.pdf)
 endif
 CLEANFILES += acopost-users-guide.ps acopost-users-guide.pdf \
              acopost-users-guide.dvi
