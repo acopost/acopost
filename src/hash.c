@@ -377,6 +377,21 @@ void hash_map2(hash_pt ht, void (*f)(void *, void *, void*, void*), void *d1, vo
 }
 
 /* ----------------------------------------------------------------------
+ * like hash_map1, but f is provided with two arguments 
+ */
+void hash_map3(hash_pt ht, void (*f)(void *, void *, void *, void*, void*), void *d1, void *d2, void *d3)
+{
+   hash_entry_pt entry;
+   size_t i;
+
+   for (i = 0; i < ht->capacity; i++) {
+     for (entry = ht->entries[i]; entry != NULL; entry = entry->next) {
+	     (*f)(entry->key, entry->value, d1, d2, d3);
+     }
+   }
+}
+
+/* ----------------------------------------------------------------------
  * like hash_map, but removes element from hash if f returns true
  */
 void hash_filter(hash_pt ht, int (*f)(void *, void *))
