@@ -161,8 +161,6 @@ typedef model_t *model_pt;
 char *banner=
 "Trigram POS Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
 
-globals_pt g;
-
 option_t ops[]={
   { 'a', "-a a  lambdas" },
   { 'b', "-b b  beam factor [1000]" },
@@ -319,8 +317,9 @@ trie_pt trie_get_daughter(trie_pt tr, unsigned char c)
 }
 
 /* ------------------------------------------------------------ */
-void add_word_to_trie(void *key, void *value, void *data)
+void add_word_to_trie(void *key, void *value, void* gp, void *data)
 {
+  globals_pt g = (globals_pt) gp;
   char *s=(char *)key;
   word_pt wd=(word_pt)value;
   model_pt m=(model_pt)data;
@@ -351,7 +350,7 @@ void add_word_to_trie(void *key, void *value, void *data)
 
 
 /* ------------------------------------------------------------ */
-void usage(void)
+void usage(globals_pt g)
 {
   size_t i;
   report(-1, "\n%s\n\n", banner);
@@ -388,7 +387,7 @@ void get_options(globals_pt g, int argc, char **argv)
 	  g->mode=8;
 	  break;
 	case 'h':
-	  usage();
+	  usage(g);
 	  exit(0);
 	  break;
 	case 'l':
@@ -440,7 +439,7 @@ void get_options(globals_pt g, int argc, char **argv)
 	}
     }
 
-  if (optind>=argc-1) { usage(); error("too few arguments\n"); }
+  if (optind>=argc-1) { usage(g); error("too few arguments\n"); }
   g->mf=strdup(argv[optind]);
   g->df=strdup(argv[optind+1]);
   if (optind+2<argc && strcmp("-", argv[optind+2]))
@@ -483,7 +482,7 @@ int ngram_index(size_t n, size_t s, int t1, int t2, int t3)
 }
 
 /* ------------------------------------------------------------ */
-void read_ngram_file(model_pt m)
+void read_ngram_file(globals_pt g, model_pt m)
 {
   FILE *f=try_to_open(g->mf, "r");
   size_t lno, not;
@@ -674,8 +673,9 @@ void compute_counts_for_boundary(model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-void enter_rare_word_tag_counts(void *key, void *value, void *d1, void *d2)
+static void enter_rare_word_tag_counts(void *key, void *value, void* gp, void *d1, void *d2)
 {
+  globals_pt g = (globals_pt) gp;
   word_pt wd=(word_pt)value;
   model_pt m=(model_pt)d1;
   int *lowcount=(int *)d2;
@@ -688,7 +688,7 @@ void enter_rare_word_tag_counts(void *key, void *value, void *d1, void *d2)
 }
 
 /* ------------------------------------------------------------ */
-void compute_theta(model_pt m)
+void compute_theta(globals_pt g, model_pt m)
 {
   /* TODO: check whether to include 0 */
 #define START_AT_TAG 1
@@ -698,7 +698,7 @@ void compute_theta(model_pt m)
   size_t ttc, i;
 
   for (i=0; i<not; i++) { lowcount[i]=0; }
-  hash_map2(m->dictionary, enter_rare_word_tag_counts, m, lowcount);
+  hash_map3(m->dictionary, enter_rare_word_tag_counts, (void *) g, m, lowcount);
   for (ttc=0, i=START_AT_TAG; i<not; i++)
     { ttc+=lowcount[i]; }
   for (sum=0.0, i=START_AT_TAG; i<not; i++)
@@ -786,7 +786,7 @@ void compute_lambdas(model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-void compute_transition_probs(model_pt m)
+void compute_transition_probs(globals_pt g, model_pt m)
 {
   size_t not=array_count(m->tags);
   /*
@@ -859,7 +859,7 @@ void compute_transition_probs(model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-void read_dictionary_file(model_pt m)
+void read_dictionary_file(globals_pt g, model_pt m)
 {
   FILE *f=try_to_open(g->df, "r");
   char *s, *rs;
@@ -924,12 +924,12 @@ void count_nodes(trie_pt tr, int s[])
 }
 
 /* ------------------------------------------------------------ */
-void build_suffix_trie(model_pt m)
+void build_suffix_trie(globals_pt g, model_pt m)
 {
   m->lower_trie=new_trie(m, NULL);
   m->upper_trie=new_trie(m, NULL);
 
-  hash_map1(m->dictionary, add_word_to_trie, m);
+  hash_map2(m->dictionary, add_word_to_trie, g, m);
   report(1, "built suffix tries with %d lowercase and %d uppercase nodes\n",
 	 m->lc_count, m->uc_count);
 
@@ -946,7 +946,7 @@ void build_suffix_trie(model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-void smooth_suffix_probs(model_pt m, trie_pt tr, trie_pt dad)
+void smooth_suffix_probs(globals_pt g, model_pt m, trie_pt tr, trie_pt dad)
 {
   size_t not=array_count(m->tags);
   double one_plus_theta=1.0+m->theta;
@@ -984,14 +984,14 @@ void smooth_suffix_probs(model_pt m, trie_pt tr, trie_pt dad)
 
   if (g->mode!=8) { mem_free(tr->tagcount); tr->tagcount=NULL; }
 
-  if (tr->children==1) { smooth_suffix_probs(m, (trie_pt)tr->unarynext, tr); }
+  if (tr->children==1) { smooth_suffix_probs(g, m, (trie_pt)tr->unarynext, tr); }
   else if (tr->next)
     {
       for (i=0; i<256; i++)
 	{
 	  trie_pt son=tr->next[i];
 	  if (!son) { continue; }
-	  smooth_suffix_probs(m, son, tr);
+	  smooth_suffix_probs(g, m, son, tr);
 	}
     }
 
@@ -999,10 +999,10 @@ void smooth_suffix_probs(model_pt m, trie_pt tr, trie_pt dad)
 }
 
 /* ------------------------------------------------------------ */
-void compute_unknown_word_probs(model_pt m)
+void compute_unknown_word_probs(globals_pt g, model_pt m)
 {
-  if (m->lower_trie) { smooth_suffix_probs(m, m->lower_trie, NULL); }
-  if (m->upper_trie) { smooth_suffix_probs(m, m->upper_trie, NULL); }
+  if (m->lower_trie) { smooth_suffix_probs(g, m, m->lower_trie, NULL); }
+  if (m->upper_trie) { smooth_suffix_probs(g, m, m->upper_trie, NULL); }
   report(1, "suffix probabilities smoothing done [theta %4.3e]\n", m->theta);
 }
 
@@ -1047,7 +1047,7 @@ prob_t *get_lexical_probs(model_pt m, char *s)
   - When finished, the traverse b[][][] and a[][][] and enter
     infos in probs.
 */
-void viterbi(model_pt m, array_pt words, array_pt tags)
+void viterbi(globals_pt g, model_pt m, array_pt words, array_pt tags)
 {
   int i, j, k, l, cai, nai=0;
   size_t not=array_count(m->tags);
@@ -1386,14 +1386,14 @@ void dump_transition_probs(model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-void tag_sentence(model_pt m, array_pt words, array_pt tags, char *l)
+void tag_sentence(globals_pt g, model_pt m, array_pt words, array_pt tags, char *l)
 {
   char *t;
   size_t i;
   array_clear(words); array_clear(tags);
   for (t=strtok(l, " \t"); t; t=strtok(NULL, " \t"))
     { array_add(words, t); }
-  viterbi(m, words, tags);
+  viterbi(g, m, words, tags);
   for (i=0; i<array_count(words); i++)
     {
       size_t ti=(size_t)array_get(tags, i);
@@ -1406,7 +1406,7 @@ void tag_sentence(model_pt m, array_pt words, array_pt tags, char *l)
 }
 
 /* ------------------------------------------------------------ */
-void tagging(model_pt m)
+void tagging(globals_pt g, model_pt m)
 {
   FILE *f= g->rf ? try_to_open(g->rf, "r") : stdin;  
   array_pt words=array_new(128), tags=array_new(128);
@@ -1415,7 +1415,7 @@ void tagging(model_pt m)
   if (g->bmode>=0 && !setvbuf(f, NULL, g->bmode, 0))
     { report(0, "setvbuf error: %s\n", strerror(errno)); }
   for (l=freadline(f); l; l=freadline(f))
-    { tag_sentence(m, words, tags, l); }
+    { tag_sentence(g, m, words, tags, l); }
   array_free(words); array_free(tags);
   if (g->rf) {
     fclose(f);
@@ -1423,7 +1423,7 @@ void tagging(model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-void testing(model_pt m)
+void testing(globals_pt g, model_pt m)
 {
   FILE *f= g->rf ? try_to_open(g->rf, "r") : stdin;  
   array_pt words=array_new(128), tags=array_new(128), refs=array_new(128);
@@ -1447,7 +1447,7 @@ void testing(model_pt m)
 	    }
 	}
       if (array_count(words)==0) { continue; }
-      viterbi(m, words, tags);
+      viterbi(g, m, words, tags);
       for (i=0; i<array_count(words); i++)
 	{
 	  size_t guess=(size_t)array_get(tags, i);
@@ -1530,7 +1530,7 @@ void delete_model(model_pt m)
 }
 
 
-void delete_globals()
+void delete_globals(globals_pt g)
 {
   free(g->cmd);
   free(g->mf);
@@ -1546,7 +1546,8 @@ int main(int argc, char **argv)
 {
   model_pt m=new_model();
   
-  g=new_globals(NULL);
+
+  globals_pt g=new_globals(NULL);
   g->cmd=strdup(acopost_basename(argv[0], NULL));
   get_options(g, argc, argv);
 
@@ -1554,23 +1555,23 @@ int main(int argc, char **argv)
   report(1, "%s\n", banner);
   report(1, "\n");
 
-  read_ngram_file(m);
+  read_ngram_file(g, m);
   compute_counts_for_boundary(m);
 
   if (g->lambda[0]<0.0) { compute_lambdas(m); }
   else { int i; for (i=0; i<3; i++) { m->lambda[i]=g->lambda[i]; } }
-  compute_transition_probs(m);
+  compute_transition_probs(g, m);
 
-  read_dictionary_file(m);
-  if (g->theta<0.0) { compute_theta(m); }
+  read_dictionary_file(g, m);
+  if (g->theta<0.0) { compute_theta(g, m); }
   else { m->theta=g->theta; }
-  build_suffix_trie(m);
-  compute_unknown_word_probs(m);
+  build_suffix_trie(g, m);
+  compute_unknown_word_probs(g, m);
 
   switch (g->mode)
     {
-    case 0: tagging(m); break;
-    case 1: testing(m); break;
+    case 0: tagging(g, m); break;
+    case 1: testing(g, m); break;
     case 7: dump_transition_probs(m); break; 
     case 8: debugging(m); break; 
 /*    case 9: sleep(30); break;*/
@@ -1580,7 +1581,7 @@ int main(int argc, char **argv)
   report(1, "done\n");
 
   delete_model(m);
-  delete_globals();
+  delete_globals(g);
 
   /* Free the memory held by util.c. */
   util_teardown();
