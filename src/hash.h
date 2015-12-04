@@ -67,6 +67,9 @@ extern void hash_map1(hash_pt ht, void (*)(void *, void *, void *), void *);
 /* like hash_map1, but f is provided with two arguments of generic data */
 extern void hash_map2(hash_pt ht, void (*)(void *, void *, void *, void *), void *, void *);
 
+/* like hash_map1, but f is provided with two arguments of generic data */
+extern void hash_map3(hash_pt ht, void (*)(void *, void *, void *, void *, void *), void *, void *, void *);
+
 /* like hash_map, but removes element from hash if f returns true */
 extern void hash_filter(hash_pt ht, int (*)(void *, void *));
 
