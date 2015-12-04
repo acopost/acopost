@@ -34,6 +34,8 @@
 */
 
 /*
+  Original author: Giulio Paci <giuliopaci@gmail.com>
+
   Most of the theory behind these functions can be found on Wikipedia:
   http://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test
   https://en.wikipedia.org/wiki/Modular_exponentiation
