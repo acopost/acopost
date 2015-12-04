@@ -1,0 +1,2 @@
+version=2
+http://sf.net/acopost/acopost-(\d\S*)\.(?:zip|tgz|tbz|txz|(?:tar\.(?:gz|bz2|xz)))
