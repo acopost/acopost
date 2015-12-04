@@ -4,7 +4,7 @@ Source: http://acopost.sourceforge.net
 
 Files: *
 Copyright: (c) 2001-2002, Ingo Schröder
-           (c) 2007-2013, ACOPOST Developers Team
+           (c) 2007-2015, ACOPOST Developers Team
 License: BSD-3-Clause
 
 Files: debian/*
