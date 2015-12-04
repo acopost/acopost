@@ -1,9 +1,9 @@
 Source: acopost
-Section: text
+Section: science
 Priority: optional
 Maintainer: Ulrik Sandborg-Petersen <ulrikp@users.sourceforge.net>
-Build-Depends: debhelper (>= 8.0.0), autotools-dev
-Standards-Version: 3.9.4
+Build-Depends: debhelper (>= 8.0.0), autotools-dev, dh-autoreconf
+Standards-Version: 3.9.5
 Homepage: http://acopost.sourceforge.net/
 Vcs-Git: git://git.code.sf.net/p/acopost/code
 Vcs-Browser: http://sourceforge.net/p/acopost/code/ci/master/tree/
