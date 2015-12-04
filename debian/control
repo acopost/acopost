@@ -2,7 +2,7 @@ Source: acopost
 Section: science
 Priority: optional
 Maintainer: Ulrik Sandborg-Petersen <ulrikp@users.sourceforge.net>
-Build-Depends: debhelper (>= 8.0.0), autotools-dev, dh-autoreconf
+Build-Depends: debhelper (>= 9), autotools-dev, dh-autoreconf
 Standards-Version: 3.9.5
 Homepage: http://acopost.sourceforge.net/
 Vcs-Git: git://git.code.sf.net/p/acopost/code
@@ -11,9 +11,9 @@ Vcs-Browser: http://sourceforge.net/p/acopost/code/ci/master/tree/
 Package: acopost
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: A COlection of POS Taggers (tagging part of speech)
-  Part-of-speech tagging is the task of assigning symbols from a
-  particular set to words in a natural language text. ACOPOST
-  implements and extends well-known machine learning techniques and
-  provides a uniform environment for testing.
+Description: POS Taggers (tagging part of speech) collection
+ Part-of-speech tagging is the task of assigning symbols from a
+ particular set to words in a natural language text. ACOPOST (A
+ Collection Of POS Taggers), implements and extends well-known machine
+ learning techniques and provides a uniform environment for testing.
 
