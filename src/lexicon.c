@@ -68,6 +68,7 @@ static lexicon_pt new_lexicon(void)
   l->taghash=hash_new(100, .5, hash_string_hash, hash_string_equal);
 
   l->words=hash_new(5000, .5, hash_string_hash, hash_string_equal);
+  l->strings=sregister_new(5000);
 
   return l;
 }
@@ -157,7 +158,7 @@ extern lexicon_pt read_lexicon_file(char *fn)
 
       s=strtok(s, " \t");
       if (!s) { report(1, "can't find word (%s:%d)\n", fn, lno); continue; }
-      s=register_string(s);
+      s=sregister_get(l->strings,s);
 
       wd=new_word(s, not);
       old=hash_put(l->words, s, wd);
