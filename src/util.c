@@ -54,7 +54,6 @@
 #include "mem.h"
 
 /* ------------------------------------------------------------ */
-static hash_pt g_table=NULL;
 static char *g_buffer=NULL;
 
 
@@ -274,21 +273,6 @@ char *freadline(FILE *f)
   return g_buffer;
 }
 
-/* ------------------------------------------------------------ */
-char *register_string(char *s)
-{
-  char *t=NULL;
-
-  if (!s) { return s; } 
-  if (!g_table) 
-    { g_table=hash_new(1000, 0.6, hash_string_hash, hash_string_equal); }
-  else { t=hash_get(g_table, s); if (t) { return t; } }
-
-  t=strdup(s);
-  hash_put(g_table, t, t);
-  return t;
-}
-
 
 
 /* ------------------------------------------------------------ */
@@ -360,22 +344,9 @@ int common_suffix_length(char *s, char *t)
   return c;
 }
 
-void util_free_g_table_entry(void *key, void *value)
-{
-  /* Don't free key; it points to the same memory as value. */
-  /* Don't use mem_free; the memory was obtained with strdup,
-   * in register_string. 
-   */
-  free(value);
-}
-
 /* ------------------------------------------------------------ */
 void util_teardown()
 {
-  if (g_table) {
-    hash_map_free(g_table, util_free_g_table_entry);
-  }
-
   if (g_buffer) {
     mem_free(g_buffer);
   }
