@@ -73,6 +73,7 @@
 #include "array.h"
 #include "util.h"
 #include "mem.h"
+#include "sregister.h"
 
 /* on 64-bit systems, sizeof(void*) is different from
  * sizeof(int) so to make it compile silently we need to
@@ -114,6 +115,7 @@ typedef struct globals_s
   size_t zuetp; /* zero undefined empirical transition probs */
   double theta; /* suffix backoff weight */
   double lambda[3]; /* transition probs smoothing weights */
+  sregister_pt strings;
 } globals_t;
 typedef globals_t *globals_pt;
 
@@ -874,7 +876,7 @@ void read_dictionary_file(globals_pt g, model_pt m)
       
       s=tokenizer(s, " \t");
       if (!s) { report(1, "can't find word (%s:%d)\n", g->df, lno); continue; }
-      rs=register_string(s);
+      rs=sregister_get(g->strings,s);
       wd=new_word(rs, 0, not);
       old=hash_put(m->dictionary, rs, wd);
       if (old)
@@ -1549,6 +1551,7 @@ int main(int argc, char **argv)
 
   globals_pt g=new_globals(NULL);
   g->cmd=strdup(acopost_basename(argv[0], NULL));
+  g->strings = sregister_new(500);
   get_options(g, argc, argv);
 
   report(1, "\n");
@@ -1583,6 +1586,8 @@ int main(int argc, char **argv)
   delete_model(m);
   delete_globals(g);
 
+  /* Free strings register */
+  sregister_delete(g->strings);
   /* Free the memory held by util.c. */
   util_teardown();
   
