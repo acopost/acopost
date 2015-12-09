@@ -41,6 +41,7 @@
 /* ------------------------------------------------------------ */
 #include "array.h"
 #include "hash.h"
+#include "sregister.h"
 
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
@@ -53,6 +54,7 @@ typedef struct lexicon_s
   int *sorter;        /* */
   int *tagcount;      /* */
   hash_pt words;      /* dictionary: string->int (best tag) */
+  sregister_pt strings;      /* string register */
   void *userdata;     /* */
 } lexicon_t;
 typedef lexicon_t *lexicon_pt;
