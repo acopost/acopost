@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([acopost], [2.0.0.pre01], [ulrikp@users.sourceforge.net])
+AC_INIT([acopost], [2.0.0~pre01], [ulrikp@users.sourceforge.net])
 AM_INIT_AUTOMAKE([-Wall])
 AC_CONFIG_SRCDIR([src/t3.c])
 AC_CONFIG_HEADERS([config.h])
