@@ -1,0 +1,9 @@
+* Implement acopost as a library
+** Make main functions re-entrant and avoid global variables
+* Support UTF-8
+  Currently util.c, tbt.c, t3.c, met.c, et.c contain hard-coded
+  latin1 strings, that are used to deal with ä, ö, ü, Ä, Ö, and Ü
+  there is no support for other common latin1 symbols, nor for
+  unicode.
+  Complete UTF-8 support would be a good option to improve that
+  code.
