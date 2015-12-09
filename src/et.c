@@ -53,6 +53,7 @@
 #include "array.h"
 #include "hash.h"
 #include "util.h"
+#include "sregister.h"
 
 /* ------------------------------------------------------------ */
 
@@ -79,6 +80,7 @@ typedef struct globals_s
   char *uf;     /* wtree file for unknown words */   
   char *df;     /* dictionary file name */
   char *rf;     /* name of file to tag/test */
+  sregister_pt strings;
 } globals_t;
 typedef globals_t *globals_pt;
 
@@ -310,7 +312,7 @@ static ptrdiff_t register_tag(model_pt m, char *t)
 }
 
 /* ------------------------------------------------------------ */
-static void read_dictionary_file(model_pt m)
+static void read_dictionary_file(globals_pt g, model_pt m)
 {
   FILE *f=try_to_open(g->df, "r");
   char *s;
@@ -340,7 +342,7 @@ static void read_dictionary_file(model_pt m)
       
       s=strtok(s, " \t");
       if (!s) { report(1, "can't find word (%s:%zd)\n", g->df, lno); continue; }
-      s=register_string(s);
+      s=sregister_get(g->strings, s);
       wd=new_word(s, not);
       old=hash_put(m->dictionary, s, wd);
       if (old)
@@ -365,7 +367,7 @@ static void read_dictionary_file(model_pt m)
 	  wd->count+=cnt;
 	  if (wd->defaulttag<0) { wd->defaulttag=ti; }
 	}
-      wd->aclass=register_string(b);
+      wd->aclass=sregister_get(g->strings, s);
       no_token+=wd->count;
     }
   report(2, "read %zd/%zd entries (type/token) from dictionary\n",
@@ -421,7 +423,7 @@ static size_t register_feature_value(feature_pt f, char *s)
   ptrdiff_t i=find_feature_value(f, s);
   if (i<0)
     {
-      s=register_string(s);
+      s=sregister_get(g->strings, s);
       i=array_add(f->values, s);
       hash_put(f->v2i, s, (void *)i+1);
     }
@@ -741,8 +743,9 @@ int main(int argc, char **argv)
   g=new_globals(NULL);
   g->cmd=strdup(acopost_basename(argv[0], NULL));
   get_options(g, argc, argv);
-  
-  read_dictionary_file(m);
+
+  g->strings = sregister_new(500);
+  read_dictionary_file(g, m);
 
   read_known_wtree(m);
   read_unknown_wtree(m);
@@ -754,6 +757,8 @@ int main(int argc, char **argv)
     default: error("unknown mode of operation %d\n", g->mode);
     }
 
+  /* Free strings register */
+  sregister_delete(g->strings);
   /* Free the memory held by util.c. */
   util_teardown();
   
