@@ -58,6 +58,7 @@
 #include "array.h"
 #include "util.h"
 #include "mem.h"
+#include "sregister.h"
 
 /* ------------------------------------------------------------ */
 #ifndef MIN
@@ -68,7 +69,7 @@
 #define MAX(a, b) ((a)>(b) ? (a) : (b))
 #endif
 
-#define REGISTER_STRING(a) register_string(a) 
+#define REGISTER_STRING(a) sregister_get(g->strings,a) 
 /* #define REGISTER_STRING(a) strdup(a) */
 
 /* ------------------------------------------------------------ */
@@ -108,6 +109,7 @@ typedef struct globals_s
 
   int level;    /* size of context for rules */
   int stage;    /* stage of learning: unknown word, ... */
+  sregister_pt strings;
 } globals_t;
 typedef globals_t *globals_pt;
 
@@ -1532,6 +1534,7 @@ int main(int argc, char **argv)
   
   g=new_globals(NULL);
   g->cmd=strdup(acopost_basename(argv[0], NULL));
+  g->strings = sregister_new(500);
   get_options(argc, argv);
  
   report(-1, "\n%s\n\n", banner);
@@ -1561,6 +1564,8 @@ int main(int argc, char **argv)
   
   report(1, "done\n");
   
+  /* Free strings register */
+  sregister_delete(g->strings);
   /* Free the memory held by util.c. */
   util_teardown();
   
