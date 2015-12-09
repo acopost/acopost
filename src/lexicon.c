@@ -100,12 +100,12 @@ extern char *tagname(lexicon_pt l, int i)
 
 /* ------------------------------------------------------------ */
 extern int find_tag(lexicon_pt l, char *t)
-{ return (int)hash_get(l->taghash, t)-1; }
+{ return (size_t)hash_get(l->taghash, t)-1; }
 
 /* ------------------------------------------------------------ */
 static int register_tag(lexicon_pt l, char *t)
 {
-  int i=find_tag(l, t);
+  size_t i=find_tag(l, t);
  
   if (i<0) 
     { 
