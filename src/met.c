@@ -57,6 +57,7 @@
 #include "hash.h"
 #include "util.h"
 #include "gis.h"
+#include "sregister.h"
 
 /* ------------------------------------------------------------ */
 typedef struct sample_s
@@ -156,24 +157,44 @@ option_t ops[]={
 char *banner=
 "Maximum Entropy Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
 
-/* threshold for rare words */
-unsigned int rwt=5;
+typedef struct globals_s
+{
+  /* threshold for rare words */
+  unsigned int rwt;
+  /* counter of (frequent) words */
+  int no_w_token;
+  int no_fw_token;
+  int no_fw_types;
+  char *cmd;    /* command name */
+  sregister_pt strings;
+  /* arrrrgh, needed for qsort */
+  double *dp;
+} globals_t;
+typedef globals_t *globals_pt;
 
-/* counter of (frequent) words */
-int no_w_token=0;
-int no_fw_token=0;
-int no_fw_types=0;
+globals_pt g;
 
-/* arrrrgh, needed for qsort */
-double *dp=NULL;
+/* ------------------------------------------------------------ */
+/* ------------------------------------------------------------ */
+static globals_pt new_globals(globals_pt old)
+{
+  globals_pt g=(globals_pt)mem_malloc(sizeof(globals_t));
 
-/* program name */
-char *cmd=NULL;
+  if (old) { memcpy(g, old, sizeof(globals_t)); return g; }
+
+  g->cmd=NULL;
+  g->rwt=5;
+  g->no_w_token=0;
+  g->no_fw_token=0;
+  g->no_fw_types=0;
+  g->dp=NULL;
+  return g;
+}
 
 /* ------------------------------------------------------------ */
 static char *register_word(char *w, size_t t, array_pt wds, array_pt wtgs, array_pt wcs, hash_pt wh)
 {
-  char *s=register_string(w);
+  char *s=sregister_get(g->strings,w);
   ptrdiff_t i=((ptrdiff_t)hash_get(wh, s))-1;
   array_pt tags;
   
@@ -351,7 +372,7 @@ static predindex_pt new_predindex(model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-static void make_event(char *w[], int t[], array_pt wcs, hash_pt wh, model_pt m, array_pt evs)
+static void make_event(globals_pt g, char *w[], int t[], array_pt wcs, hash_pt wh, model_pt m, array_pt evs)
 {
   predinfo_t p;
   event_pt ev=new_event(1, t[2]);
@@ -365,7 +386,7 @@ static void make_event(char *w[], int t[], array_pt wcs, hash_pt wh, model_pt m,
 #endif
   
   array_add(evs, ev);
-  if (wc>=rwt)
+  if (wc>=g->rwt)
     { p.w=w[2]; p.type=pt_word; register_predinfo(&p, m, ev); }
   else
     {
@@ -378,10 +399,10 @@ static void make_event(char *w[], int t[], array_pt wcs, hash_pt wh, model_pt m,
       for (i=1; i<5 && i<cl; i++)
 	{
 	  p.type=pt_prefix;
-	  p.w=register_string(substr(w[2], 0, i));
+	  p.w=sregister_get(g->strings,substr(w[2], 0, i));
 	  register_predinfo(&p, m, ev);
 	  p.type=pt_suffix;
-	  p.w=register_string(substr(w[2], cl-1, -i));
+	  p.w=sregister_get(g->strings,substr(w[2], cl-1, -i));
 	  register_predinfo(&p, m, ev);
 	}
       p.w=w[2];
@@ -403,7 +424,7 @@ static void make_event(char *w[], int t[], array_pt wcs, hash_pt wh, model_pt m,
 }
 
 /* ------------------------------------------------------------ */
-static void sample2event(array_pt wcs, hash_pt wh,
+static void sample2event(globals_pt g, array_pt wcs, hash_pt wh,
 			 char *w, int tg, model_pt m, array_pt evs)
 {
   static char *wds[5]={0, 0, 0, 0, 0};
@@ -414,7 +435,7 @@ static void sample2event(array_pt wcs, hash_pt wh,
       size_t i;      
       for (i=0; i<4; i++) { wds[i]=wds[i+1]; tgs[i]=tgs[i+1]; }      
       wds[4]=w; tgs[4]=tg;
-      if (wds[2]) { make_event(wds, tgs, wcs, wh, m, evs); }
+      if (wds[2]) { make_event(g, wds, tgs, wcs, wh, m, evs); }
     } while (!w && (wds[3] || wds[4]));
 }
 
@@ -642,12 +663,12 @@ static predicate_pt read_predicate(char *s, model_pt m)
   char b[slen];
   char c[slen];
 
-#define S_OR_B(i) (strcmp("BOUNDARY", (i)) ? register_string((i)) : NULL)
-#define T_OR_B(i) (strcmp("BOUNDARY", (i)) ? array_add_unique(tgs, register_string((i))) : -1)
+#define S_OR_B(i) (strcmp("BOUNDARY", (i)) ? sregister_get(g->strings,(i)) : NULL)
+#define T_OR_B(i) (strcmp("BOUNDARY", (i)) ? array_add_unique(tgs, sregister_get(g->strings,(i))) : -1)
 
   while (s[slen-1]=='\n') { s[slen-1]='\0'; slen--; }
   if (1==sscanf(s, "curword=%s", b))
-    { pi->type=pt_word; pi->w=register_string(b); }
+    { pi->type=pt_word; pi->w=sregister_get(g->strings,b); }
   else if (1==sscanf(s, "word-1=%s", b))
     { pi->type=pt_wm1; pi->w=S_OR_B(b); }
   else if (1==sscanf(s, "word-2=%s", b))
@@ -771,7 +792,7 @@ static model_pt read_model_file(FILE *f)
 	  t=tokenizer(NULL, " \n");
 	  if (!t || !*t)
 	    { error("can't read tag in line %d\n", lno); }
-	  ft=new_feature(c, array_add_unique(tgs, register_string(t)), pd);
+	  ft=new_feature(c, array_add_unique(tgs, sregister_get(g->strings,t)), pd);
 	  m->no_fts++;
 	  t=tokenizer(NULL, " \n");
 	  if (t)
@@ -833,7 +854,7 @@ static size_t read_samples(FILE *f, array_pt sms, array_pt wds,
 	  t=strtok(NULL, " \t");
 	  if (!t)
 	    { report(0, "can't read tag %d in line %d\n", wdc, lno); continue; }
-	  ti=array_add_unique(tgs, register_string(t));
+	  ti=array_add_unique(tgs, sregister_get(g->strings,t));
 	  w=register_word(w, ti, wds, wtgs, wcs, wdh);
 	  array_add(sms, new_sample(w, ti));
 	}
@@ -856,7 +877,7 @@ static void write_dictionary_file(FILE *f, array_pt wds, array_pt wcs,
       size_t j;
       array_pt tags;
       
-      if (wc<rwt) { continue; }
+      if (wc<g->rwt) { continue; }
       tags=(array_pt)array_get(wtgs, i);
       fprintf(f, "%s", (char *)array_get(wds, i));
 /*       fprintf(f, " %zd", wc); */
@@ -888,7 +909,7 @@ static hash_pt read_dictionary_file(model_pt m, FILE *f, size_t cs)
       if (!w) { continue; }
       if (!cs) { w=lowercase(w); tgs=hash_get(d, w); }
       if (!tgs)
-	{ tgs=array_new(8); hash_put(d, (void *)register_string(w), (void *)tgs); }
+	{ tgs=array_new(8); hash_put(d, (void *)sregister_get(g->strings,w), (void *)tgs); }
       for (s=tokenizer(NULL, " \t"); s; s=tokenizer(NULL, " \t"))
 	{
 	  ptrdiff_t ti=find_tag(s, m->outcomes);
@@ -915,7 +936,7 @@ static void count_words(void *p, void *data)
   int *wc=(int *)data;
   wc[0]++;
   wc[1]+=c;
-  if (c<rwt) { return; }
+  if (c<g->rwt) { return; }
   wc[2]++;
   wc[3]+=c;
 }
@@ -949,7 +970,7 @@ static void training(FILE *mf, FILE *df, FILE *rf, size_t mi, double dt, size_t 
   for (i=0; i<no_sms; i++)
     {
       sample_pt s=array_get(sms, i);
-      sample2event(wcs, wh, s->word, s->tag, md, evs);
+      sample2event(g, wcs, wh, s->word, s->tag, md, evs);
       delete_sample(s);
       if (i%1000==0)
 	{ report(-3, "%3d%%: %10d features\r", i*100/no_sms, md->no_fts); }
@@ -981,8 +1002,8 @@ static int mycompare(const void *ip, const void *jp)
   int i = *((int *)ip);
   int j = *((int *)jp);
 
-  if (dp[i] < dp[j]) { return 1; }
-  if (dp[i] > dp[j]) { return -1; }
+  if (g->dp[i] < g->dp[j]) { return 1; }
+  if (g->dp[i] > g->dp[j]) { return -1; }
   return 0;
 }
 
@@ -1095,7 +1116,7 @@ static void tag_probabilities(model_pt m, hash_pt d, size_t cs, int t[], char *w
   if (!mypds) { mypds=array_new(8); }
   
   /* hack to let the sorting function of qsort have access to p */
-  dp=p;
+  g->dp=p;
 
   for (i=0; i<m->no_ocs; i++) { s[i]=i; }
 
@@ -1502,7 +1523,7 @@ static void testing(FILE *mf, FILE *df, FILE *rf, double pt, size_t bw, size_t c
 static void usage(int mode)
 {
   int i;
-  report(-1, "\n%s\n\n%s %s\nwhere OPTIONS can be\n\n", banner, cmd, ivs[mode].call);
+  report(-1, "\n%s\n\n%s %s\nwhere OPTIONS can be\n\n", banner, g->cmd, ivs[mode].call);
   for (i=0; ops[i].usage; i++)
     {
       if (strchr(ivs[mode].opt, ops[i].character))
@@ -1524,13 +1545,15 @@ extern int main(int argc, char **argv)
   double pt=-1.0;
   int oldnice=nice(0), newnice=19;
   ptrdiff_t fmin=5, bw=-1, cs=0, nbest=0, mode;
-  
-  cmd=strdup(acopost_basename(argv[0], NULL));
+
+  g=new_globals(NULL);
+  g->cmd=strdup(acopost_basename(argv[0], NULL));
+  g->strings = sregister_new(500);
   if (oldnice<0) { error("can't get priority class\n"); }
 
   for (mode=0; ivs[mode].cmd; mode++)
-    { if (!strcmp(cmd, ivs[mode].cmd)) { break; } }
-  if (!ivs[mode].cmd) { error("invalid command \"%s\"\n", cmd); }
+    { if (!strcmp(g->cmd, ivs[mode].cmd)) { break; } }
+  if (!ivs[mode].cmd) { error("invalid command \"%s\"\n", g->cmd); }
   mode=ivs[mode].mode;
 
   while ((c=getopt(argc, argv, ivs[mode].opt))!=EOF)
@@ -1544,8 +1567,8 @@ extern int main(int argc, char **argv)
 	    { report(1, "using %d as beam width\n", bw); }
 	  break;
 	case 'c':
-	  cmd=strdup(optarg);
-	  report(1, "running as %s\n", cmd);
+	  g->cmd=strdup(optarg);
+	  report(1, "running as %s\n", g->cmd);
 	  break;
 	case 'd':
 	  dictfile=strdup(optarg);
@@ -1584,10 +1607,10 @@ extern int main(int argc, char **argv)
 	    { report(1, "using %d as priority class\n", newnice); }
 	  break;
 	case 'r':
-	  if (1!=sscanf(optarg, "%d", &rwt))
+	  if (1!=sscanf(optarg, "%d", &(g->rwt)))
 	    { error("invalid rare word threshold \"%s\"\n", optarg); }
 	  else
-	    { report(1, "using %d as rare word threshold\n", rwt); }
+	    { report(1, "using %d as rare word threshold\n", g->rwt); }
 	  break;
 	case 's':
 	  cs=1;
@@ -1613,12 +1636,12 @@ extern int main(int argc, char **argv)
   if (bw<0) { bw= nbest ? 5 : 1000; }
   
   for (mode=0; ivs[mode].cmd; mode++)
-    { if (!strcmp(cmd, ivs[mode].cmd)) { break; } }
-  if (!ivs[mode].cmd) { error("invalid command \"%s\"\n", cmd); }
+    { if (!strcmp(g->cmd, ivs[mode].cmd)) { break; } }
+  if (!ivs[mode].cmd) { error("invalid command \"%s\"\n", g->cmd); }
   mode=ivs[mode].mode;
   if (mode==3)
     {
-      if (rwt<0) { rwt=5; }
+      if (g->rwt<0) { g->rwt=5; }
       mf=try_to_open(argv[optind], "w");
       if (dictfile) { df=try_to_open(dictfile, "w"); }
       training(mf, df, rf, mi, dt, fmin);
@@ -1633,9 +1656,11 @@ extern int main(int argc, char **argv)
 	{ tagging(mf, df, rf, pt, bw, cs, nbest); }
       else if (mode==4)
 	{ error("daemon mode not implemented\n"); }
-      else { error("don't know what to do (\"%s\")\n", cmd); }
+      else { error("don't know what to do (\"%s\")\n", g->cmd); }
     }
 
+  /* Free strings register */
+  sregister_delete(g->strings);
   /* Free the memory held by util.c. */
   util_teardown();
   
