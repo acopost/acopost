@@ -52,6 +52,7 @@
 #include "array.h"
 #include "util.h"
 #include "mem.h"
+#include "eqsort.h"
 
 /* ------------------------------------------------------------ */
 
@@ -118,8 +119,9 @@ static int register_tag(lexicon_pt l, char *t)
 }
 
 /* ------------------------------------------------------------ */
-static int tagcount_compare(const void *ip, const void *jp)
+static int tagcount_compare(const void *ip, const void *jp, void *glpt)
 {
+  const lexicon_pt gl = (lexicon_pt) glpt;
   int i = *((int *)ip), j = *((int *)jp);
   
 /*   report(0, "tagcount_compare tc[%d]=%d tc[%d]=%d\n", i, gl->tagcount[i], j, gl->tagcount[j]); */
@@ -186,7 +188,7 @@ extern lexicon_pt read_lexicon_file(char *fn)
     }
   l->sorter=(int *)mem_malloc(not*sizeof(int));
   for (lno=0; lno<not; lno++) { l->sorter[lno]=lno; }
-  gl=l; qsort(l->sorter, not, sizeof(int), tagcount_compare);
+  gl=l; eqsort(l->sorter, not, sizeof(int), tagcount_compare, (void*)gl);
   l->defaulttag=l->sorter[0];
   
   return l;
