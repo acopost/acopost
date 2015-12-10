@@ -300,8 +300,8 @@ char *substr(char *s, int pos, int length)
 /* ------------------------------------------------------------ */
 char mytolower(char c)
 {
-  static char *UC="ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ";
-  static char *LC="abcdefghijklmnopqrstuvwxyzäöü";
+  static char *UC="ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc";
+  static char *LC="abcdefghijklmnopqrstuvwxyz\xe4\xf6\xfc";
 
   char *t=strchr(UC, c);
   return t ? LC[t-UC] : c;
