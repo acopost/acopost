@@ -844,7 +844,7 @@ static int xxx_subtype(char *s, char *t)
 
 /* ------------------------------------------------------------ */
 static int cap_subtype(char *s)
-{ return xxx_subtype(s, "ABCDEFGHIJKLMNOPQRSTUVWXYZÜÖÄ"); }
+{ return xxx_subtype(s, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc"); }
 
 /* ------------------------------------------------------------ */
 static int digit_subtype(char *s)
