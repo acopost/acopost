@@ -1026,7 +1026,7 @@ prob_t *get_lexical_probs(model_pt m, char *s)
   if (w) { return w->lp; }
   else
     {
-      char *uc=strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ", s[0]);
+      char *uc=strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc", s[0]);
       trie_pt tr= uc ? m->upper_trie : m->lower_trie;
 
       tr=lookup_suffix_in_trie(tr, s);
@@ -1331,7 +1331,7 @@ void debugging(model_pt m)
 		}
 	      else
 		{
-		  char *uc=strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ", t[0]);
+		  char *uc=strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc", t[0]);
 		  trie_pt tr= uc ? m->upper_trie : m->lower_trie;
 	      
 		  tr=lookup_suffix_in_trie(tr, t);
