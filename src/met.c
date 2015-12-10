@@ -58,6 +58,7 @@
 #include "util.h"
 #include "gis.h"
 #include "sregister.h"
+#include "eqsort.h"
 
 /* ------------------------------------------------------------ */
 typedef struct sample_s
@@ -167,8 +168,6 @@ typedef struct globals_s
   int no_fw_types;
   char *cmd;    /* command name */
   sregister_pt strings;
-  /* arrrrgh, needed for qsort */
-  double *dp;
 } globals_t;
 typedef globals_t *globals_pt;
 
@@ -187,7 +186,6 @@ static globals_pt new_globals(globals_pt old)
   g->no_w_token=0;
   g->no_fw_token=0;
   g->no_fw_types=0;
-  g->dp=NULL;
   return g;
 }
 
@@ -997,13 +995,13 @@ static void training(FILE *mf, FILE *df, FILE *rf, size_t mi, double dt, size_t 
 }
 
 /* ------------------------------------------------------------ */
-static int mycompare(const void *ip, const void *jp)
+static int mycompare(const void *ip, const void *jp, void *data)
 {
   int i = *((int *)ip);
   int j = *((int *)jp);
-
-  if (g->dp[i] < g->dp[j]) { return 1; }
-  if (g->dp[i] > g->dp[j]) { return -1; }
+  double *dp = (double*)data;
+  if (dp[i] < dp[j]) { return 1; }
+  if (dp[i] > dp[j]) { return -1; }
   return 0;
 }
 
@@ -1114,9 +1112,6 @@ static void tag_probabilities(model_pt m, hash_pt d, size_t cs, int t[], char *w
   size_t i;
 
   if (!mypds) { mypds=array_new(8); }
-  
-  /* hack to let the sorting function of qsort have access to p */
-  g->dp=p;
 
   for (i=0; i<m->no_ocs; i++) { s[i]=i; }
 
@@ -1158,7 +1153,7 @@ static void tag_probabilities(model_pt m, hash_pt d, size_t cs, int t[], char *w
   
   assign_probabilities(m, mypds, p);
 #if DEBUG_TAG_PROBABILITIES
-  qsort((void *)s, no_ocs, sizeof(int), mycompare);
+  eqsort((void *)s, no_ocs, sizeof(int), mycompare, p);
   report(-1, "BEFORE:");
   for (i=0; i<5; i++)
     { report(-1, " %f/%s", p[s[i]], (char *)array_get(m->outcomes, s[i])); }
@@ -1169,7 +1164,7 @@ static void tag_probabilities(model_pt m, hash_pt d, size_t cs, int t[], char *w
       a=hash_get(d, cs ? w[2] : lowercase(w[2]));
       if (a) { redistribute_probabilities(m, a, p); }
     }
-  qsort((void *)s, no_ocs, sizeof(int), mycompare);
+  eqsort((void *)s, no_ocs, sizeof(int), mycompare, p);
 #if DEBUG_TAG_PROBABILITIES
   report(-1, " AFTER:");
   for (i=0; i<5; i++)
@@ -1191,9 +1186,6 @@ static int tag_in_context(model_pt m, hash_pt d, int t[], char *w[], double pt, 
   int sorter[m->no_ocs];
   size_t i;
   
-  /* hack to let the sorting function of qsort have access to p */
-  dp=p;
-  
   for (i=0; i<no_ocs; i++) { sorter[i]=i; }
   for (i=0; i<array_count(pds); i++)
     {
@@ -1202,7 +1194,7 @@ static int tag_in_context(model_pt m, hash_pt d, int t[], char *w[], double pt, 
     }
   assign_probabilities(m, mypds, p);
   array_free(mypds);
-  qsort((void *)sorter, no_ocs, sizeof(int), mycompare);
+  eqsort((void *)sorter, no_ocs, sizeof(int), mycompare, p);
 
   fprintf(stdout, "%-30s", w[2]);
   for (i=0; i==0 || (pt>0.0 && p[sorter[i]]>=pt); i++)
