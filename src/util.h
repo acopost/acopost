@@ -71,9 +71,11 @@ extern void report(int mode, char *format, ...);
 extern void print_progress(int mode);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   compares to ints, for qsort()
+   The intcmp() function return an integer less than, equal to, or greater than zero
+   if the int pointed by ip is found, respectively, to be
+   less than, to match, or be greater than the integer pointed by jp.
 */
-extern int intcompare(const void *ip, const void *jp);
+int intcmp(const void *ip, const void *jp);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    tries to open file, exists on error
