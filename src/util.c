@@ -119,14 +119,9 @@ void print_progress(int mode)
 }
 
 /* ------------------------------------------------------------ */
-int intcompare(const void *ip, const void *jp)
+int intcmp(const void *ip, const void *jp)
 {
-  int i = *((int *)ip);
-  int j = *((int *)jp);
-
-  if (i > j) { return 1; }
-  if (i < j) { return -1; }
-  return 0;
+  return *((int *)ip) - *((int *)jp);
 }
 
 /* ------------------------------------------------------------ */
