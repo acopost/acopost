@@ -118,6 +118,16 @@ extern char *ftokenizer(FILE *f, char *sep);
 extern char *reverse(char *s);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   This function is a replacement for POSIX.1-2008 getdelim()
+*/
+size_t readdelim(char **lineptr, size_t  *n, int delim, FILE *stream);
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   This function is a replacement for POSIX.1-2008 getline()
+*/
+size_t readline(char **lineptr, size_t  *n, FILE *stream);
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    successively returns new lines from file, NOT reentrant
    typical use:
    for (t=freadline(f); t; t=freadline(f))
@@ -125,12 +135,6 @@ extern char *reverse(char *s);
 */
 extern char *freadline(FILE *f);
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   looks for s in string table
-   - if found, returns stored string
-   - if not, copies s, stores the copy and returns the copy
-*/
-char *register_string(char *s);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    returns substring of s with maximum length length
