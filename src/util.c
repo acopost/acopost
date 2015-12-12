@@ -56,6 +56,43 @@
 /* ------------------------------------------------------------ */
 static char *g_buffer=NULL;
 
+/* ------------------------------------------------------------ */
+char *freadline(FILE *f)
+{
+  static int csize=5;
+  char *s;
+  int sl;
+
+  if (!g_buffer) { g_buffer=(char *)mem_malloc(csize); }
+
+  s=fgets(g_buffer, csize, f);
+  if (!s) { return NULL; }
+  sl=strlen(s);
+/*   fprintf(stderr, ">> csize=%d sl=%d s[sl-1]=%d s=\"%s\" %p g_buffer=\"%s\"\n",  */
+/* 	  csize, sl, s[sl-1], s, s, g_buffer); */
+  while (s[sl-1]!='\n')
+    {
+      int oldsize=csize;
+      csize*=2;
+      g_buffer=(char *)mem_realloc(g_buffer, csize);
+/*       fprintf(stderr, ">> fgets at %d %d\n", oldsize-1, g_buffer[oldsize-1]); */
+      s=fgets(g_buffer+oldsize-1, oldsize+1, f);
+      if (!s) { return g_buffer; }
+      sl=strlen(s);
+/*       fprintf(stderr, ">> csize=%d sl=%d s[sl-1]=%d s=\"%s\" %p g_buffer=\"%s\"\n",  */
+/* 	      csize, sl, s[sl-1], s, s, g_buffer); */
+    }
+  s[sl-1]='\0';
+  return g_buffer;
+}
+
+/* ------------------------------------------------------------ */
+void util_teardown()
+{
+  if (g_buffer) {
+    mem_free(g_buffer);
+  }
+}
 
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
@@ -238,37 +275,76 @@ char *reverse(char *s)
   return b;
 }
 
-/* ------------------------------------------------------------ */
-char *freadline(FILE *f)
+size_t
+readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
 {
-  static int csize=5;
-  char *s;
-  int sl;
+	size_t tmpn;
+	char *tmplineptr;
+	size_t i;
+	int c;
+	if(feof(stream)) {
+		return -1;
+	}
 
-  if (!g_buffer) { g_buffer=(char *)mem_malloc(csize); }
+	if(*n<=0) {
+		tmpn = 32;
+		tmplineptr = (char*) realloc(*lineptr, tmpn);
+		if(tmplineptr!=NULL) {
+			*n = tmpn;
+			*lineptr = tmplineptr;
+		} else {
+			return -1;
+		}
+	}
+	if (!*lineptr) {
+		*lineptr = (char*) malloc(*n);
+		if(*lineptr == NULL) {
+			return -1;
+		}
+	}
 
-  s=fgets(g_buffer, csize, f);
-  if (!s) { return NULL; }
-  sl=strlen(s);
-/*   fprintf(stderr, ">> csize=%d sl=%d s[sl-1]=%d s=\"%s\" %p g_buffer=\"%s\"\n",  */
-/* 	  csize, sl, s[sl-1], s, s, g_buffer); */
-  while (s[sl-1]!='\n')
-    {
-      int oldsize=csize;
-      csize*=2;
-      g_buffer=(char *)mem_realloc(g_buffer, csize);
-/*       fprintf(stderr, ">> fgets at %d %d\n", oldsize-1, g_buffer[oldsize-1]); */
-      s=fgets(g_buffer+oldsize-1, oldsize+1, f);
-      if (!s) { return g_buffer; }
-      sl=strlen(s);
-/*       fprintf(stderr, ">> csize=%d sl=%d s[sl-1]=%d s=\"%s\" %p g_buffer=\"%s\"\n",  */
-/* 	      csize, sl, s[sl-1], s, s, g_buffer); */
-    }
-  s[sl-1]='\0';
-  return g_buffer;
+	i = 0;
+	while((c=getc(stream))!=EOF)
+	{
+		(*lineptr)[i]=(unsigned char)c;
+		i++;
+		if(c == delim) {
+			break;
+		}
+		if(i>=(*n))
+		{
+			tmpn = (*n) *2;
+			tmplineptr = (char*) realloc(*lineptr, tmpn);
+			if(tmplineptr!=NULL) {
+				*n = tmpn;
+				*lineptr = tmplineptr;
+			} else {
+				return -1;
+			}
+		}
+	}
+	if(ferror(stream)) {
+		return -1;
+	}
+	if(i>=(*n))
+	{
+		tmpn = (*n) +1;
+		tmplineptr = (char*) realloc(*lineptr, tmpn);
+		if(tmplineptr!=NULL) {
+			*n = tmpn;
+			*lineptr = tmplineptr;
+		} else {
+			return -1;
+		}
+	}
+	(*lineptr)[i]= '\0';
+	return i;
 }
 
-
+size_t
+readline(char **lineptr, size_t  *n, FILE *stream) {
+	return readdelim(lineptr, n, '\n', stream);
+}
 
 /* ------------------------------------------------------------ */
 char *substr(char *s, int pos, int length)
@@ -337,14 +413,6 @@ int common_suffix_length(char *s, char *t)
   while (a>=s && b>=t && *a==*b) { a--; b--; c++; }
 
   return c;
-}
-
-/* ------------------------------------------------------------ */
-void util_teardown()
-{
-  if (g_buffer) {
-    mem_free(g_buffer);
-  }
 }
 
 /* ------------------------------------------------------------ */
