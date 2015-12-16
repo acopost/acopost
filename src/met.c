@@ -1,7 +1,7 @@
 /*
   Maximum Entropy Tagger
 
-  Copyright (c) 2001-2002, Ingo SchrÃ¶der
+  Copyright (c) 2001-2002, Ingo Schröder
   Copyright (c) 2007-2013, ACOPOST Developers Team
   All rights reserved.
 
@@ -128,7 +128,7 @@ typedef option_t *option_pt;
 
 /* ------------------------------------------------------------ */
 invocation_t ivs[]={
-  { 0, "met", "b:c:d:f:hi:m:np:r:st:v:", "[OPTIONS] model [input]" },
+  { 0, "acopost-met", "b:c:d:f:hi:m:np:r:st:v:", "[OPTIONS] model [input]" },
   { 1, "met-tag", "b:d:hm:np:sv:", "[OPTIONS] model [text-file]" },
   { 2, "met-test", "b:d:hm:np:sv:", "[OPTIONS] model [corpus-file]" },
   { 3, "met-train", "d:f:hi:p:r:t:v:", "[OPTIONS] model [corpus-file]" },
@@ -156,7 +156,7 @@ option_t ops[]={
 };
 
 char *banner=
-"Maximum Entropy Tagger (c) Ingo SchrÃ¶der and others, http://acopost.sf.net/";
+"Maximum Entropy Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
 
 typedef struct globals_s
 {
