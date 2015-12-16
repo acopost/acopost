@@ -102,18 +102,18 @@ extern char *tagname(lexicon_pt l, int i)
 
 /* ------------------------------------------------------------ */
 extern int find_tag(lexicon_pt l, char *t)
-{ return (size_t)hash_get(l->taghash, t)-1; }
+{ return (ssize_t)hash_get(l->taghash, t)-1; }
 
 /* ------------------------------------------------------------ */
 static int register_tag(lexicon_pt l, char *t)
 {
-  size_t i=find_tag(l, t);
+  int i=find_tag(l, t);
  
   if (i<0) 
     { 
-      t=strdup(t); 
+      t=strdup(t);
       i=array_add(l->tags, t);
-      hash_put(l->taghash, t, (void *)(i+1));
+      hash_put(l->taghash, t, (void *)(size_t)(i+1));
     }
   return i;
 }
@@ -135,13 +135,17 @@ extern lexicon_pt read_lexicon_file(char *fn)
 {
   FILE *f;
   lexicon_pt l=new_lexicon();
-  char *s;
   int lno, not;
+  size_t n, r = 0;
+  char *buf = NULL;
 
   if (fn) { l->fname=strdup(fn); f=try_to_open(fn, "r"); }
   else { l->fname="STDIN"; f=stdin; }
-  for (s=freadline(f); s; s=freadline(f)) 
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      char *s = buf;
+      if(s[r-1] == '\n')
+	   s[r-1] = '\0';
       for (s=strtok(s, " \t"), s=strtok(NULL, " \t");
 	   s;
 	   s=strtok(NULL, " \t"), s=strtok(NULL, " \t"))
@@ -152,9 +156,15 @@ extern lexicon_pt read_lexicon_file(char *fn)
   memset(l->tagcount, 0, not*sizeof(int));
   
   if (fseek(f, 0, SEEK_SET)) { error("can't rewind file \"%s\"\n", fn); }
-  
-  for (lno=1, s=freadline(f); s; lno++, s=freadline(f)) 
+  lno=0;
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      char* s = buf;
+      if(r==0)
+	      continue;
+      if(s[r-1] == '\n')
+	   s[r-1] = '\0';
+      lno++;
       int cnt, i;
       word_pt wd, old;
 
@@ -173,7 +183,6 @@ extern lexicon_pt read_lexicon_file(char *fn)
       for (i=0, s=strtok(NULL, " \t"); s;  i++, s=strtok(NULL, " \t"))
 	{
 	  int ti=find_tag(l, s);
-	  
 	  if (ti<0)
 	    { report(0, "invalid tag \"%s\" (%s:%d)\n", s, fn, lno); continue; }
 	  s=strtok(NULL, " \t");
@@ -190,7 +199,11 @@ extern lexicon_pt read_lexicon_file(char *fn)
   for (lno=0; lno<not; lno++) { l->sorter[lno]=lno; }
   gl=l; eqsort(l->sorter, not, sizeof(int), tagcount_compare, (void*)gl);
   l->defaulttag=l->sorter[0];
-  
+  if(buf) {
+    free(buf);
+    buf = NULL;
+    n = 0;
+  }
   return l;
 }
 
