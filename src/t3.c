@@ -52,7 +52,7 @@
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
 #include <stdio.h>
-/*#include <unistd.h>*/
+#include <unistd.h>
 #include <string.h>
 #ifdef HAVE_STRINGS_H
 #include <strings.h> /* strtok */
@@ -116,6 +116,8 @@ typedef struct globals_s
   double theta; /* suffix backoff weight */
   double lambda[3]; /* transition probs smoothing weights */
   sregister_pt strings;
+  char* buffer;
+  size_t buffer_size;
 } globals_t;
 typedef globals_t *globals_pt;
 
@@ -201,6 +203,8 @@ globals_pt new_globals(globals_pt old)
   g->zuetp=0;
   g->theta=-1.0;
   g->lambda[0]=g->lambda[1]=g->lambda[2]=-1.0;
+  g->buffer = NULL;
+  g->buffer_size = 0;
   
   return g;
 }
@@ -491,14 +495,20 @@ void read_ngram_file(globals_pt g, model_pt m)
   int t[3]={0, 0, 0};
   size_t i;
   size_t size;
+  ssize_t r;
   char *s;
   
   m->tags=array_new(64);
   /* tag 0 is special: begin of sentence & end of sentence */
   array_add(m->tags, strdup("*BOUNDARY*"));
   m->taghash=hash_new(100, .7, hash_string_hash, hash_string_equal);
-  for (lno=0, s=freadline(f); s; lno++, s=freadline(f))
+  lno=-1;
+  while ((r = readline(&(g->buffer),(&g->buffer_size),f)) != -1)
     {
+      s = g->buffer;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       if (s[0]=='\t') { continue; }
       s=strtok(s, " \t");
       if (!s) { error("can't find tag in %s:%d\n", g->mf, lno); }
@@ -520,8 +530,13 @@ void read_ngram_file(globals_pt g, model_pt m)
   /* reset file position */
   if (fseek(f, 0, SEEK_SET)) { error("can't rewind file \"%s\"\n", g->mf); }
 
-  for (lno=0, s=freadline(f); s; lno++, s=freadline(f))
+  lno=-1;
+  while ((r = readline(&(g->buffer),(&g->buffer_size),f)) != -1)
     {
+      s = g->buffer;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       size_t cnt;
       
       for (i=0; *s=='\t'; i++, s++) { /* nada */ }
@@ -867,10 +882,17 @@ void read_dictionary_file(globals_pt g, model_pt m)
   char *s, *rs;
   size_t lno, no_token=0;
   size_t not=array_count(m->tags);
+  ssize_t r;
   
   m->dictionary=hash_new(5000, .5, hash_string_hash, hash_string_equal);
-  for (lno=1, s=freadline(f); s; lno++, s=freadline(f)) 
+
+  lno=0;
+  while ((r = readline(&(g->buffer),(&g->buffer_size),f)) != -1)
     {
+      s = g->buffer;
+      lno++;
+      if(r==0) { continue; }
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       size_t cnt;
       word_pt wd, old;
       
@@ -1266,15 +1288,18 @@ void forward_backward(model_pt m, array_pt words, array_pt tags)
 #endif
 
 /* ------------------------------------------------------------ */
-void debugging(model_pt m)
+void debugging(globals_pt g, model_pt m)
 {
   size_t not=array_count(m->tags);
   int ts[3]={-1, -1, -1};
   char *s;
+  ssize_t r;
 
   report(-1, "Entering debug mode...\n");
-  for (s=freadline(stdin); s; s=freadline(stdin))
+  while ((r = readline(&(g->buffer),(&g->buffer_size),stdin)) != -1)
     {
+      s = g->buffer;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       char *t;
       size_t i, j, mode;
       for (i=0, t=tokenizer(s, " \t"), mode=0; t && i<3 && mode==0; i++, t=tokenizer(NULL, " \t"))
@@ -1412,12 +1437,17 @@ void tagging(globals_pt g, model_pt m)
 {
   FILE *f= g->rf ? try_to_open(g->rf, "r") : stdin;  
   array_pt words=array_new(128), tags=array_new(128);
-  char *l;
+  char *s;
+  ssize_t r;
 
   if (g->bmode>=0 && !setvbuf(f, NULL, g->bmode, 0))
     { report(0, "setvbuf error: %s\n", strerror(errno)); }
-  for (l=freadline(f); l; l=freadline(f))
-    { tag_sentence(g, m, words, tags, l); }
+  while ((r = readline(&(g->buffer),(&g->buffer_size),f)) != -1)
+    {
+      s = g->buffer;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      tag_sentence(g, m, words, tags, s);
+    }
   array_free(words); array_free(tags);
   if (g->rf) {
     fclose(f);
@@ -1430,10 +1460,13 @@ void testing(globals_pt g, model_pt m)
   FILE *f= g->rf ? try_to_open(g->rf, "r") : stdin;  
   array_pt words=array_new(128), tags=array_new(128), refs=array_new(128);
   char *l;
+  ssize_t r;
   size_t pos=0, neg=0;
   
-  for (l=freadline(f); l; l=freadline(f))
+  while ((r = readline(&(g->buffer),(&g->buffer_size),f)) != -1)
     {
+      l = g->buffer;
+      if (r>0 && l[r-1]=='\n') l[r-1] = '\0';
       char *t;
       size_t i;
 
@@ -1576,7 +1609,7 @@ int main(int argc, char **argv)
     case 0: tagging(g, m); break;
     case 1: testing(g, m); break;
     case 7: dump_transition_probs(m); break; 
-    case 8: debugging(m); break; 
+    case 8: debugging(g, m); break; 
 /*    case 9: sleep(30); break;*/
     default: report(0, "unknown mode of operation %d\n", g->mode);
     }
@@ -1588,8 +1621,12 @@ int main(int argc, char **argv)
 
   /* Free strings register */
   sregister_delete(g->strings);
-  /* Free the memory held by util.c. */
-  util_teardown();
+  /* Free the buffer memory */
+  if(g->buffer) {
+    free(g->buffer);
+    g->buffer = NULL;
+    g->buffer_size=0;
+  }
   
   exit(0);
 }
