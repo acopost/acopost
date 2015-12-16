@@ -76,18 +76,18 @@ typedef word_t *word_pt;
 /* ------------------------------------------------------------
    returns name of tag index i in lexicon
 */
-extern char *tagname(lexicon_pt l, int i);
+char *tagname(lexicon_pt l, int i);
 
 /* ------------------------------------------------------------
    returns index of tag t in lexicon or -1
 */
-extern int find_tag(lexicon_pt l, char *t);
+int find_tag(lexicon_pt l, char *t);
 
 /* ------------------------------------------------------------
    reads lexicon file fn and returns new lexicon
    (if fn==NULL it uses STDIN)
 */
-extern lexicon_pt read_lexicon_file(char *fn);
+lexicon_pt read_lexicon_file(char *fn);
 
 /* ------------------------------------------------------------ */
 #endif
