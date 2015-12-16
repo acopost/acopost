@@ -8,7 +8,7 @@
 
    * Redistributions of source code must retain the above copyright
      notice, this list of conditions and the following disclaimer.
-   * Redistributions in binary form must reproduce the above copyright
+   * Redistributions in binary form must reprodufrece the above copyright
      notice, this list of conditions and the following disclaimer in
      the documentation and/or other materials provided with the
      distribution.
@@ -226,9 +226,6 @@ int main (int argc, char *argv[])
     bContinue = !mem_test();
     bContinue = bContinue ? !array_test() : 0;
     bContinue = bContinue ? !primes_test() : 0;
-
-    /* Free the memory held by util.c. */
-    util_teardown();
 
     if (bContinue) {
 	printf("SUCCESS: All tests succeeded.\n");
