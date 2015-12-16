@@ -1,7 +1,7 @@
 /*
   String Register
 
-  Copyright (c) 2001-2002, Ingo SchrÃ¶der
+  Copyright (c) 2001-2002, Ingo Schröder
   Copyright (c) 2007-2015, ACOPOST Developers Team
   All rights reserved.
 
