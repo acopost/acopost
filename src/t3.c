@@ -897,7 +897,7 @@ void read_dictionary_file(globals_pt g, model_pt m)
       
       s=tokenizer(s, " \t");
       if (!s) { report(1, "can't find word (%s:%d)\n", g->df, lno); continue; }
-      rs=sregister_get(g->strings,s);
+      rs=(char*)sregister_get(g->strings,s);
       wd=new_word(rs, 0, not);
       old=hash_put(m->dictionary, rs, wd);
       if (old)
