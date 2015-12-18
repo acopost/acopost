@@ -192,7 +192,7 @@ static globals_pt new_globals(globals_pt old)
 /* ------------------------------------------------------------ */
 static char *register_word(char *w, size_t t, array_pt wds, array_pt wtgs, array_pt wcs, hash_pt wh)
 {
-  char *s=sregister_get(g->strings,w);
+	char *s=(char*)sregister_get(g->strings,w);
   ptrdiff_t i=((ptrdiff_t)hash_get(wh, s))-1;
   array_pt tags;
   
@@ -397,10 +397,10 @@ static void make_event(globals_pt g, char *w[], int t[], array_pt wcs, hash_pt w
       for (i=1; i<5 && i<cl; i++)
 	{
 	  p.type=pt_prefix;
-	  p.w=sregister_get(g->strings,substr(w[2], 0, i));
+	  p.w=(char*)sregister_get(g->strings,substr(w[2], 0, i));
 	  register_predinfo(&p, m, ev);
 	  p.type=pt_suffix;
-	  p.w=sregister_get(g->strings,substr(w[2], cl-1, -i));
+	  p.w=(char*)sregister_get(g->strings,substr(w[2], cl-1, -i));
 	  register_predinfo(&p, m, ev);
 	}
       p.w=w[2];
@@ -661,12 +661,12 @@ static predicate_pt read_predicate(char *s, model_pt m)
   char b[slen];
   char c[slen];
 
-#define S_OR_B(i) (strcmp("BOUNDARY", (i)) ? sregister_get(g->strings,(i)) : NULL)
-#define T_OR_B(i) (strcmp("BOUNDARY", (i)) ? array_add_unique(tgs, sregister_get(g->strings,(i))) : -1)
+#define S_OR_B(i) (strcmp("BOUNDARY", (i)) ? (char*)sregister_get(g->strings,(i)) : NULL)
+#define T_OR_B(i) (strcmp("BOUNDARY", (i)) ? array_add_unique(tgs, (char*)sregister_get(g->strings,(i))) : -1)
 
   while (s[slen-1]=='\n') { s[slen-1]='\0'; slen--; }
   if (1==sscanf(s, "curword=%s", b))
-    { pi->type=pt_word; pi->w=sregister_get(g->strings,b); }
+    { pi->type=pt_word; pi->w=(char*)sregister_get(g->strings,b); }
   else if (1==sscanf(s, "word-1=%s", b))
     { pi->type=pt_wm1; pi->w=S_OR_B(b); }
   else if (1==sscanf(s, "word-2=%s", b))
@@ -790,7 +790,7 @@ static model_pt read_model_file(FILE *f)
 	  t=tokenizer(NULL, " \n");
 	  if (!t || !*t)
 	    { error("can't read tag in line %d\n", lno); }
-	  ft=new_feature(c, array_add_unique(tgs, sregister_get(g->strings,t)), pd);
+	  ft=new_feature(c, array_add_unique(tgs, (char*)sregister_get(g->strings,t)), pd);
 	  m->no_fts++;
 	  t=tokenizer(NULL, " \n");
 	  if (t)
@@ -852,7 +852,7 @@ static size_t read_samples(FILE *f, array_pt sms, array_pt wds,
 	  t=strtok(NULL, " \t");
 	  if (!t)
 	    { report(0, "can't read tag %d in line %d\n", wdc, lno); continue; }
-	  ti=array_add_unique(tgs, sregister_get(g->strings,t));
+	  ti=array_add_unique(tgs, (char*)sregister_get(g->strings,t));
 	  w=register_word(w, ti, wds, wtgs, wcs, wdh);
 	  array_add(sms, new_sample(w, ti));
 	}
