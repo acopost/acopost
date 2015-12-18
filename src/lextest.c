@@ -61,7 +61,7 @@ int main(int argc, char **argv)
       printf("%s[%d,%s]:", s, w->defaulttag, tagname(l, w->defaulttag));
       for (i=0; w->sorter[i]>0; i++)
 	{
-	  printf("\t%s %d", (char *)array_get(l->tags, w->sorter[i]), w->tagcount[w->sorter[i]]);
+	  printf("\t%s %d", tagname(l, w->sorter[i]), w->tagcount[w->sorter[i]]);
 	}
       printf("\n");
     }
