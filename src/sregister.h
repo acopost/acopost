@@ -49,7 +49,7 @@ typedef struct sregister_s sregister_s, *sregister_pt;
 extern sregister_pt sregister_new(size_t);
 
 /* stores and retrieves a shared string equivalent to s */
-char *sregister_get(sregister_pt st, char *s);
+const char *sregister_get(sregister_pt st, const char *s);
 
 /* clears all entries, stored strings will be invalid */
 void sregister_clear(sregister_pt st);
