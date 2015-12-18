@@ -65,9 +65,7 @@ static lexicon_pt new_lexicon(void)
 {
   lexicon_pt l=(lexicon_pt)mem_malloc(sizeof(lexicon_t));
   
-  l->tags=array_new(50);
-  l->taghash=hash_new(100, .5, hash_string_hash, hash_string_equal);
-
+  l->tags=iregister_new(100);
   l->words=hash_new(5000, .5, hash_string_hash, hash_string_equal);
   l->strings=sregister_new(5000);
 
@@ -97,26 +95,13 @@ static void delete_word(word_pt w)
 }
 
 /* ------------------------------------------------------------ */
-extern char *tagname(lexicon_pt l, int i)
-{ return (char *)array_get(l->tags, i); }
+extern const char *tagname(lexicon_pt l, int i)
+{ return iregister_get_name(l->tags, i); }
 
 /* ------------------------------------------------------------ */
 extern int find_tag(lexicon_pt l, char *t)
-{ return (ssize_t)hash_get(l->taghash, t)-1; }
+{ return iregister_get_index(l->tags, t); }
 
-/* ------------------------------------------------------------ */
-static int register_tag(lexicon_pt l, char *t)
-{
-  int i=find_tag(l, t);
- 
-  if (i<0) 
-    { 
-      t=strdup(t);
-      i=array_add(l->tags, t);
-      hash_put(l->taghash, t, (void *)(size_t)(i+1));
-    }
-  return i;
-}
 
 /* ------------------------------------------------------------ */
 static int tagcount_compare(const void *ip, const void *jp, void *glpt)
@@ -149,9 +134,9 @@ extern lexicon_pt read_lexicon_file(char *fn)
       for (s=strtok(s, " \t"), s=strtok(NULL, " \t");
 	   s;
 	   s=strtok(NULL, " \t"), s=strtok(NULL, " \t"))
-	{ (void)register_tag(l, s); }
+	{ iregister_add_name(l->tags, s); }
     }
-  not=array_count(l->tags);
+  not=iregister_get_length(l->tags);
   l->tagcount=(int *)mem_malloc(not*sizeof(int));
   memset(l->tagcount, 0, not*sizeof(int));
   
@@ -170,7 +155,7 @@ extern lexicon_pt read_lexicon_file(char *fn)
 
       s=strtok(s, " \t");
       if (!s) { report(1, "can't find word (%s:%d)\n", fn, lno); continue; }
-      s=sregister_get(l->strings,s);
+      s=(char*)sregister_get(l->strings,s);
 
       wd=new_word(s, not);
       old=hash_put(l->words, s, wd);
