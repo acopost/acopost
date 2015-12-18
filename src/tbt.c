@@ -69,7 +69,7 @@
 #define MAX(a, b) ((a)>(b) ? (a) : (b))
 #endif
 
-#define REGISTER_STRING(a) sregister_get(g->strings,a) 
+#define REGISTER_STRING(a) (char*)sregister_get(g->strings,a) 
 /* #define REGISTER_STRING(a) strdup(a) */
 
 /* ------------------------------------------------------------ */
