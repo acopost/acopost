@@ -59,6 +59,7 @@
 #include "util.h"
 #include "mem.h"
 #include "sregister.h"
+#include "iregister.h"
 
 /* ------------------------------------------------------------ */
 #ifndef MIN
@@ -172,8 +173,7 @@ typedef rule_t *rule_pt;
 
 typedef struct model_s
 {
-  array_pt tags;      /* tags */
-  hash_pt taghash;    /* lookup table tags[taghash{"tag"}-1]="tag" */
+  iregister_pt tags;  /* lookup table tags */
   hash_pt lexicon;    /* hashtable: string->word_pt */
   array_pt templates; /* rule templates */
   int defaulttag;     /* most probable tag (unigram) */
@@ -264,8 +264,7 @@ static model_pt new_model(void)
   model_pt m=(model_pt)mem_malloc(sizeof(model_t));
   memset(m, 0, sizeof(model_t));
 
-  m->tags=array_new(64);
-  m->taghash=hash_new(100, .7, hash_string_hash, hash_string_equal);
+  m->tags=iregister_new(128);
   m->lexicon=hash_new(5000, .5, hash_string_hash, hash_string_equal);
   m->templates=array_new(64);
   m->rules=array_new(1000);
@@ -413,32 +412,6 @@ static void get_options(int argc, char **argv)
 }
 
 /* ------------------------------------------------------------ */
-/* previously inlined */
-static char *tag_name(model_pt m, size_t i)
-{ return (char *)array_get(m->tags, i); }
-
-/* ------------------------------------------------------------ */
-/* previously inlined */
-static ptrdiff_t find_tag(model_pt m, char *t)
-{
-  return ((ptrdiff_t)hash_get(m->taghash, t))-1;
-}
-
-/* ------------------------------------------------------------ */
-static ptrdiff_t register_tag(model_pt m, char *t)
-{
-  ptrdiff_t i=find_tag(m, t);
- 
-  if (i<0) 
-    { 
-      t=REGISTER_STRING(t); 
-      i=array_add(m->tags, t);
-      hash_put(m->taghash, t, (void *)(i+1));
-    }
-  return i;
-}
-
-/* ------------------------------------------------------------ */
 static rule_pt new_rule(rule_pt old)
 {
   rule_pt r=(rule_pt)mem_malloc(sizeof(rule_t));
@@ -462,7 +435,7 @@ static char *precondition2string(model_pt m, precondition_pt pc)
   switch (pc->type)
     {
     case PRE_TAG:
-      l=snprintf(b, BSIZE, "tag[%d]=%s", pc->pos, pc->u.tag<0 ? g->joker : tag_name(m, pc->u.tag));
+      l=snprintf(b, BSIZE, "tag[%d]=%s", pc->pos, pc->u.tag<0 ? g->joker : iregister_get_name(m->tags, pc->u.tag));
       break;
     case PRE_WORD:
       l=snprintf(b, BSIZE, "word[%d]=%s", pc->pos, pc->u.word ? pc->u.word : g->joker);
@@ -538,7 +511,7 @@ static char *rule2string(model_pt m, rule_pt r)
 {
 #define BSIZE 4096
   static char b[BSIZE];
-  char *ts=r->tag<0 ? g->joker : tag_name(m, r->tag);
+  char *ts=r->tag<0 ? g->joker : (char*)iregister_get_name(m->tags, r->tag);
   size_t tsl=strlen(ts);
   ptrdiff_t i, bl=BSIZE-1;
   
@@ -568,7 +541,7 @@ static void read_precondition_into_rule(model_pt m, rule_pt r, size_t n, char *s
     {
       r->pc[n].type=PRE_TAG;
       s=strchr(s, '='); s++;
-      r->pc[n].u.tag=(tf && !strcmp(s, g->joker)) ? -1 : register_tag(m, REGISTER_STRING(s));
+      r->pc[n].u.tag=(tf && !strcmp(s, g->joker)) ? -1 : iregister_add_name(m->tags, REGISTER_STRING(s));
     }
   else if (1==sscanf(s, "word[%d]=", &r->pc[n].pos))
     {
@@ -673,7 +646,7 @@ static void read_rules_file(model_pt m)
       s=tokenizer(s, " \t");
       if (!s) { continue; }      
       if (s[0]=='#' && s[1]=='#') { cno++; continue; }      
-      rt.tag=register_tag(m, s);
+      rt.tag=iregister_add_name(m->tags, s);
       for (rt.nop=0, s=tokenizer(NULL, " \t");
 	   s && rt.nop<MAX_NO_PC;
 	   rt.nop++, s=tokenizer(NULL, " \t"))
@@ -701,9 +674,9 @@ static void read_lexicon_file(model_pt m)
       for (s=strtok(s, " \t"), s=strtok(NULL, " \t");
            s;
            s=strtok(NULL, " \t"), s=strtok(NULL, " \t"))
-        { (void)register_tag(m, s); }
+        { (void)iregister_add_name(m->tags, s); }
     }
-  not=array_count(m->tags);
+  not=iregister_get_length(m->tags);
   tagcount=(int *)mem_malloc(not*sizeof(int));
   memset(tagcount, 0, not*sizeof(int));
 
@@ -723,7 +696,7 @@ static void read_lexicon_file(model_pt m)
       bcnt=btag=-1;
       for (t=tokenizer(NULL, " \t"); t;  t=tokenizer(NULL, " \t"))
 	{
-	  ptrdiff_t cnt, ti=register_tag(m, t);
+	  ptrdiff_t cnt, ti=iregister_add_name(m->tags, t);
 	  
 	  t=tokenizer(NULL, " \t");
 	  if (!t || 1!=sscanf(t, "%td", &cnt))
@@ -765,10 +738,10 @@ static void read_lexicon_file(model_pt m)
   for (i=0; i<not; i++)
     { int tc=tagcount[i]; if (tc>mftc) { mftc=tc; mft=i; } }
   mem_free(tagcount);
-  if (mft<0 || mft>=array_count(m->tags))
+  if (mft<0 || mft>=iregister_get_length(m->tags))
     { report(0, "warning: no tag in lexicon, using zero for mft\n"); mft=0; }
   else
-    { report(2, "most frequent rare tag \"%s\" (%d occurences)\n", tag_name(m, mft), mftc); }
+    { report(2, "most frequent rare tag \"%s\" (%d occurences)\n", iregister_get_name(m->tags, mft), mftc); }
   m->defaulttag=mft;
 }
 
@@ -797,7 +770,7 @@ static array_pt read_cooked_file(model_pt m, char *name)
 	  sp->pos=array_count(st);
 	  sp->word=w;
 	  sp->tag=sp->tmptag=-1;
-	  sp->reference=register_tag(m, t);
+	  sp->reference=iregister_add_name(m->tags, t);
 	  array_add(st, sp);
 	  sc++;
 	}
@@ -902,7 +875,7 @@ static int rule_matches_sample(model_pt m, array_pt sps, int pos, rule_pt r)
 	{
 	  int x=w?w->tcount[r->tag]:0;
 	  report(-1, "RMS: %d ->%s%s[%d]/%s<- %d\n", i,
-		 sp->word, is_rare(m, sp->word)?"*":"", x, tag_name(m, sp->tmptag),
+		 sp->word, is_rare(m, sp->word)?"*":"", x, iregister_get_name(m->tags, sp->tmptag),
 		 precondition_satisfied(m, sps, pos, r, i));
 	}
 #endif
@@ -958,8 +931,8 @@ apply_rule(model_pt m, array_pt sts, rule_pt r, int countonly)
 	  {
 	    sample_pt spm1= j>0 ? (sample_pt)array_get(sps, j-1) : NULL;
 	    sample_pt spp1= j+1<array_count(sps) ? (sample_pt)array_get(sps, j+1) : NULL;
-	    char *ttm1= spm1 ? tag_name(m, spm1->tag) : "NONE";
-	    char *ttp1= spp1 ? tag_name(m, spp1->tag) : "NONE";
+	    char *ttm1= spm1 ? iregister_get_name(m->tags, spm1->tag) : "NONE";
+	    char *ttp1= spp1 ? iregister_get_name(m->tags, spp1->tag) : "NONE";
 	    g++; delta++;
 	    if (!strcmp(rule2string(m, r), "NE rare[0] suffix[0]=a"))
 	      {
@@ -967,7 +940,7 @@ apply_rule(model_pt m, array_pt sts, rule_pt r, int countonly)
 		int x=w?w->tcount[r->tag]:0;
 		report(-1, "POS1: %d %s/%s ->%s%s[%d]/%s<- %s/%s\n", j,
 		       spm1?spm1->word:"B", ttm1,
-		       sp->word, is_rare(m, sp->word)?"*":"", x, tag_name(m, sp->tmptag),
+		       sp->word, is_rare(m, sp->word)?"*":"", x, iregister_get_name(m->tags, sp->tmptag),
 		       spp1?spp1->word:"B", ttp1);
 	      }
 	  }	  
@@ -979,8 +952,8 @@ apply_rule(model_pt m, array_pt sts, rule_pt r, int countonly)
 	  {
 	    sample_pt spm1= j>0 ? (sample_pt)array_get(sps, j-1) : NULL;
 	    sample_pt spp1= j+1<array_count(sps) ? (sample_pt)array_get(sps, j+1) : NULL;
-	    char *ttm1= spm1 ? tag_name(m, spm1->tag) : "NONE";
-	    char *ttp1= spp1 ? tag_name(m, spp1->tag) : "NONE";
+	    char *ttm1= spm1 ? iregister_get_name(m->tags, spm1->tag) : "NONE";
+	    char *ttp1= spp1 ? iregister_get_name(m->tags, spp1->tag) : "NONE";
 	    b++; delta--;
 	    if (!strcmp(rule2string(m, r), "NE rare[0] suffix[0]=a"))
 	      {
@@ -988,7 +961,7 @@ apply_rule(model_pt m, array_pt sts, rule_pt r, int countonly)
 		int x=w?w->tcount[r->tag]:0;
 		report(-1, "NEG1: %d %s/%s ->%s%s[%d]/%s<- %s/%s\n", j,
 		       spm1?spm1->word:"B", ttm1,
-		       sp->word, is_rare(m, sp->word)?"*":"", x, tag_name(m, sp->tmptag),
+		       sp->word, is_rare(m, sp->word)?"*":"", x, iregister_get_name(m->tags, sp->tmptag),
 		       spp1?spp1->word:"B", ttp1);
 	      }
 	  }
@@ -1027,7 +1000,7 @@ static void read_template_file(model_pt m)
       l=tokenizer(l, " \t");
       if (!l) { continue; }
       if (l[0]=='#' && l[1]=='#') { cno++; continue; }
-      rt.tag= strcmp(l, g->joker) ? register_tag(m, l) : -1;
+      rt.tag= strcmp(l, g->joker) ? iregister_add_name(m->tags, l) : -1;
       for (rt.nop=0, l=tokenizer(NULL, " \t");
 	   rt.nop<MAX_NO_PC && l;
 	   rt.nop++, l=tokenizer(NULL, " \t"))
@@ -1175,7 +1148,7 @@ make_rule(model_pt m, array_pt sps, int pos, rule_pt t)
 static void
 make_rules(model_pt m, array_pt sps, int pos, array_pt rs, int goodonly)
 {
-  size_t i, not=array_count(m->tags);
+  size_t i, not=iregister_get_length(m->tags);
   sample_pt sp=(sample_pt)array_get(sps, pos);
   word_pt w=get_word(m, sp->word);
   int israre=is_rare(m, sp->word);
@@ -1293,8 +1266,8 @@ static void make_deltas(void *a, void *b)
 	  {
 	    sample_pt spm1= i>0 ? (sample_pt)array_get(sps, i-1) : NULL;
 	    sample_pt spp1= i+1<array_count(sps) ? (sample_pt)array_get(sps, i+1) : NULL;
-	    char *ttm1= spm1 ? tag_name(m, spm1->tag) : "NONE";
-	    char *ttp1= spp1 ? tag_name(m, spp1->tag) : "NONE";
+	    char *ttm1= spm1 ? iregister_get_name(m->tags, spm1->tag) : "NONE";
+	    char *ttp1= spp1 ? iregister_get_name(m->tags, spp1->tag) : "NONE";
 	    hr->good++; hr->delta++;
 	    if (!strcmp(rule2string(m, hr), "NE rare[0] suffix[0]=a"))
 	      {
@@ -1302,7 +1275,7 @@ static void make_deltas(void *a, void *b)
 		int x=w?w->tcount[hr->tag]:0;
 		report(-1, "POS2: %d %s/%s ->%s%s[%d]/%s<- %s/%s\n", i,
 		       spm1?spm1->word:"B", ttm1,
-		       sp->word, is_rare(m, sp->word)?"*":"", x, tag_name(m, sp->tmptag),
+		       sp->word, is_rare(m, sp->word)?"*":"", x, iregister_get_name(m->tags, sp->tmptag),
 		       spp1?spp1->word:"B", ttp1);
 	      }
 	  }
@@ -1314,8 +1287,8 @@ static void make_deltas(void *a, void *b)
 	  {
 	    sample_pt spm1= i>0 ? (sample_pt)array_get(sps, i-1) : NULL;
 	    sample_pt spp1= i+1<array_count(sps) ? (sample_pt)array_get(sps, i+1) : NULL;
-	    char *ttm1= spm1 ? tag_name(m, spm1->tag) : "NONE";
-	    char *ttp1= spp1 ? tag_name(m, spp1->tag) : "NONE";
+	    char *ttm1= spm1 ? iregister_get_name(m->tags, spm1->tag) : "NONE";
+	    char *ttp1= spp1 ? iregister_get_name(m->tags, spp1->tag) : "NONE";
 	    hr->bad++; hr->delta--;
 	    if (!strcmp(rule2string(m, hr), "NE rare[0] suffix[0]=a"))
 	      {
@@ -1323,7 +1296,7 @@ static void make_deltas(void *a, void *b)
 		int x=w?w->tcount[hr->tag]:0;
 		report(-1, "NEG2: %d %s/%s ->%s%s[%d]/%s<- %s/%s\n", i,
 		       spm1?spm1->word:"B", ttm1,
-		       sp->word, is_rare(m, sp->word)?"*":"", x, tag_name(m, sp->tmptag),
+		       sp->word, is_rare(m, sp->word)?"*":"", x, iregister_get_name(m->tags, sp->tmptag),
 		       spp1?spp1->word:"B", ttp1);
 	      }
 	  }
@@ -1434,7 +1407,7 @@ static void tagging(model_pt m)
 	      t=strtok(NULL, " \t");
 	      if (!t)
 		{ error("can't find tag #%d in cooked input (%s:%d)\n", i, g->ipf ? g->ipf : "STDIN", lno); }
-	      sp->tag=register_tag(m, t);
+	      sp->tag=iregister_add_name(m->tags, t);
 	    }
 	  sp->tmptag=sp->tag;
 	  array_add(sps, sp);
@@ -1458,7 +1431,7 @@ static void tagging(model_pt m)
 	{
 	  sample_pt sp=(sample_pt)array_get(sps, i);
 	  if (i>0) { fprintf(stdout, " "); }
-	  fprintf(stdout, "%s %s", sp->word, tag_name(m, sp->tmptag));
+	  fprintf(stdout, "%s %s", sp->word, iregister_get_name(m->tags, sp->tmptag));
 	}
       fprintf(stdout, "\n");
     }
@@ -1546,7 +1519,7 @@ int main(int argc, char **argv)
   if (g->lf) { read_lexicon_file(m); }
   if (g->dft)
     {
-      m->defaulttag=register_tag(m, g->dft);
+      m->defaulttag=iregister_add_name(m->tags, g->dft);
       report(2, "overriding default tag for unknown word: %s\n", g->dft);
     }
 
