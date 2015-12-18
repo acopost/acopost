@@ -453,7 +453,6 @@ void get_options(globals_pt g, int argc, char **argv)
 }
 
 /* ------------------------------------------------------------ */
-/* previously inlined */
 ptrdiff_t find_tag(model_pt m, char *t)
 {
   return ((ptrdiff_t)hash_get(m->taghash, t))-1;
@@ -466,7 +465,7 @@ ptrdiff_t register_tag(model_pt m, char *t)
 
   if (i<0) 
     { 
-      char *rt=strdup(t); 
+      char *rt=strdup(t);
       i=array_add(m->tags, rt);
       hash_put(m->taghash, rt, (void *)(i+1));
     }
