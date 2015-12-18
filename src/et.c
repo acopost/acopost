@@ -342,7 +342,7 @@ static void read_dictionary_file(globals_pt g, model_pt m)
       
       s=strtok(s, " \t");
       if (!s) { report(1, "can't find word (%s:%zd)\n", g->df, lno); continue; }
-      s=sregister_get(g->strings, s);
+      s=(char*)sregister_get(g->strings, s);
       wd=new_word(s, not);
       old=hash_put(m->dictionary, s, wd);
       if (old)
@@ -367,7 +367,7 @@ static void read_dictionary_file(globals_pt g, model_pt m)
 	  wd->count+=cnt;
 	  if (wd->defaulttag<0) { wd->defaulttag=ti; }
 	}
-      wd->aclass=sregister_get(g->strings, s);
+      wd->aclass=(char*)sregister_get(g->strings, s);
       no_token+=wd->count;
     }
   report(2, "read %zd/%zd entries (type/token) from dictionary\n",
@@ -423,7 +423,7 @@ static size_t register_feature_value(feature_pt f, char *s)
   ptrdiff_t i=find_feature_value(f, s);
   if (i<0)
     {
-      s=sregister_get(g->strings, s);
+      s=(char*)sregister_get(g->strings, s);
       i=array_add(f->values, s);
       hash_put(f->v2i, s, (void *)i+1);
     }
