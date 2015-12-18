@@ -64,17 +64,17 @@ static void _free_g_table_entry(void *key, void *value)
 }
 
 /* ------------------------------------------------------------ */
-char *sregister_get(sregister_pt st, char *s)
+const char *sregister_get(sregister_pt st, const char *s)
 {
-  char *t=NULL;
+  const char *t=NULL;
 
   if (!s) { return s; } 
   if (!st->g_table) 
     { st->g_table=hash_new(st->cp, 0.6, hash_string_hash, hash_string_equal); }
-  else { t=hash_get(st->g_table, s); if (t) { return t; } }
+  else { t=hash_get(st->g_table, (char*)s); if (t) { return t; } }
 
   t=strdup(s);
-  hash_put(st->g_table, t, t);
+  hash_put(st->g_table, (char*)t, (char*)t);
   return t;
 }
 	
