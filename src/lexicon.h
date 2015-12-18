@@ -42,18 +42,18 @@
 #include "array.h"
 #include "hash.h"
 #include "sregister.h"
+#include "iregister.h"
 
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 typedef struct lexicon_s
 {
   char *fname;        /* filename */
-  array_pt tags;      /* tags */
-  hash_pt taghash;    /* lookup table tags[taghash{"tag"}-1]="tag" */
   int defaulttag;     /* */
   int *sorter;        /* */
   int *tagcount;      /* */
   hash_pt words;      /* dictionary: string->int (best tag) */
+  iregister_pt tags;  /* lookup table tags */
   sregister_pt strings;      /* string register */
   void *userdata;     /* */
 } lexicon_t;
@@ -76,7 +76,7 @@ typedef word_t *word_pt;
 /* ------------------------------------------------------------
    returns name of tag index i in lexicon
 */
-char *tagname(lexicon_pt l, int i);
+const char *tagname(lexicon_pt l, int i);
 
 /* ------------------------------------------------------------
    returns index of tag t in lexicon or -1
