@@ -242,9 +242,8 @@ void delete_word(word_pt w)
 }
 
 /* ------------------------------------------------------------ */
-trie_pt new_trie(model_pt m, trie_pt mother)
+trie_pt new_trie(size_t tagsnumber, trie_pt mother)
 {
-  size_t not=iregister_get_length(m->tags);
   trie_pt t=(trie_pt)mem_malloc(sizeof(trie_t));
   memset(t, 0, sizeof(trie_t));
   t->count=0;
@@ -252,10 +251,10 @@ trie_pt new_trie(model_pt m, trie_pt mother)
   t->children=0;
   t->unarychar='\0';
   t->unarynext=NULL;
-  t->tagcount=(int *)mem_malloc(not*sizeof(int));
   t->lp=NULL;
   t->next=NULL;
-  memset(t->tagcount, 0, not*sizeof(int));
+  t->tagcount=(int *)mem_malloc(tagsnumber*sizeof(int));
+  memset(t->tagcount, 0, tagsnumber*sizeof(int));
   return t;
 }
 
@@ -343,7 +342,7 @@ void add_word_to_trie(void *key, void *value, void* gp, void *data)
 
       if (!daughter)
 	{
-	  daughter=new_trie(m, tr);
+	  daughter=new_trie(iregister_get_length(m->tags), tr);
 	  if (uc) { m->uc_count++; } else { m->lc_count++; }
 	  trie_add_daughter(tr, c, daughter); 
 	}
@@ -928,8 +927,8 @@ void count_nodes(trie_pt tr, int s[])
 /* ------------------------------------------------------------ */
 void build_suffix_trie(globals_pt g, model_pt m)
 {
-  m->lower_trie=new_trie(m, NULL);
-  m->upper_trie=new_trie(m, NULL);
+  m->lower_trie=new_trie(iregister_get_length(m->tags), NULL);
+  m->upper_trie=new_trie(iregister_get_length(m->tags), NULL);
 
   hash_map2(m->dictionary, add_word_to_trie, g, m);
   report(1, "built suffix tries with %d lowercase and %d uppercase nodes\n",
