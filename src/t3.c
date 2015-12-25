@@ -74,6 +74,7 @@
 #include "util.h"
 #include "mem.h"
 #include "sregister.h"
+#include "iregister.h"
 
 /* on 64-bit systems, sizeof(void*) is different from
  * sizeof(int) so to make it compile silently we need to
@@ -145,8 +146,7 @@ typedef word_t *word_pt;
 
 typedef struct model_s
 {
-  array_pt tags;      /* tags */
-  hash_pt taghash;    /* lookup table tags[taghash{"tag"}-1]="tag */
+  iregister_pt tags;  /* lookup table tags */
   double theta;       /* standard deviation of unconditioned ML probs */
   prob_t *tp;         /* smoothed transition probs */
   int *count[3];      /* uni-, bi- and trigram counts */
@@ -244,7 +244,7 @@ void delete_word(word_pt w)
 /* ------------------------------------------------------------ */
 trie_pt new_trie(model_pt m, trie_pt mother)
 {
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   trie_pt t=(trie_pt)mem_malloc(sizeof(trie_t));
   memset(t, 0, sizeof(trie_t));
   t->count=0;
@@ -307,7 +307,7 @@ void trie_add_daughter(trie_pt tr, unsigned char c, trie_pt daughter)
 void add_word_info_to_trie_node(model_pt m, trie_pt tr, word_pt wd)
 {
   size_t i;
-  size_t not = array_count(m->tags);
+  size_t not = iregister_get_length(m->tags);
   tr->count += wd->count;
   for (i = 0; i < not; i++)
     tr->tagcount[i] += wd->tagcount[i];
@@ -453,26 +453,6 @@ void get_options(globals_pt g, int argc, char **argv)
 }
 
 /* ------------------------------------------------------------ */
-ptrdiff_t find_tag(model_pt m, char *t)
-{
-  return ((ptrdiff_t)hash_get(m->taghash, t))-1;
-}
-
-/* ------------------------------------------------------------ */
-ptrdiff_t register_tag(model_pt m, char *t)
-{
-  ptrdiff_t i=find_tag(m, t);
-
-  if (i<0) 
-    { 
-      char *rt=strdup(t);
-      i=array_add(m->tags, rt);
-      hash_put(m->taghash, rt, (void *)(i+1));
-    }
-  return i;
-}
-
-/* ------------------------------------------------------------ */
 /* previously inlined */
 int ngram_index(size_t n, size_t s, int t1, int t2, int t3)
 {
@@ -497,10 +477,9 @@ void read_ngram_file(globals_pt g, model_pt m)
   ssize_t r;
   char *s;
   
-  m->tags=array_new(64);
+  m->tags=iregister_new(128);
   /* tag 0 is special: begin of sentence & end of sentence */
-  array_add(m->tags, strdup("*BOUNDARY*"));
-  m->taghash=hash_new(100, .7, hash_string_hash, hash_string_equal);
+  iregister_add_unregistered_name(m->tags, "*BOUNDARY*");
   lno=-1;
   while ((r = readline(&(g->buffer),(&g->buffer_size),f)) != -1)
     {
@@ -511,9 +490,9 @@ void read_ngram_file(globals_pt g, model_pt m)
       if (s[0]=='\t') { continue; }
       s=strtok(s, " \t");
       if (!s) { error("can't find tag in %s:%d\n", g->mf, lno); }
-      register_tag(m, s);
+      iregister_add_name(m->tags, s);
     }
-  not=array_count(m->tags);
+  not=iregister_get_length(m->tags);
   report(2, "found %d tags in \"%s\"\n", not-1, g->mf);
 
   size=sizeof(int);
@@ -542,7 +521,7 @@ void read_ngram_file(globals_pt g, model_pt m)
       if (i>2) { error("parse error (too many tabs) (%s:%d)\n", g->mf, lno); }
       s=strtok(s, " \t");
       if (!s) { error("can't find tag (%s:%d)\n", g->mf, lno); }
-      t[i]=find_tag(m, s);
+      t[i]=iregister_get_index(m->tags, s);
       if (t[i]<0) { error("unknown tag \"%s\" (%s:%d)\n", s, g->mf, lno); }
       s=strtok(NULL, " \t");
       if (!s) { error("can't find count (%s:%d)\n", g->mf, lno); }
@@ -560,7 +539,7 @@ void read_ngram_file(globals_pt g, model_pt m)
 void compute_counts_for_boundary(model_pt m)
 {
   /* compute transition probs for artificial boundary tags */
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   size_t i, uni=0, bi=0, tri=0, ows=0, nos=0;
 #define DEBUG_COMPUTE_COUNTS_FOR_BOUNDARY 0
   
@@ -695,7 +674,7 @@ static void enter_rare_word_tag_counts(void *key, void *value, void* gp, void *d
   word_pt wd=(word_pt)value;
   model_pt m=(model_pt)d1;
   int *lowcount=(int *)d2;
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   size_t i;
 
   if (wd->count>g->rwt) { return; }
@@ -708,7 +687,7 @@ void compute_theta(globals_pt g, model_pt m)
 {
   /* TODO: check whether to include 0 */
 #define START_AT_TAG 1
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   int lowcount[not];
   double inv_not=1.0/(double)(not-START_AT_TAG), sum;
   size_t ttc, i;
@@ -731,7 +710,7 @@ void compute_theta(globals_pt g, model_pt m)
 void compute_lambdas(model_pt m)
 {
   size_t i, sum=0;
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   int li[3]={0, 0, 0};
 
 #define START_AT_TAG 1  
@@ -804,7 +783,7 @@ void compute_lambdas(model_pt m)
 /* ------------------------------------------------------------ */
 void compute_transition_probs(globals_pt g, model_pt m)
 {
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   /*
     FIXME
     inv_not is used for the empirical probability distributions
@@ -849,8 +828,8 @@ void compute_transition_probs(globals_pt g, model_pt m)
 #if DEBUG_COMPUTE_TRANSITION_PROBS
 	      if (j==0 && k==0)
 		{
-		  report(-1, "%s - %s - %s\n", array_get(m->tags, k),
-			 array_get(m->tags, j), array_get(m->tags, i));
+		  report(-1, "%s - %s - %s\n", iregister_get_name(m->tags, k),
+			 iregister_get_name(m->tags, j), iregister_get_name(m->tags, i));
 		  report(-1, "  %d/%d==%4.3e %4.3e %4.3e\n",
 			 ft3, m->token[0], pt3, m->lambda[0], l1pt3);
 		  report(-1, "  %d/%d==%4.3e %4.3e %4.3e\n",
@@ -880,7 +859,7 @@ void read_dictionary_file(globals_pt g, model_pt m)
   FILE *f=try_to_open(g->df, "r");
   char *s, *rs;
   size_t lno, no_token=0;
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   ssize_t r;
   
   m->dictionary=hash_new(5000, .5, hash_string_hash, hash_string_equal);
@@ -907,7 +886,7 @@ void read_dictionary_file(globals_pt g, model_pt m)
 	}
       for (s=tokenizer(NULL, " \t"); s;  s=tokenizer(NULL, " \t"))
 	{
-	  ptrdiff_t fti, ti=find_tag(m, s);
+	  ptrdiff_t fti, ti=iregister_get_index(m->tags, s);
 	  
 	  if (ti<0)
 	    { report(0, "invalid tag \"%s\" (%s:%d)\n", s, g->df, lno); continue; }
@@ -971,7 +950,7 @@ void build_suffix_trie(globals_pt g, model_pt m)
 /* ------------------------------------------------------------ */
 void smooth_suffix_probs(globals_pt g, model_pt m, trie_pt tr, trie_pt dad)
 {
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   double one_plus_theta=1.0+m->theta;
   size_t i;
 
@@ -1073,7 +1052,7 @@ prob_t *get_lexical_probs(model_pt m, char *s)
 void viterbi(globals_pt g, model_pt m, array_pt words, array_pt tags)
 {
   int i, j, k, l, cai, nai=0;
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   size_t wno=array_count(words);
   prob_t a[2][not][not];
   array_pt b = array_new(wno);
@@ -1130,7 +1109,7 @@ void viterbi(globals_pt g, model_pt m, array_pt words, array_pt tags)
 		  if (a[cai][j][k]<max_a) { continue; }
 		  new=a[cai][j][k] + m->tp[ ngram_index(2, not, j, k, l) ] + lp[l];
 #if DEBUG_VITERBI
-#define TN(x) array_get(m->tags, x)
+#define TN(x) iregister_get_name(m->tags, x)
 		  report(-1, "Considering <%s-%s> --> <%s-%s> for %s\n",
 			 TN(j), TN(k), TN(k), TN(l), w);
 		  report(-1, "\ta(%s-%s)==%5.4e\n", TN(j), TN(k), a[cai][j][k]);
@@ -1183,8 +1162,8 @@ void viterbi(globals_pt g, model_pt m, array_pt words, array_pt tags)
 
 #if DEBUG_VITERBI
   report(-1, "best final state %s-%s\n",
-	 (char *)array_get(m->tags, b_i),
-	 (char *)array_get(m->tags, b_j));
+	 (char *)iregister_get_name(m->tags, b_i),
+	 (char *)iregister_get_name(m->tags, b_j));
 #endif
 
   /* best final state is (b_i, b_j) */
@@ -1212,7 +1191,7 @@ void viterbi(globals_pt g, model_pt m, array_pt words, array_pt tags)
 /* ------------------------------------------------------------ */
 void forward_backward(model_pt m, array_pt words, array_pt tags)
 {
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   size_t wno=array_count(words);
   /* forward probs alpha */
   prob_t a[wno+2][not][not];
@@ -1289,7 +1268,7 @@ void forward_backward(model_pt m, array_pt words, array_pt tags)
 /* ------------------------------------------------------------ */
 void debugging(globals_pt g, model_pt m)
 {
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   int ts[3]={-1, -1, -1};
   char *s;
   ssize_t r;
@@ -1303,7 +1282,7 @@ void debugging(globals_pt g, model_pt m)
       size_t i, j, mode;
       for (i=0, t=tokenizer(s, " \t"), mode=0; t && i<3 && mode==0; i++, t=tokenizer(NULL, " \t"))
 	{
-	  ts[i]=find_tag(m, t);
+	  ts[i]=iregister_get_index(m->tags, t);
 	  if (!strcmp(t, "NULL")) { ts[i]=0; }
 	  if (ts[i]<0) { mode=1; }
 	}
@@ -1314,20 +1293,20 @@ void debugging(globals_pt g, model_pt m)
 	  for (j=0; j<=i; j++)
 	    {
 	      report(-1, "%s(%4.3e) ",
-		     array_get(m->tags, ts[j]),
+		     iregister_get_name(m->tags, ts[j]),
 		     (double)m->count[0][ ngram_index(0, not, ts[j], -1, -1) ]/m->token[0]);
 	    }
 	  if (i>0)
 	    {
 	      report(-1, "[%s-%s %8.7e] ",
-		     array_get(m->tags, ts[i-1]), array_get(m->tags, ts[i]),
+		     iregister_get_name(m->tags, ts[i-1]), iregister_get_name(m->tags, ts[i]),
 		     (double)m->count[1][ ngram_index(1, not, ts[i-1], ts[i], -1) ]/
 		     m->count[0][ ngram_index(0, not, ts[i-1], -1, -1) ]);
 	    }
 	  if (i>1)
 	    {
 	      report(-1, "[%s-%s-%s %8.7e] ", 
-		     array_get(m->tags, ts[0]), array_get(m->tags, ts[1]), array_get(m->tags, ts[2]),
+		     iregister_get_name(m->tags, ts[0]), iregister_get_name(m->tags, ts[1]), iregister_get_name(m->tags, ts[2]),
 		     (double)m->count[2][ ngram_index(2, not, ts[0], ts[1], ts[2]) ]/
 		     m->count[1][ ngram_index(1, not, ts[0], ts[1], -1) ]);
 	      report(-1, "[smoothed %12.11e] ", m->tp[ ngram_index(i, not, ts[0], ts[1], ts[2]) ]);
@@ -1346,10 +1325,10 @@ void debugging(globals_pt g, model_pt m)
 	      if (w)
 		{	      
 		  report(-1, "LEXICON %s ", t);
-		  for (i=j=0; i<array_count(m->tags); i++)
+		  for (i=j=0; i<iregister_get_length(m->tags); i++)
 		    {
 		      if (p[i]==-MAXPROB) { continue; }
-		      report(-1, "  [%s %3.2e]", (char *)array_get(m->tags, i), p[i]);
+		      report(-1, "  [%s %3.2e]", (char *)iregister_get_name(m->tags, i), p[i]);
 		    }
 		  report(-1, "\n");
 		}
@@ -1361,12 +1340,12 @@ void debugging(globals_pt g, model_pt m)
 		  tr=lookup_suffix_in_trie(tr, t);
 /* 		  report(-1, "SUFFIX %s \"%s\"\n", t, trie_string(tr)); */
 		  report(-1, "SUFFIX %s \"%s\"\n", t, "*UNKNOWN*");
-		  for (i=j=0; i<array_count(m->tags); i++)
+		  for (i=j=0; i<iregister_get_length(m->tags); i++)
 		    {
 		      if (p[i]==-MAXPROB || tr->tagcount[i]==0) { continue; }
 		      j++;
 		      report(-1, "  [%s %3.2e %d]",
-			     (char *)array_get(m->tags, i), p[i], tr->tagcount[i]);
+			     (char *)iregister_get_name(m->tags, i), p[i], tr->tagcount[i]);
 		      if (j%4==0) { report(-1, "\n"); }
 		    }
 		  report(-1, "\n");
@@ -1379,7 +1358,7 @@ void debugging(globals_pt g, model_pt m)
 /* ------------------------------------------------------------ */
 void dump_transition_probs(model_pt m)
 {
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   size_t i, j, k;
 
   for (i=0; i<not; i++)
@@ -1390,23 +1369,23 @@ void dump_transition_probs(model_pt m)
 	    {
 	      int index=ngram_index(2, not, i, j, k);
 	      fprintf(stdout, "tp(%s,%s => %s)=%12.11e\n",
-		      (char *)array_get(m->tags, i),
-		      (char *)array_get(m->tags, j),
-		      (char *)array_get(m->tags, k),
+		      (char *)iregister_get_name(m->tags, i),
+		      (char *)iregister_get_name(m->tags, j),
+		      (char *)iregister_get_name(m->tags, k),
 		      exp(m->tp[index]));
 	      fprintf(stdout, "tri(%s,%s,%s)=%d\n",
-		      (char *)array_get(m->tags, i),
-		      (char *)array_get(m->tags, j),
-		      (char *)array_get(m->tags, k),
+		      (char *)iregister_get_name(m->tags, i),
+		      (char *)iregister_get_name(m->tags, j),
+		      (char *)iregister_get_name(m->tags, k),
 		      m->count[2][ ngram_index(2, not, i, j, k) ]);
 	    }
 	  fprintf(stdout, "bi(%s,%s)=%d\n",
-		  (char *)array_get(m->tags, i),
-		  (char *)array_get(m->tags, j),
+		  (char *)iregister_get_name(m->tags, i),
+		  (char *)iregister_get_name(m->tags, j),
 		  m->count[1][ ngram_index(1, not, i, j, -1) ]);
 	}
       fprintf(stdout, "uni(%s)=%d\n",
-		      (char *)array_get(m->tags, i),
+		      (char *)iregister_get_name(m->tags, i),
 		      m->count[0][ ngram_index(0, not, i, -1, -1) ]);
     }
 }
@@ -1423,7 +1402,7 @@ void tag_sentence(globals_pt g, model_pt m, array_pt words, array_pt tags, char 
   for (i=0; i<array_count(words); i++)
     {
       size_t ti=(size_t)array_get(tags, i);
-      char *tn=(char *)array_get(m->tags, ti);
+      char *tn=(char *)iregister_get_name(m->tags, ti);
       char *wd=(char *)array_get(words, i);
       if (i>0) { fprintf(stdout, " "); }
       fprintf(stdout, "%s %s", wd, tn);
@@ -1475,7 +1454,7 @@ void testing(globals_pt g, model_pt m)
 	  if (i%2==0) { array_add(words, t); }
 	  else
 	    {
-	      ptrdiff_t ti=find_tag(m, t);
+	      ptrdiff_t ti=iregister_get_index(m->tags, t);
 	      if (ti<0) { error("unknown tag \"%s\"\n", t); }
               array_add(refs, (void *)ti);
 	    }
@@ -1491,14 +1470,14 @@ void testing(globals_pt g, model_pt m)
 	    {
 	      if (verbosity>3)
 		{
-		  char *gs=array_get(m->tags, guess);
-		  char *rs=array_get(m->tags, ref);
+		  const char *gs=iregister_get_name(m->tags, guess);
+		  const char *rs=iregister_get_name(m->tags, ref);
 		  ptrdiff_t j;
 		  for (j=i-2; j!=i; j++)
 		    {
 		      if (j<0) { continue; }
 		      report(-1, "%s %s ", (char *)array_get(words, j),
-			     (char *)array_get(m->tags, (size_t)array_get(refs, j)));
+			     (char *)iregister_get_name(m->tags, (size_t)array_get(refs, j)));
 		    }
 		  report(-1, ":: %s guess %s ref %s\n", (char *)array_get(words, i), gs, rs);
 		}
@@ -1525,19 +1504,8 @@ void delete_model(model_pt m)
     mem_free(m->count[i]);
   }
 
-  /* Delete the taghash hash map. */
-  hash_delete(m->taghash);
-
-  /* Delete the tags array. */
-  size_t not=array_count(m->tags);
-  for (i = 0; i < not; ++i) {
-    /* Free the string in m->tags.
-     * Do NOT use mem_free, since the memory has been obtained with strdup.
-     */
-    free(array_get(m->tags, i));
-  }
-
-  array_free(m->tags);
+  /* Delete the tags lookup register. */
+  iregister_delete(m->tags);
 
   /* Delete the probabilities. */
   mem_free(m->tp);
