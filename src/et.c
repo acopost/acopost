@@ -2,7 +2,7 @@
   Example-based Tagger
 
   Copyright (c) 2001-2002, Ingo Schröder
-  Copyright (c) 2007-2013, ACOPOST Developers Team
+  Copyright (c) 2007-2015, ACOPOST Developers Team
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -54,6 +54,7 @@
 #include "hash.h"
 #include "util.h"
 #include "sregister.h"
+#include "iregister.h"
 
 /* ------------------------------------------------------------ */
 
@@ -142,11 +143,7 @@ typedef word_t *word_pt;
 
 typedef struct model_s
 {
-  array_pt tags;      /* tags */
-  hash_pt taghash;    /* lookup table tags[taghash{"tag"}-1]="tag" */
-
-  array_pt classes;   /* ambiguity classes */
-  hash_pt classhash;  /* lookup table */
+  iregister_pt tags;  /* lookup table tags */
 
   array_pt features;  /* list of sorted features */
 
@@ -188,11 +185,7 @@ static model_pt new_model()
   model_pt m=(model_pt)mem_malloc(sizeof(model_t));
   memset(m, 0, sizeof(model_t));
 
-  m->tags=array_new(64);
-  m->taghash=hash_new(128, .5, hash_string_hash, hash_string_equal);
-
-  m->classes=array_new(128);
-  m->classhash=hash_new(256, .5, hash_string_hash, hash_string_equal);
+  m->tags=iregister_new(128);
 
   m->features=array_new(32);
 
@@ -236,7 +229,7 @@ static feature_pt new_feature(void)
 static wtree_pt new_wtree(model_pt m)
 {
   static char *foo42="foo42";
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
   wtree_pt t=(wtree_pt)mem_malloc(sizeof(wtree_t));
   memset(t, 0, sizeof(wtree_t));
 
@@ -290,26 +283,6 @@ static void get_options(globals_pt g, int argc, char **argv)
     { g->rf=strdup(argv[optind+3]); }
 }
 
-/* ------------------------------------------------------------ */
-/* previously inlined */
-static ptrdiff_t find_tag(model_pt m, char *t)
-{
-  return ((ptrdiff_t) hash_get(m->taghash, t))-1;
-}
-
-/* ------------------------------------------------------------ */
-static ptrdiff_t register_tag(model_pt m, char *t)
-{
-  ptrdiff_t i=find_tag(m, t);
- 
-  if (i<0) 
-    { 
-      t=strdup(t); 
-      i=array_add(m->tags, t);
-      hash_put(m->taghash, t, (void *)(i+1));
-    }
-  return i;
-}
 
 /* ------------------------------------------------------------ */
 static void read_dictionary_file(globals_pt g, model_pt m)
@@ -327,9 +300,9 @@ static void read_dictionary_file(globals_pt g, model_pt m)
       for (s=strtok(s, " \t"), s=strtok(NULL, " \t");
 	   s;
 	   s=strtok(NULL, " \t"), s=strtok(NULL, " \t"))
-	{ (void)register_tag(m, s); }
+	{ (void)iregister_add_name(m->tags, s); }
     }
-  not=array_count(m->tags);
+  not=iregister_get_length(m->tags);
 
   /* rewind file */
   if (fseek(f, 0, SEEK_SET)) { error("can't rewind file \"%s\"\n", g->df); }
@@ -353,7 +326,7 @@ static void read_dictionary_file(globals_pt g, model_pt m)
       wd->defaulttag=-1;
       for (b[0]='*', b[1]='\0', s=strtok(NULL, " \t"); s;  s=strtok(NULL, " \t"))
 	{
-	  ptrdiff_t ti=find_tag(m, s);
+	  ptrdiff_t ti=iregister_get_index(m->tags, s);
 	  
 	  if (ti<0)
 	    { error("invalid tag \"%s\" (%s:%zd)\n", s, g->df, lno); }
@@ -410,9 +383,9 @@ static feature_pt parse_feature(model_pt m, char *t)
 }
 
 /* ------------------------------------------------------------ */
-static ptrdiff_t find_feature_value(feature_pt f, char *s)
+static ptrdiff_t find_feature_value(feature_pt f, const char *s)
 {
-  ptrdiff_t fi=((ptrdiff_t)hash_get(f->v2i, s))-1;
+	ptrdiff_t fi=((ptrdiff_t)hash_get(f->v2i, (char *)s))-1;
   DEBUG(3, "find_feature_value %s %s ==> %td\n", f->string, s, fi); 
   return fi;
 }
@@ -445,7 +418,7 @@ static size_t find_feature_value_from_sentence(model_pt m, feature_pt f, char **
   switch (f->type)
     {
     case FT_TAG:
-      return find_feature_value(f, array_get(m->tags, ts[rp]));
+      return find_feature_value(f, iregister_get_name(m->tags, ts[rp]));
     case FT_CLASS:
       return !w ? -1 : find_feature_value(f, w->aclass);
     case FT_WORD:
@@ -500,7 +473,7 @@ static size_t find_feature_value_from_sentence(model_pt m, feature_pt f, char **
 static void prune_wtree(model_pt m, wtree_pt t)
 {
   size_t i;
-  size_t not=array_count(m->tags);
+  size_t not=iregister_get_length(m->tags);
 
   if (!t) { return; }
   for (i=0; i<array_count(t->children); i++)
@@ -580,7 +553,7 @@ static wtree_pt read_wtree(model_pt m, char *fname)
       array_set(mom->children, i, wt);
       for (t=strtok(NULL, " \t"); t; t=strtok(NULL, " \t"))
 	{
-	  size_t c, ti=register_tag(m, t);
+	  size_t c, ti=iregister_add_name(m->tags, t);
 
 	  /* leaf node */
 	  t=strtok(NULL, " \t");
@@ -629,7 +602,7 @@ void print_wtree(wtree_pt t, int indent)
 /* ------------------------------------------------------------ */
 static void tagging(model_pt m)
 {
-  size_t not=array_count(m->tags), nop=0;
+  size_t not=iregister_get_length(m->tags), nop=0;
   FILE *f= g->rf ? try_to_open(g->rf, "r") : stdin;
   char **words=NULL;
   int *tags=NULL;
@@ -678,19 +651,19 @@ static void tagging(model_pt m)
 	      {
 		size_t j;
 		report(4, "  current node %p %td %s :::",
-		       tree, tree->defaulttag, (char *)array_get(m->tags, tree->defaulttag));
+		       tree, tree->defaulttag, (char *)iregister_get_name(m->tags, tree->defaulttag));
 		for (j=0; j<not; j++)
 		  {
 		    if (tree->tagcount[j]<=0) { continue; }
-		    report(-4, " %s:%d", (char *)array_get(m->tags, j), tree->tagcount[j]);
+		    report(-4, " %s:%d", (char *)iregister_get_name(m->tags, j), tree->tagcount[j]);
 		  }
 		report(-4, "\n");
 	      }
 	    }
 	  tags[i]=tree->defaulttag;
 	  if (i>0) { printf(" "); }
-	  printf("%s %s", word, (char *)array_get(m->tags, tags[i]));
-	  report(4, "OUT: %s %s\n", word, (char *)array_get(m->tags, tags[i]));
+	  printf("%s %s", word, (char *)iregister_get_name(m->tags, tags[i]));
+	  report(4, "OUT: %s %s\n", word, (char *)iregister_get_name(m->tags, tags[i]));
 	}
       printf("\n");
     }
@@ -702,7 +675,7 @@ static void tagging(model_pt m)
 void testing(model_pt m)
 {
   char s[4000];
-  size_t not=array_count(m->tags), i;
+  size_t not=iregister_get_length(m->tags), i;
   
   report(-1, "Enter word followed by features values.\n");
   while (fgets(s, 1000, stdin))
@@ -710,7 +683,7 @@ void testing(model_pt m)
       char *w=strtok(s, " \t\n");
       word_pt wd=hash_get(m->dictionary, w);
       wtree_pt t= wd ? m->known : m->unknown;
-      if (wd) { report(-1, "word %s defaulttag %td %s\n", w, wd->defaulttag, (char *)array_get(m->tags, wd->defaulttag)); }
+      if (wd) { report(-1, "word %s defaulttag %td %s\n", w, wd->defaulttag, (char *)iregister_get_name(m->tags, wd->defaulttag)); }
       while ((w=strtok(NULL, " \t\n")))
 	{
 	  feature_pt f=t->feature;
@@ -719,11 +692,11 @@ void testing(model_pt m)
 	  t=(wtree_pt)array_get(t->children, fi);
 	  if (!t) { report(1, "can't find child for %zd, breaking out\n", fi); break; }
 	  report(1, "current node %p %td %s :::",
-		 t, t->defaulttag, (char *)array_get(m->tags, t->defaulttag));
+		 t, t->defaulttag, (char *)iregister_get_name(m->tags, t->defaulttag));
 	  for (i=0; i<not; i++)
 	    {
 	      if (t->tagcount[i]>0)
-		{ report(-1, " %s:%d", (char *)array_get(m->tags, i), t->tagcount[i]); }
+		{ report(-1, " %s:%d", (char *)iregister_get_name(m->tags, i), t->tagcount[i]); }
 	    }
 	  report(-1, "\n");
 	}
