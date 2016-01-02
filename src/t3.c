@@ -116,9 +116,6 @@ typedef struct globals_s
   size_t zuetp; /* zero undefined empirical transition probs */
   double theta; /* suffix backoff weight */
   double lambda[3]; /* transition probs smoothing weights */
-  sregister_pt strings;
-  char* buffer;
-  size_t buffer_size;
 } globals_t;
 typedef globals_t *globals_pt;
 
@@ -158,6 +155,7 @@ typedef struct model_s
   trie_pt upper_trie; /* suffix trie for uppercase words */
   size_t lc_count;
   size_t uc_count;
+  sregister_pt strings;
 } model_t;
 typedef model_t *model_pt;
 
@@ -203,9 +201,6 @@ globals_pt new_globals(globals_pt old)
   g->zuetp=0;
   g->theta=-1.0;
   g->lambda[0]=g->lambda[1]=g->lambda[2]=-1.0;
-  g->buffer = NULL;
-  g->buffer_size = 0;
-  
   return g;
 }
 
@@ -466,33 +461,35 @@ int ngram_index(size_t n, size_t s, int t1, int t2, int t3)
 }
 
 /* ------------------------------------------------------------ */
-void read_ngram_file(globals_pt g, model_pt m)
+void read_ngram_file(const char* fn, model_pt m)
 {
-  FILE *f=try_to_open(g->mf, "r");
+  FILE *f=try_to_open(fn, "r");
   size_t lno, not;
   int t[3]={0, 0, 0};
   size_t i;
   size_t size;
   ssize_t r;
   char *s;
+  char *buf = NULL;
+  size_t n = 0;
   
   m->tags=iregister_new(128);
   /* tag 0 is special: begin of sentence & end of sentence */
   iregister_add_unregistered_name(m->tags, "*BOUNDARY*");
   lno=-1;
-  while ((r = readline(&(g->buffer),(&g->buffer_size),f)) != -1)
+  while ((r = readline(&buf,&n,f)) != -1)
     {
-      s = g->buffer;
+      s = buf;
       lno++;
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       if(r == 0) { continue; }
       if (s[0]=='\t') { continue; }
       s=strtok(s, " \t");
-      if (!s) { error("can't find tag in %s:%d\n", g->mf, lno); }
+      if (!s) { error("can't find tag in %s:%d\n", fn, lno); }
       iregister_add_name(m->tags, s);
     }
   not=iregister_get_length(m->tags);
-  report(2, "found %d tags in \"%s\"\n", not-1, g->mf);
+  report(2, "found %d tags in \"%s\"\n", not-1, fn);
 
   size=sizeof(int);
   for (i=0; i<3; i++)
@@ -505,32 +502,37 @@ void read_ngram_file(globals_pt g, model_pt m)
     }
 
   /* reset file position */
-  if (fseek(f, 0, SEEK_SET)) { error("can't rewind file \"%s\"\n", g->mf); }
+  if (fseek(f, 0, SEEK_SET)) { error("can't rewind file \"%s\"\n", fn); }
 
   lno=-1;
-  while ((r = readline(&(g->buffer),(&g->buffer_size),f)) != -1)
+  while ((r = readline(&buf,&n,f)) != -1)
     {
-      s = g->buffer;
+      s = buf;
       lno++;
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       if(r == 0) { continue; }
       size_t cnt;
       
       for (i=0; *s=='\t'; i++, s++) { /* nada */ }
-      if (i>2) { error("parse error (too many tabs) (%s:%d)\n", g->mf, lno); }
+      if (i>2) { error("parse error (too many tabs) (%s:%d)\n", fn, lno); }
       s=strtok(s, " \t");
-      if (!s) { error("can't find tag (%s:%d)\n", g->mf, lno); }
+      if (!s) { error("can't find tag (%s:%d)\n", fn, lno); }
       t[i]=iregister_get_index(m->tags, s);
-      if (t[i]<0) { error("unknown tag \"%s\" (%s:%d)\n", s, g->mf, lno); }
+      if (t[i]<0) { error("unknown tag \"%s\" (%s:%d)\n", s, fn, lno); }
       s=strtok(NULL, " \t");
-      if (!s) { error("can't find count (%s:%d)\n", g->mf, lno); }
-      if (1!=sscanf(s, "%zd", &cnt)) { error("can't read count (%s:%zd)\n", g->mf, lno); }
+      if (!s) { error("can't find count (%s:%d)\n", fn, lno); }
+      if (1!=sscanf(s, "%zd", &cnt)) { error("can't read count (%s:%zd)\n", fn, lno); }
       m->count[i][ ngram_index(i, not, t[0], t[1], t[2])  ]=cnt;
       m->type[i]++;
       m->token[i]+=cnt;
     }
   report(2, "read %d/%d uni-, %d/%d bi-, and %d/%d trigram count (type/token)\n",
 	 m->type[0], m->token[0], m->type[1], m->token[1], m->type[2], m->token[2]);
+  if(buf!=NULL){
+    free(buf);
+    buf = NULL;
+    n = 0;
+  }
   fclose(f);
 }
 
@@ -853,20 +855,22 @@ void compute_transition_probs(globals_pt g, model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-void read_dictionary_file(globals_pt g, model_pt m)
+void read_dictionary_file(const char*fn, model_pt m)
 {
-  FILE *f=try_to_open(g->df, "r");
+  FILE *f=try_to_open(fn, "r");
   char *s, *rs;
   size_t lno, no_token=0;
   size_t not=iregister_get_length(m->tags);
   ssize_t r;
+  char *buf = NULL;
+  size_t n = 0;
   
   m->dictionary=hash_new(5000, .5, hash_string_hash, hash_string_equal);
 
   lno=0;
-  while ((r = readline(&(g->buffer),(&g->buffer_size),f)) != -1)
+  while ((r = readline(&buf,&n,f)) != -1)
     {
-      s = g->buffer;
+      s = buf;
       lno++;
       if(r==0) { continue; }
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
@@ -874,13 +878,13 @@ void read_dictionary_file(globals_pt g, model_pt m)
       word_pt wd, old;
       
       s=tokenizer(s, " \t");
-      if (!s) { report(1, "can't find word (%s:%d)\n", g->df, lno); continue; }
-      rs=(char*)sregister_get(g->strings,s);
+      if (!s) { report(1, "can't find word (%s:%d)\n", fn, lno); continue; }
+      rs=(char*)sregister_get(m->strings,s);
       wd=new_word(rs, 0, not);
       old=hash_put(m->dictionary, rs, wd);
       if (old)
 	{
-	  report(1, "duplicate dictionary entry \"%s\" (%s:%d)\n", s, g->df, lno);
+	  report(1, "duplicate dictionary entry \"%s\" (%s:%d)\n", s, fn, lno);
 	  delete_word(old);
 	}
       for (s=tokenizer(NULL, " \t"); s;  s=tokenizer(NULL, " \t"))
@@ -888,10 +892,10 @@ void read_dictionary_file(globals_pt g, model_pt m)
 	  ptrdiff_t fti, ti=iregister_get_index(m->tags, s);
 	  
 	  if (ti<0)
-	    { report(0, "invalid tag \"%s\" (%s:%d)\n", s, g->df, lno); continue; }
+	    { report(0, "invalid tag \"%s\" (%s:%d)\n", s, fn, lno); continue; }
 	  s=tokenizer(NULL, " \t");
 	  if (!s || 1!=sscanf(s, "%zd", &cnt))
-	    { report(1, "can't find tag count (%s:%d)\n", g->df, lno); continue; }
+	    { report(1, "can't find tag count (%s:%d)\n", fn, lno); continue; }
 	  wd->count+=cnt;
 	  wd->tagcount[ti]=cnt;
 	  fti=m->count[0][ ngram_index(0, not, ti, -1, -1) ];
@@ -903,6 +907,11 @@ void read_dictionary_file(globals_pt g, model_pt m)
     }
   report(2, "read %d/%d entries (type/token) from dictionary\n",
 	 hash_size(m->dictionary), no_token);
+  if(buf!=NULL){
+    free(buf);
+    buf = NULL;
+    n = 0;
+  }
   fclose(f);
 }
 
@@ -1265,17 +1274,19 @@ void forward_backward(model_pt m, array_pt words, array_pt tags)
 #endif
 
 /* ------------------------------------------------------------ */
-void debugging(globals_pt g, model_pt m)
+void debugging(model_pt m)
 {
   size_t not=iregister_get_length(m->tags);
   int ts[3]={-1, -1, -1};
   char *s;
   ssize_t r;
+  char *buf = NULL;
+  size_t n = 0;
 
   report(-1, "Entering debug mode...\n");
-  while ((r = readline(&(g->buffer),(&g->buffer_size),stdin)) != -1)
+  while ((r = readline(&buf,&n,stdin)) != -1)
     {
-      s = g->buffer;
+      s = buf;
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       char *t;
       size_t i, j, mode;
@@ -1352,6 +1363,11 @@ void debugging(globals_pt g, model_pt m)
 	    }
 	}
     }
+  if(buf!=NULL){
+    free(buf);
+    buf = NULL;
+    n = 0;
+  }
 }
 
 /* ------------------------------------------------------------ */
@@ -1410,39 +1426,48 @@ void tag_sentence(globals_pt g, model_pt m, array_pt words, array_pt tags, char 
 }
 
 /* ------------------------------------------------------------ */
-void tagging(globals_pt g, model_pt m)
+void tagging(const char* fn, globals_pt g, model_pt m)
 {
-  FILE *f= g->rf ? try_to_open(g->rf, "r") : stdin;  
+  FILE *f= fn ? try_to_open(fn, "r") : stdin;  
   array_pt words=array_new(128), tags=array_new(128);
   char *s;
   ssize_t r;
+  char *buf = NULL;
+  size_t n = 0;
 
   if (g->bmode>=0 && !setvbuf(f, NULL, g->bmode, 0))
     { report(0, "setvbuf error: %s\n", strerror(errno)); }
-  while ((r = readline(&(g->buffer),(&g->buffer_size),f)) != -1)
+  while ((r = readline(&buf,&n,f)) != -1)
     {
-      s = g->buffer;
+      s = buf;
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       tag_sentence(g, m, words, tags, s);
     }
   array_free(words); array_free(tags);
-  if (g->rf) {
+  if(buf!=NULL){
+    free(buf);
+    buf = NULL;
+    n = 0;
+  }
+  if (fn) {
     fclose(f);
   }
 }
 
 /* ------------------------------------------------------------ */
-void testing(globals_pt g, model_pt m)
+void testing(const char* fn, globals_pt g, model_pt m)
 {
-  FILE *f= g->rf ? try_to_open(g->rf, "r") : stdin;  
+  FILE *f= fn ? try_to_open(fn, "r") : stdin;  
   array_pt words=array_new(128), tags=array_new(128), refs=array_new(128);
   char *l;
   ssize_t r;
   size_t pos=0, neg=0;
+  char *buf = NULL;
+  size_t n = 0;
   
-  while ((r = readline(&(g->buffer),(&g->buffer_size),f)) != -1)
+  while ((r = readline(&buf,&n,f)) != -1)
     {
-      l = g->buffer;
+      l = buf;
       if (r>0 && l[r-1]=='\n') l[r-1] = '\0';
       char *t;
       size_t i;
@@ -1487,6 +1512,14 @@ void testing(globals_pt g, model_pt m)
   array_free(words); array_free(tags); array_free(refs);
   report(0, "%d (%d+%d) words tagged, accuracy %7.3f%%\n",
 	 pos+neg, pos, neg, 100.0*(double)pos/(double)(pos+neg));
+  if(buf!=NULL){
+    free(buf);
+    buf = NULL;
+    n = 0;
+  }
+  if (fn) {
+    fclose(f);
+  }
 }
 
 
@@ -1550,21 +1583,21 @@ int main(int argc, char **argv)
 
   globals_pt g=new_globals(NULL);
   g->cmd=strdup(acopost_basename(argv[0], NULL));
-  g->strings = sregister_new(500);
+  m->strings = sregister_new(500);
   get_options(g, argc, argv);
 
   report(1, "\n");
   report(1, "%s\n", banner);
   report(1, "\n");
 
-  read_ngram_file(g, m);
+  read_ngram_file(g->mf, m);
   compute_counts_for_boundary(m);
 
   if (g->lambda[0]<0.0) { compute_lambdas(m); }
   else { int i; for (i=0; i<3; i++) { m->lambda[i]=g->lambda[i]; } }
   compute_transition_probs(g, m);
 
-  read_dictionary_file(g, m);
+  read_dictionary_file(g->df, m);
   if (g->theta<0.0) { compute_theta(g, m); }
   else { m->theta=g->theta; }
   build_suffix_trie(g, m);
@@ -1572,10 +1605,10 @@ int main(int argc, char **argv)
 
   switch (g->mode)
     {
-    case 0: tagging(g, m); break;
-    case 1: testing(g, m); break;
+    case 0: tagging(g->rf, g, m); break;
+    case 1: testing(g->rf, g, m); break;
     case 7: dump_transition_probs(m); break; 
-    case 8: debugging(g, m); break; 
+    case 8: debugging(m); break; 
 /*    case 9: sleep(30); break;*/
     default: report(0, "unknown mode of operation %d\n", g->mode);
     }
@@ -1586,14 +1619,7 @@ int main(int argc, char **argv)
   delete_globals(g);
 
   /* Free strings register */
-  sregister_delete(g->strings);
-  /* Free the buffer memory */
-  if(g->buffer) {
-    free(g->buffer);
-    g->buffer = NULL;
-    g->buffer_size=0;
-  }
-  
+  sregister_delete(m->strings);
   exit(0);
 }
 
