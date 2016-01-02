@@ -162,7 +162,7 @@ int intcmp(const void *ip, const void *jp)
 }
 
 /* ------------------------------------------------------------ */
-FILE *try_to_open(char *name, char *mode)
+FILE *try_to_open(const char *name, char *mode)
 {
   FILE *f;
 
