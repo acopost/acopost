@@ -82,7 +82,7 @@ int intcmp(const void *ip, const void *jp);
    - name: filename
    - mode: open mode
 */
-extern FILE *try_to_open(char *name, char *mode);
+extern FILE *try_to_open(const char *name, char *mode);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    returns pointer to single internal static buffer that
