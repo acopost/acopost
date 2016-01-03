@@ -108,12 +108,12 @@ typedef struct globals_s
   char *mf;     /* model file name */   
   char *df;     /* dictionary file name */
   char *rf;     /* name of file to tag/test */
-  size_t bw;    /* beam width */
   size_t rwt;   /* rare word threshold */
   size_t msl;   /* max. suffix length */
   size_t stcs;  /* use one or two (case-sensitive) suffix trees */
   size_t stics; /* case sensitive internal in suffix trie */
   size_t zuetp; /* zero undefined empirical transition probs */
+  size_t bw;    /* beam width */
   double theta; /* suffix backoff weight */
   double lambda[3]; /* transition probs smoothing weights */
 } globals_t;
@@ -144,12 +144,13 @@ typedef word_t *word_pt;
 typedef struct model_s
 {
   iregister_pt tags;  /* lookup table tags */
-  double theta;       /* standard deviation of unconditioned ML probs */
   prob_t *tp;         /* smoothed transition probs */
   int *count[3];      /* uni-, bi- and trigram counts */
   int type[3];        /* uni-, bi- and trigram type counts */
   int token[3];       /* uni-, bi- and trigram token counts */
+  double theta;       /* standard deviation of unconditioned ML probs */
   double lambda[3];   /* lambda_1 - _3 for trigram interpolation */
+  size_t bw;    /* beam width */
   hash_pt dictionary; /* dictionary: string->array */ 
   trie_pt lower_trie; /* suffix trie for all/lowercase words */
   trie_pt upper_trie; /* suffix trie for uppercase words */
@@ -1057,7 +1058,7 @@ prob_t *get_lexical_probs(model_pt m, char *s)
   - When finished, the traverse b[][][] and a[][][] and enter
     infos in probs.
 */
-void viterbi(globals_pt g, model_pt m, array_pt words, array_pt tags)
+void viterbi(model_pt m, array_pt words, array_pt tags)
 {
   int i, j, k, l, cai, nai=0;
   size_t not=iregister_get_length(m->tags);
@@ -1105,7 +1106,7 @@ void viterbi(globals_pt g, model_pt m, array_pt words, array_pt tags)
 	{ for (k=0; k<not; k++) { a[nai][j][k]=-MAXPROB; } }
 
       /* TODO: precompute log(g->bw) */
-      if (g->bw==0) { max_a=-MAXPROB; } else { max_a-=log((prob_t)g->bw); }
+      if (m->bw==0) { max_a=-MAXPROB; } else { max_a-=log((prob_t)m->bw); }
       for (l=0; l<not; l++)
 	{
 	  if (lp[l]==-MAXPROB) { continue; }
@@ -1406,14 +1407,14 @@ void dump_transition_probs(model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-void tag_sentence(globals_pt g, model_pt m, array_pt words, array_pt tags, char *l)
+void tag_sentence(model_pt m, array_pt words, array_pt tags, char *l)
 {
   char *t;
   size_t i;
   array_clear(words); array_clear(tags);
   for (t=strtok(l, " \t"); t; t=strtok(NULL, " \t"))
     { array_add(words, t); }
-  viterbi(g, m, words, tags);
+  viterbi(m, words, tags);
   for (i=0; i<array_count(words); i++)
     {
       size_t ti=(size_t)array_get(tags, i);
@@ -1441,7 +1442,7 @@ void tagging(const char* fn, globals_pt g, model_pt m)
     {
       s = buf;
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
-      tag_sentence(g, m, words, tags, s);
+      tag_sentence(m, words, tags, s);
     }
   array_free(words); array_free(tags);
   if(buf!=NULL){
@@ -1455,7 +1456,7 @@ void tagging(const char* fn, globals_pt g, model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-void testing(const char* fn, globals_pt g, model_pt m)
+void testing(const char* fn, model_pt m)
 {
   FILE *f= fn ? try_to_open(fn, "r") : stdin;  
   array_pt words=array_new(128), tags=array_new(128), refs=array_new(128);
@@ -1484,7 +1485,7 @@ void testing(const char* fn, globals_pt g, model_pt m)
 	    }
 	}
       if (array_count(words)==0) { continue; }
-      viterbi(g, m, words, tags);
+      viterbi(m, words, tags);
       for (i=0; i<array_count(words); i++)
 	{
 	  size_t guess=(size_t)array_get(tags, i);
@@ -1597,6 +1598,8 @@ int main(int argc, char **argv)
   else { int i; for (i=0; i<3; i++) { m->lambda[i]=g->lambda[i]; } }
   compute_transition_probs(g, m);
 
+  m->bw = g->bw;
+
   read_dictionary_file(g->df, m);
   if (g->theta<0.0) { compute_theta(g, m); }
   else { m->theta=g->theta; }
@@ -1606,7 +1609,7 @@ int main(int argc, char **argv)
   switch (g->mode)
     {
     case 0: tagging(g->rf, g, m); break;
-    case 1: testing(g->rf, g, m); break;
+    case 1: testing(g->rf, m); break;
     case 7: dump_transition_probs(m); break; 
     case 8: debugging(m); break; 
 /*    case 9: sleep(30); break;*/
