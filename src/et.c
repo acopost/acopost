@@ -38,21 +38,20 @@
 /* ------------------------------------------------------------ */
 #include "config-common.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
-#include <getopt.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <errno.h>
+#include <unistd.h>
 #include <string.h>
 #ifdef HAVE_STRINGS_H
 #include <strings.h> /* strtok */
 #endif
-#include "mem.h"
-#include "array.h"
+#include <math.h>
+#include <errno.h>
+#include <getopt.h>
 #include "hash.h"
+#include "array.h"
 #include "util.h"
+#include "mem.h"
 #include "sregister.h"
 #include "iregister.h"
 
@@ -73,24 +72,23 @@
 #define MODE_TAG 1
 #define MODE_TEST 2
 
-typedef struct globals_s
-{
-  int mode;
-  char *cmd;    /* command name */   
-  char *kf;     /* wtree file for known words */   
-  char *uf;     /* wtree file for unknown words */   
-  char *df;     /* dictionary file name */
-  char *rf;     /* name of file to tag/test */
-  sregister_pt strings;
-} globals_t;
-typedef globals_t *globals_pt;
-
 typedef struct option_s
 {
   char ch;
   char *usage;
 } option_t;
 typedef option_t *option_pt;
+
+typedef struct globals_s
+{
+  int mode;     /* mode: tagging, training, testing */
+  char *cmd;    /* command name */   
+  char *kf;     /* wtree file for known words */
+  char *uf;     /* wtree file for unknown words */
+  char *df;     /* dictionary file name */
+  char *rf;     /* name of file to tag/test */
+} globals_t;
+typedef globals_t *globals_pt;
 
 #define FT_TAG 1
 #define FT_CLASS 2
@@ -135,8 +133,8 @@ typedef struct word_s
 {
   char *string;      /* grapheme */
   size_t count;      /* total number of occurances */
-  ptrdiff_t defaulttag;    /* most frequent tag index */
   int *tagcount;     /* maps tag index -> no. of occurances */
+  ptrdiff_t defaulttag;    /* most frequent tag index */
   char *aclass;      /* ambiguity class */
 } word_t;
 typedef word_t *word_pt;
@@ -150,22 +148,20 @@ typedef struct model_s
   hash_pt dictionary; /* dictionary: string->int (best tag) */
   wtree_pt known;     /* weighted tree for known words */
   wtree_pt unknown;   /* weighted tree for known words */
+  sregister_pt strings;
 } model_t;
 typedef model_t *model_pt;
 
 /* ------------------------------------------------------------ */
-/* ------------------------------------------------------------ */
 char *banner=
 "Example-based Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
 
-globals_pt g;
-
 option_t ops[]={
+  { 't', "-t    test mode" },
   { 'v', "-v v  verbosity [1]" },
   { '\0', NULL },
 };
 
-/* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 static globals_pt new_globals(globals_pt old)
 {
@@ -185,20 +181,18 @@ static model_pt new_model()
   model_pt m=(model_pt)mem_malloc(sizeof(model_t));
   memset(m, 0, sizeof(model_t));
 
-  m->tags=iregister_new(128);
-
   m->features=array_new(32);
 
   return m;
 }
 
 /* ------------------------------------------------------------ */
-static word_pt new_word(char *s, size_t not)
+static word_pt new_word(char *s, size_t cnt, size_t not)
 {
   word_pt w=(word_pt)mem_malloc(sizeof(word_t));
   
   w->string=s;
-  w->count=0;
+  w->count=cnt;
   w->tagcount=(int *)mem_malloc(not*sizeof(int));
   memset(w->tagcount, 0, not*sizeof(int));
 
@@ -226,10 +220,9 @@ static feature_pt new_feature(void)
 }
 
 /* ------------------------------------------------------------ */
-static wtree_pt new_wtree(model_pt m)
+static wtree_pt new_wtree(size_t not)
 {
   static char *foo42="foo42";
-  size_t not=iregister_get_length(m->tags);
   wtree_pt t=(wtree_pt)mem_malloc(sizeof(wtree_t));
   memset(t, 0, sizeof(wtree_t));
 
@@ -242,11 +235,11 @@ static wtree_pt new_wtree(model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-static void usage(void)
+static void usage(globals_pt g)
 {
   size_t i;
   report(-1, "\n%s\n\n", banner);
-  report(-1, "Usage: %s OPTIONS knownwtree unknownwtree dictionary [inputfile]\n", g->cmd);
+  report(-1, "Usage: %s OPTIONS knownwtree unknownwtree dictionaryfile [inputfile]\n", g->cmd);
   report(-1, "where OPTIONS can be\n\n");
   for (i=0; ops[i].usage; i++)
     { report(-1, "  %s\n", ops[i].usage); }
@@ -275,7 +268,7 @@ static void get_options(globals_pt g, int argc, char **argv)
 	}
     }
 
-  if (optind+2>=argc) { usage(); error("too few arguments\n"); }
+  if (optind+2>=argc) { usage(g); error("too few arguments\n"); }
   g->kf=strdup(argv[optind]);
   g->uf=strdup(argv[optind+1]);
   g->df=strdup(argv[optind+2]);
@@ -285,65 +278,69 @@ static void get_options(globals_pt g, int argc, char **argv)
 
 
 /* ------------------------------------------------------------ */
-static void read_dictionary_file(globals_pt g, model_pt m)
+static void read_dictionary_file(const char*fn, model_pt m)
 {
-  FILE *f=try_to_open(g->df, "r");
+  FILE *f=try_to_open(fn, "r");
   char *s;
 #define BLEN 8000
   char b[BLEN];
-  size_t lno, not, no_token=0;
+  size_t lno, not;
+  size_t no_token=0;
   
-  m->dictionary=hash_new(5000, .5, hash_string_hash, hash_string_equal);
   /* first pass through file: just get the tag */
+  m->tags=iregister_new(128);
   for (s=freadline(f); s; s=freadline(f)) 
     {
       for (s=strtok(s, " \t"), s=strtok(NULL, " \t");
 	   s;
 	   s=strtok(NULL, " \t"), s=strtok(NULL, " \t"))
-	{ (void)iregister_add_name(m->tags, s); }
+	{ iregister_add_name(m->tags, s); }
     }
   not=iregister_get_length(m->tags);
+  report(2, "found %d tags in \"%s\"\n", not-1, fn);
 
   /* rewind file */
-  if (fseek(f, 0, SEEK_SET)) { error("can't rewind file \"%s\"\n", g->df); }
+  if (fseek(f, 0, SEEK_SET)) { error("can't rewind file \"%s\"\n", fn); }
 
   /* second pass through file: collect details */
+  m->dictionary=hash_new(5000, .5, hash_string_hash, hash_string_equal);
   for (lno=1, s=freadline(f); s; lno++, s=freadline(f)) 
     {
       size_t cnt;
       word_pt wd, old;
       
       s=strtok(s, " \t");
-      if (!s) { report(1, "can't find word (%s:%zd)\n", g->df, lno); continue; }
-      s=(char*)sregister_get(g->strings, s);
-      wd=new_word(s, not);
+      if (!s) { report(1, "can't find word (%s:%d)\n", fn, lno); continue; }
+      s=(char*)sregister_get(m->strings,s);
+      wd=new_word(s, 0, not);
       old=hash_put(m->dictionary, s, wd);
       if (old)
 	{
-	  report(1, "duplicate dictionary entry \"%s\" (%s:%zd)\n", s, g->df, lno);
+	  report(1, "duplicate dictionary entry \"%s\" (%s:%d)\n", s, fn, lno);
 	  delete_word(old);
 	}
       wd->defaulttag=-1;
-      for (b[0]='*', b[1]='\0', s=strtok(NULL, " \t"); s;  s=strtok(NULL, " \t"))
+      b[0]='*', b[1]='\0';
+      for (s=strtok(NULL, " \t"); s;  s=strtok(NULL, " \t"))
 	{
 	  ptrdiff_t ti=iregister_get_index(m->tags, s);
 	  
 	  if (ti<0)
-	    { error("invalid tag \"%s\" (%s:%zd)\n", s, g->df, lno); }
+	    { error("invalid tag \"%s\" (%s:%d)\n", s, fn, lno); }
 	  if (strlen(b)+strlen(s)+2>BLEN)
-	    { error("oops, ambiguity class too long (%s:%zd)\n", g->df, lno); }
+	    { error("oops, ambiguity class too long (%s:%d)\n", fn, lno); }
 	  strcat(b, s); strcat(b, "*");
 	  s=strtok(NULL, " \t");
 	  if (!s || 1!=sscanf(s, "%zd", &cnt))
-	    { error("can't find tag count (%s:%zd)\n", g->df, lno); }
-	  wd->tagcount[ti]=cnt;
+	    { error("can't find tag count (%s:%d)\n", fn, lno); }
 	  wd->count+=cnt;
+	  wd->tagcount[ti]=cnt;
 	  if (wd->defaulttag<0) { wd->defaulttag=ti; }
 	}
-      wd->aclass=(char*)sregister_get(g->strings, s);
+      wd->aclass=(char*)sregister_get(m->strings, s);
       no_token+=wd->count;
     }
-  report(2, "read %zd/%zd entries (type/token) from dictionary\n",
+  report(2, "read %d/%d entries (type/token) from dictionary\n",
 	 hash_size(m->dictionary), no_token);
 }
 
@@ -391,12 +388,12 @@ static ptrdiff_t find_feature_value(feature_pt f, const char *s)
 }
 
 /* ------------------------------------------------------------ */
-static size_t register_feature_value(feature_pt f, char *s)
+static size_t register_feature_value(feature_pt f, char *s, sregister_pt strings)
 {
   ptrdiff_t i=find_feature_value(f, s);
   if (i<0)
     {
-      s=(char*)sregister_get(g->strings, s);
+      s=(char*)sregister_get(strings, s);
       i=array_add(f->values, s);
       hash_put(f->v2i, s, (void *)i+1);
     }
@@ -491,12 +488,12 @@ static void prune_wtree(model_pt m, wtree_pt t)
 }
 
 /* ------------------------------------------------------------ */
-static wtree_pt read_wtree(model_pt m, char *fname)
+static wtree_pt read_wtree(model_pt m, const char *fname)
 {
   char *s;
   size_t lno, fno, cl=0, non=1, fos=array_count(m->features);
   FILE *f=try_to_open(fname, "r");
-  wtree_pt root=new_wtree(m);
+  wtree_pt root=new_wtree(iregister_get_length(m->tags));
   wtree_pt *ns;
     
   /* first read list of features */
@@ -540,14 +537,14 @@ static wtree_pt read_wtree(model_pt m, char *fname)
       t=strtok(s, " \t");
       if (!t) { error("%s:%zd: can't read value\n", fname, lno); }
 
-      i=register_feature_value(mom->feature, t);
+      i=register_feature_value(mom->feature, t, m->strings);
       /* i is index of value, wt is current node */
 /*       report(-1, "t=%s l=%zd cl=%zd mom->feature=%s i=%zd\n", t, l, cl, mom->feature->string, i); */
       
       if (i<array_count(mom->children) && array_get(mom->children, i))
 	{ error("%s:%zd: duplicate feature value %zd %zd\n", fname, lno, i, array_count(mom->children)); }
 
-      wt=new_wtree(m);
+      wt=new_wtree(iregister_get_length(m->tags));
       non++;
       if (l<fno) { wt->feature=array_get(m->features, l+fos); }
       array_set(mom->children, i, wt);
@@ -574,12 +571,12 @@ static wtree_pt read_wtree(model_pt m, char *fname)
 }
 
 /* ------------------------------------------------------------ */
-static void read_known_wtree(model_pt m)
-{ m->known=read_wtree(m, g->kf); }
+static void read_known_wtree(const char *fn, model_pt m)
+{ m->known=read_wtree(m, fn); }
 
 /* ------------------------------------------------------------ */
-static void read_unknown_wtree(model_pt m)
-{ m->unknown=read_wtree(m, g->uf); }
+static void read_unknown_wtree(const char *fn, model_pt m)
+{ m->unknown=read_wtree(m, fn); }
 
 /* ------------------------------------------------------------ */
 void print_wtree(wtree_pt t, int indent)
@@ -600,10 +597,10 @@ void print_wtree(wtree_pt t, int indent)
 }
 
 /* ------------------------------------------------------------ */
-static void tagging(model_pt m)
+static void tagging(const char* fn, globals_pt g, model_pt m)
 {
   size_t not=iregister_get_length(m->tags), nop=0;
-  FILE *f= g->rf ? try_to_open(g->rf, "r") : stdin;
+  FILE *f= fn ? try_to_open(fn, "r") : stdin;
   char **words=NULL;
   int *tags=NULL;
   char *s;
@@ -706,32 +703,34 @@ void testing(model_pt m)
 
 /* ------------------------------------------------------------ */
 int main(int argc, char **argv)
-{ 
+{
   model_pt m=new_model();
+
+  globals_pt g=new_globals(NULL);
+  g->cmd=strdup(acopost_basename(argv[0], NULL));
+  m->strings = sregister_new(500);
+  get_options(g, argc, argv);
 
   report(1, "\n");
   report(1, "%s\n", banner);
   report(1, "\n");
 
-  g=new_globals(NULL);
-  g->cmd=strdup(acopost_basename(argv[0], NULL));
-  get_options(g, argc, argv);
+  read_dictionary_file(g->df, m);
 
-  g->strings = sregister_new(500);
-  read_dictionary_file(g, m);
-
-  read_known_wtree(m);
-  read_unknown_wtree(m);
+  read_known_wtree(g->kf, m);
+  read_unknown_wtree(g->uf, m);
 
   switch (g->mode)
     {
-    case MODE_TAG: tagging(m); break;
+    case MODE_TAG: tagging(g->rf, g, m); break;
     case MODE_TEST: testing(m); break;
-    default: error("unknown mode of operation %d\n", g->mode);
+    default: report(0, "unknown mode of operation %d\n", g->mode);
     }
 
+  report(1, "done\n");
+
   /* Free strings register */
-  sregister_delete(g->strings);
+  sregister_delete(m->strings);
   /* Free the memory held by util.c. */
   util_teardown();
   
