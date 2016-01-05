@@ -1081,12 +1081,6 @@ void viterbi(model_pt m, array_pt words, array_pt tags)
 	  for (k = 0; k < not; ++k) {
 		  int *arr = (int*)((void*)intarrs + (k * not * sizeof(int)));
 		  array_set(b2, k, arr);
-		  /* The following is not necessary, and so wastes cycles. */
-		  /*
-		  for (l = 0; l < not; ++l) {
-			  arr[l] = 0;
-		  }
-		  */
 	  }
   }
 
@@ -1445,6 +1439,7 @@ static void tagging(const char* fn, globals_pt g, model_pt m)
     {
       s = buf;
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if (!r) continue;
       tag_sentence(m, words, tags, s);
     }
   array_free(words); array_free(tags);
@@ -1563,6 +1558,9 @@ void delete_model(model_pt m)
   delete_trie(m->lower_trie);
   delete_trie(m->upper_trie);
 
+  /* Free strings register */
+  sregister_delete(m->strings);
+
   /* Delete the model itself. */
   mem_free(m);
 }
@@ -1622,9 +1620,6 @@ int main(int argc, char **argv)
 
   delete_model(m);
   delete_globals(g);
-
-  /* Free strings register */
-  sregister_delete(m->strings);
   exit(0);
 }
 
