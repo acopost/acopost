@@ -259,20 +259,27 @@ char *ftokenizer(FILE *ff, char *sep)
 }
 
 /* ------------------------------------------------------------ */
-char *reverse(char *s)
+char *reverse(const char *s, char**buffer, size_t*n)
 {
-  static int csize=5;
-  static char *b=NULL;
-  int sl=strlen(s);
-  int oldcsize=csize;
+  size_t sl;
   int i;
-  
-  if (!b) { b=(char *)mem_malloc(csize); }
-  for (;csize<sl;csize*=2) { }
-  if (csize!=oldcsize) { b=(char *)mem_realloc(b, csize); }
-  b[sl]='\0';
-  for (i=0;i<sl; i++) { b[i]=s[sl-i-1]; }
-  return b;
+  if(!s) {
+	  return NULL;
+  }
+  sl=strlen(s);
+  if (!*buffer) {
+	  *buffer=(char *)mem_malloc(sl+1);
+	  *n = sl+1;
+  }
+  if (*n<=sl) {
+	  *buffer=(char *)mem_realloc(*buffer, sl+1);
+	  *n = sl+1;
+  }
+  (*buffer)[sl]='\0';
+  for (i=0;i<sl; i++) {
+	  (*buffer)[i]=s[sl-i-1];
+  }
+  return *buffer;
 }
 
 size_t
