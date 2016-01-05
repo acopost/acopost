@@ -192,7 +192,7 @@ char *acopost_basename(char *name, char *s)
 }
 
 /* ------------------------------------------------------------ */
-char *tokenizer(char *s, char *sep)
+char *tokenizer(char *s, const char *sep)
 {
   static char c;
   static char *last=NULL;
@@ -217,7 +217,7 @@ char *tokenizer(char *s, char *sep)
 }
 
 /* ------------------------------------------------------------ */
-char *ftokenizer(FILE *ff, char *sep)
+char *ftokenizer(FILE *ff, const char *sep)
 {
 #define BS (16*1024-1)
   static char b[BS+1];
