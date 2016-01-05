@@ -38,6 +38,9 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <stdlib.h>
+#include <stdio.h>
+
 /* ------------------------------------------------------------ */
 
 /* ------------------------------------------------------------ */
@@ -112,10 +115,9 @@ extern char *ftokenizer(FILE *f, char *sep);
 
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   reverses a string s, returns a static buffer.
-   NOT reentrant
+   reverses a string s, returns a pointer to buffer
 */
-extern char *reverse(char *s);
+char *reverse(const char *s, char**buffer, size_t*n);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    This function is a replacement for POSIX.1-2008 getdelim()
@@ -159,12 +161,12 @@ char mytolower(char);
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    returns length of common prefix
 */
-int common_prefix_length(char *, char *);
+size_t common_prefix_length(const char *, const char *);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    returns length of common suffix
 */
-int common_suffix_length(char *, char *);
+size_t common_suffix_length(const char *, const char *);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    frees the memory held by util.c.
