@@ -1,8 +1,8 @@
 /*
   Trigram POS tagger
-  
+
   Copyright (c) 2001-2002, Ingo Schröder
-  Copyright (c) 2007-2013, ACOPOST Developers Team
+  Copyright (c) 2007-2015, ACOPOST Developers Team
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -66,9 +66,8 @@
 #include <values.h> /* MAXDOUBLE, MAXFLOAT/Linux */
 #endif
 #endif
-#include <errno.h> 
+#include <errno.h>
 #include <getopt.h>
-#include <string.h> /* strerror */
 #include "hash.h"
 #include "array.h"
 #include "util.h"
@@ -134,9 +133,9 @@ typedef trie_t *trie_pt;
 
 typedef struct word_s
 {
-  char *string;
-  size_t count;
-  int *tagcount;
+  char *string;      /* grapheme */
+  size_t count;      /* total number of occurances */
+  int *tagcount;     /* maps tag index -> no. of occurances */
   prob_t *lp;
 } word_t;
 typedef word_t *word_pt;
@@ -184,7 +183,7 @@ option_t ops[]={
 };
 
 /* ------------------------------------------------------------ */
-globals_pt new_globals(globals_pt old)
+static globals_pt new_globals(globals_pt old)
 {
   globals_pt g=(globals_pt)mem_malloc(sizeof(globals_t));
 
@@ -206,7 +205,7 @@ globals_pt new_globals(globals_pt old)
 }
 
 /* ------------------------------------------------------------ */
-model_pt new_model()
+static model_pt new_model()
 {
   model_pt m=(model_pt)mem_malloc(sizeof(model_t));
   memset(m, 0, sizeof(model_t));
@@ -214,7 +213,7 @@ model_pt new_model()
 }
 
 /* ------------------------------------------------------------ */
-word_pt new_word(char *s, size_t cnt, size_t not)
+static word_pt new_word(char *s, size_t cnt, size_t not)
 {
   word_pt w=(word_pt)mem_malloc(sizeof(word_t));
   size_t i;
@@ -230,7 +229,7 @@ word_pt new_word(char *s, size_t cnt, size_t not)
 }
 
 /* ------------------------------------------------------------ */
-void delete_word(word_pt w)
+static void delete_word(word_pt w)
 {
   mem_free(w->tagcount);
   mem_free(w->lp);
@@ -351,7 +350,7 @@ void add_word_to_trie(void *key, void *value, void* gp, void *data)
 
 
 /* ------------------------------------------------------------ */
-void usage(globals_pt g)
+static void usage(globals_pt g)
 {
   size_t i;
   report(-1, "\n%s\n\n", banner);
@@ -363,7 +362,7 @@ void usage(globals_pt g)
 }
 
 /* ------------------------------------------------------------ */
-void get_options(globals_pt g, int argc, char **argv)
+static void get_options(globals_pt g, int argc, char **argv)
 {
   char c;
 
@@ -437,6 +436,9 @@ void get_options(globals_pt g, int argc, char **argv)
 	case 'z':
 	  g->zuetp=1;
 	  break;
+	default:
+	  error("unknown option \"-%c\"\n", c);
+	  break;
 	}
     }
 
@@ -502,7 +504,7 @@ void read_ngram_file(const char* fn, model_pt m)
       m->token[i]=0; 
     }
 
-  /* reset file position */
+  /* rewind file */
   if (fseek(f, 0, SEEK_SET)) { error("can't rewind file \"%s\"\n", fn); }
 
   lno=-1;
@@ -856,7 +858,7 @@ void compute_transition_probs(globals_pt g, model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-void read_dictionary_file(const char*fn, model_pt m)
+static void read_dictionary_file(const char*fn, model_pt m)
 {
   FILE *f=try_to_open(fn, "r");
   char *s, *rs;
@@ -890,7 +892,8 @@ void read_dictionary_file(const char*fn, model_pt m)
 	}
       for (s=tokenizer(NULL, " \t"); s;  s=tokenizer(NULL, " \t"))
 	{
-	  ptrdiff_t fti, ti=iregister_get_index(m->tags, s);
+	  ptrdiff_t fti;
+	  ptrdiff_t ti=iregister_get_index(m->tags, s);
 	  
 	  if (ti<0)
 	    { report(0, "invalid tag \"%s\" (%s:%d)\n", s, fn, lno); continue; }
@@ -1427,7 +1430,7 @@ void tag_sentence(model_pt m, array_pt words, array_pt tags, char *l)
 }
 
 /* ------------------------------------------------------------ */
-void tagging(const char* fn, globals_pt g, model_pt m)
+static void tagging(const char* fn, globals_pt g, model_pt m)
 {
   FILE *f= fn ? try_to_open(fn, "r") : stdin;  
   array_pt words=array_new(128), tags=array_new(128);
@@ -1580,7 +1583,6 @@ void delete_globals(globals_pt g)
 int main(int argc, char **argv)
 {
   model_pt m=new_model();
-  
 
   globals_pt g=new_globals(NULL);
   g->cmd=strdup(acopost_basename(argv[0], NULL));
