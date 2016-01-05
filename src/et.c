@@ -692,6 +692,45 @@ static void tagging(const char* fn, globals_pt g, model_pt m)
 }
 
 /* ------------------------------------------------------------ */
+void delete_model(model_pt m)
+{
+  hash_iterator_pt hi;
+  void *key;
+
+  /* Delete the tags lookup register. */
+  iregister_delete(m->tags);
+
+  /* Delete all words in dictionary. */
+  hi = hash_iterator_new(m->dictionary);
+  while (NULL != (key = hash_iterator_next_key(hi))) {
+    word_pt wd = (word_pt) hash_get(m->dictionary, key);
+    if (wd != NULL) {
+      delete_word(wd);
+    }
+  }
+  hash_iterator_delete(hi);
+
+  /* Delete the dictionary hash map. */
+  hash_delete(m->dictionary);
+
+  /* Free strings register */
+  sregister_delete(m->strings);
+
+  /* Delete the model itself. */
+  mem_free(m);
+}
+
+
+void delete_globals(globals_pt g)
+{
+  free(g->cmd);
+  free(g->kf);
+  free(g->uf);
+  free(g->df);
+  free(g->rf);
+  mem_free(g);
+}
+/* ------------------------------------------------------------ */
 void testing(model_pt m)
 {
   char s[4000];
@@ -752,8 +791,9 @@ int main(int argc, char **argv)
 
   report(1, "done\n");
 
-  /* Free strings register */
-  sregister_delete(m->strings);
+  delete_model(m);
+  delete_globals(g);
+
   /* Free the memory held by util.c. */
   util_teardown();
   
