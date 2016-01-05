@@ -97,21 +97,22 @@ char *acopost_basename(char *name, char *suffix);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    successively returns tokens separated by one or more chars
-   from sep string, not reentrant, temporarily modifies s
+   from sep string, not reentrant, temporarily modifies s,
+   NOT reentrant
    typical use:
    for (t=tokenizer(b, " \t"); t; t=tokenizer(NULL, " \t"))
      { ... }
 */
-extern char *tokenizer(char *s, char *sep);
+char *tokenizer(char *s, const char *sep);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    successively returns tokens separated by one or more chars
    from sep string, NOT reentrant
    typical use:
-   for (t=ftokenizer(f, " \t"); t; t=tokenizer(NULL, " \t"))
+   for (t=ftokenizer(f, " \t"); t; t=ftokenizer(NULL, " \t"))
      { ... }
 */
-extern char *ftokenizer(FILE *f, char *sep);
+char *ftokenizer(FILE *f, const char *sep);
 
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
