@@ -281,20 +281,30 @@ static void get_options(globals_pt g, int argc, char **argv)
 static void read_dictionary_file(const char*fn, model_pt m)
 {
   FILE *f=try_to_open(fn, "r");
-  char *s;
+  char *s, *rs;
 #define BLEN 8000
   char b[BLEN];
   size_t lno, not;
   size_t no_token=0;
+  ssize_t r;
+  char *buf = NULL;
+  size_t n = 0;
   
   /* first pass through file: just get the tag */
   m->tags=iregister_new(128);
-  for (s=freadline(f); s; s=freadline(f)) 
+  lno=-1;
+  while ((r = readline(&buf,&n,f)) != -1)
     {
-      for (s=strtok(s, " \t"), s=strtok(NULL, " \t");
+      s = buf;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
+      for (s=tokenizer(s, " \t"), s=tokenizer(NULL, " \t");
 	   s;
-	   s=strtok(NULL, " \t"), s=strtok(NULL, " \t"))
-	{ iregister_add_name(m->tags, s); }
+	   s=tokenizer(NULL, " \t"), s=tokenizer(NULL, " \t"))
+	{
+      iregister_add_name(m->tags, s);
+        }
     }
   not=iregister_get_length(m->tags);
   report(2, "found %d tags in \"%s\"\n", not-1, fn);
@@ -304,16 +314,22 @@ static void read_dictionary_file(const char*fn, model_pt m)
 
   /* second pass through file: collect details */
   m->dictionary=hash_new(5000, .5, hash_string_hash, hash_string_equal);
-  for (lno=1, s=freadline(f); s; lno++, s=freadline(f)) 
+
+  lno=0;
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      s = buf;
+      lno++;
+      if(r==0) { continue; }
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       size_t cnt;
       word_pt wd, old;
       
-      s=strtok(s, " \t");
+      s=tokenizer(s, " \t");
       if (!s) { report(1, "can't find word (%s:%d)\n", fn, lno); continue; }
-      s=(char*)sregister_get(m->strings,s);
-      wd=new_word(s, 0, not);
-      old=hash_put(m->dictionary, s, wd);
+      rs=(char*)sregister_get(m->strings,s);
+      wd=new_word(rs, 0, not);
+      old=hash_put(m->dictionary, rs, wd);
       if (old)
 	{
 	  report(1, "duplicate dictionary entry \"%s\" (%s:%d)\n", s, fn, lno);
@@ -321,18 +337,18 @@ static void read_dictionary_file(const char*fn, model_pt m)
 	}
       wd->defaulttag=-1;
       b[0]='*', b[1]='\0';
-      for (s=strtok(NULL, " \t"); s;  s=strtok(NULL, " \t"))
+      for (s=tokenizer(NULL, " \t"); s;  s=tokenizer(NULL, " \t"))
 	{
 	  ptrdiff_t ti=iregister_get_index(m->tags, s);
 	  
 	  if (ti<0)
-	    { error("invalid tag \"%s\" (%s:%d)\n", s, fn, lno); }
+	    { report(0, "invalid tag \"%s\" (%s:%d)\n", s, fn, lno); continue; }
 	  if (strlen(b)+strlen(s)+2>BLEN)
 	    { error("oops, ambiguity class too long (%s:%d)\n", fn, lno); }
 	  strcat(b, s); strcat(b, "*");
-	  s=strtok(NULL, " \t");
+	  s=tokenizer(NULL, " \t");
 	  if (!s || 1!=sscanf(s, "%zd", &cnt))
-	    { error("can't find tag count (%s:%d)\n", fn, lno); }
+	    { report(1, "can't find tag count (%s:%d)\n", fn, lno); continue; }
 	  wd->count+=cnt;
 	  wd->tagcount[ti]=cnt;
 	  if (wd->defaulttag<0) { wd->defaulttag=ti; }
@@ -342,6 +358,12 @@ static void read_dictionary_file(const char*fn, model_pt m)
     }
   report(2, "read %d/%d entries (type/token) from dictionary\n",
 	 hash_size(m->dictionary), no_token);
+  if(buf!=NULL){
+    free(buf);
+    buf = NULL;
+    n = 0;
+  }
+  fclose(f);
 }
 
 /* ------------------------------------------------------------ */
