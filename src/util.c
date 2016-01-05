@@ -398,9 +398,9 @@ char *lowercase(char *s)
 }
 
 /* ------------------------------------------------------------ */
-int common_prefix_length(char *s, char *t)
+size_t common_prefix_length(const char *s, const char *t)
 {
-  int c=0;
+  size_t c=0;
   
   if (!s || !t) { return 0; }
   while (*s && *s==*t) { s++; t++; c++; }
@@ -408,11 +408,11 @@ int common_prefix_length(char *s, char *t)
 }
 
 /* ------------------------------------------------------------ */
-int common_suffix_length(char *s, char *t)
+size_t common_suffix_length(const char *s, const char *t)
 {
-  char *a;
-  char *b;
-  int c=0;
+  const char *a;
+  const char *b;
+  size_t c=0;
   
   if (!s || !t || !*s || !*t) { return 0; }
   a=s+strlen(s)-1;
