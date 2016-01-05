@@ -2,7 +2,7 @@
   Example-based Tagger
 
   Copyright (c) 2001-2002, Ingo Schröder
-  Copyright (c) 2007-2015, ACOPOST Developers Team
+  Copyright (c) 2007-2016, ACOPOST Developers Team
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -289,10 +289,11 @@ static void read_dictionary_file(const char*fn, model_pt m)
   ssize_t r;
   char *buf = NULL;
   size_t n = 0;
+  unsigned long tmp;
   
   /* first pass through file: just get the tag */
   m->tags=iregister_new(128);
-  lno=-1;
+  lno=0;
   while ((r = readline(&buf,&n,f)) != -1)
     {
       s = buf;
@@ -322,17 +323,17 @@ static void read_dictionary_file(const char*fn, model_pt m)
       lno++;
       if(r==0) { continue; }
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
-      int cnt;
+      size_t cnt;
       word_pt wd, old;
       
       s=tokenizer(s, " \t");
-      if (!s) { report(1, "can't find word (%s:%d)\n", fn, lno); continue; }
+      if (!s) { report(1, "can't find word (%s:%lu)\n", fn, (unsigned long) lno); continue; }
       rs=(char*)sregister_get(m->strings,s);
       wd=new_word(rs, 0, not);
       old=hash_put(m->dictionary, rs, wd);
       if (old)
 	{
-	  report(1, "duplicate dictionary entry \"%s\" (%s:%d)\n", s, fn, lno);
+	  report(1, "duplicate dictionary entry \"%s\" (%s:%lu)\n", s, fn, (unsigned long) lno);
 	  delete_word(old);
 	}
       wd->defaulttag=-1;
@@ -342,13 +343,14 @@ static void read_dictionary_file(const char*fn, model_pt m)
 	  ptrdiff_t ti=iregister_get_index(m->tags, s);
 	  
 	  if (ti<0)
-	    { report(0, "invalid tag \"%s\" (%s:%d)\n", s, fn, lno); continue; }
+	    { report(0, "invalid tag \"%s\" (%s:%lu)\n", s, fn, (unsigned long) lno); continue; }
 	  if (strlen(b)+strlen(s)+2>BLEN)
-	    { error("oops, ambiguity class too long (%s:%d)\n", fn, lno); }
+	    { error("oops, ambiguity class too long (%s:%lu)\n", fn, (unsigned long) lno); }
 	  strcat(b, s); strcat(b, "*");
 	  s=tokenizer(NULL, " \t");
-	  if (!s || 1!=sscanf(s, "%d", &cnt) || cnt < 0)
-	    { report(1, "can't find tag count (%s:%d)\n", fn, lno); continue; }
+	  if (!s || 1!=sscanf(s, "%lu", &tmp))
+	    { report(1, "can't find tag count (%s:%lu)\n", fn, (unsigned long) lno); continue; }
+	  cnt = tmp;
 	  wd->count+=cnt;
 	  wd->tagcount[ti]=cnt;
 	  if (wd->defaulttag<0) { wd->defaulttag=ti; }
@@ -424,7 +426,7 @@ static size_t register_feature_value(feature_pt f, char *s, sregister_pt strings
 }
 
 /* ------------------------------------------------------------ */
-static size_t find_feature_value_from_sentence(model_pt m, feature_pt f, char **ws, int *ts, ptrdiff_t i, int wno)
+static size_t find_feature_value_from_sentence(model_pt m, feature_pt f, char **ws, int *ts, ptrdiff_t i, size_t wno)
 {
   ptrdiff_t rp=i+f->arg1;  
   word_pt w;
@@ -491,7 +493,7 @@ static size_t find_feature_value_from_sentence(model_pt m, feature_pt f, char **
 /* ------------------------------------------------------------ */
 static void prune_wtree(model_pt m, wtree_pt t)
 {
-  int i;
+  size_t i;
   size_t not=iregister_get_length(m->tags);
 
   if (!t) { return; }
@@ -513,7 +515,7 @@ static void prune_wtree(model_pt m, wtree_pt t)
 static wtree_pt read_wtree(model_pt m, const char *fname)
 {
   char *s;
-  int lno, cl=0, non=1, fos=array_count(m->features);
+  size_t lno, cl=0, non=1, fos=array_count(m->features);
   ssize_t fno;
   FILE *f=try_to_open(fname, "r");
   wtree_pt root=new_wtree(iregister_get_length(m->tags));
@@ -546,7 +548,7 @@ static wtree_pt read_wtree(model_pt m, const char *fname)
   for (cl=1, lno++, s=freadline(f); s; lno++, s=freadline(f))
     {
       char *t;
-      int i, l;
+      size_t i, l;
       wtree_pt mom, wt;
       
       if (!*s) { continue; }
@@ -573,13 +575,13 @@ static wtree_pt read_wtree(model_pt m, const char *fname)
       array_set(mom->children, i, wt);
       for (t=strtok(NULL, " \t"); t; t=strtok(NULL, " \t"))
 	{
-	  int c, ti=iregister_add_name(m->tags, t);
+	  size_t c, ti=iregister_add_name(m->tags, t);
 
 	  /* leaf node */
 	  t=strtok(NULL, " \t");
-	  if (!t) { error("%s:%zd: can't find tag count\n", fname, lno); }
-	  if (1!=sscanf(t, "%d", &c))
-	    { error("%s:%zd: tag count not a number\n", fname, lno); }
+	  if (!t) { error("%s:%lu: can't find tag count\n", fname, (unsigned long) lno); }
+	  if (1!=sscanf(t, "%lu", &c))
+	    { error("%s:%lu: tag count not a number\n", fname, (unsigned long) lno); }
 	  wt->tagcount[ti]=c;
 	  if (c>wt->tagcount[wt->defaulttag]) { wt->defaulttag=ti; }
 	}
@@ -605,13 +607,13 @@ static void read_unknown_wtree(const char *fn, model_pt m)
 void print_wtree(wtree_pt t, int indent)
 {
   feature_pt f=t->feature;
-  int i;
+  size_t i;
   
   for (i=0; i<array_count(t->children); i++)
     {
       wtree_pt son=(wtree_pt)array_get(t->children, i);
       char *v=(char *)array_get(f->values, i);
-      int j;
+      size_t j;
       if (!son) { continue; }
       for (j=0; j<indent; j++) { report(-1, " "); }
       report(-1, "%s\n", v);

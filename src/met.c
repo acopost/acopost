@@ -2,7 +2,7 @@
   Maximum Entropy Tagger
 
   Copyright (c) 2001-2002, Ingo Schröder
-  Copyright (c) 2007-2013, ACOPOST Developers Team
+  Copyright (c) 2007-2016, ACOPOST Developers Team
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -40,25 +40,45 @@
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
-#include <getopt.h>
-#include <time.h>
+#include <unistd.h>
 #include <string.h>
 #ifdef HAVE_STRINGS_H
 #include <strings.h> /* strtok */
 #endif
-#include <stdarg.h>
+#include <math.h>
 #include <errno.h>
+#include <getopt.h>
+#include <stdarg.h>
+#include <time.h>
 #include <sys/time.h>
-#include <unistd.h>
 #include <ctype.h>
-#include "mem.h"
-#include "array.h"
 #include "hash.h"
+#include "array.h"
 #include "util.h"
-#include "gis.h"
+#include "mem.h"
 #include "sregister.h"
+#include "gis.h"
 #include "eqsort.h"
+
+typedef struct option_s
+{
+  char ch;
+  char *usage;
+} option_t;
+typedef option_t *option_pt;
+
+typedef struct globals_s
+{
+  char *cmd;    /* command name */
+  unsigned int rwt;  /* threshold for rare words */
+  int no_w_token;    /* counter of (frequent) words */
+  int no_fw_token;
+  int no_fw_types;
+  sregister_pt strings;
+} globals_t;
+typedef globals_t *globals_pt;
+
+globals_pt g;
 
 /* ------------------------------------------------------------ */
 typedef struct sample_s
@@ -119,13 +139,6 @@ typedef struct invocation_s
 } invocation_t;
 typedef invocation_t *invocation_pt;
 
-typedef struct option_s
-{
-  char character;
-  char *usage;
-} option_t;
-typedef option_t *option_pt;
-
 /* ------------------------------------------------------------ */
 invocation_t ivs[]={
   { 0, "acopost-met", "b:c:d:f:hi:m:np:r:st:v:", "[OPTIONS] model [input]" },
@@ -137,6 +150,11 @@ invocation_t ivs[]={
   { 3, "train", NULL, NULL },
   {0, NULL, NULL},
 };
+
+/* ------------------------------------------------------------ */
+char *banner=
+"Maximum Entropy Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
+
 
 option_t ops[]={
   { 'b', "-b b  beam factor [1000] or n-best width [5]" },
@@ -155,25 +173,6 @@ option_t ops[]={
   { '\0', NULL },
 };
 
-char *banner=
-"Maximum Entropy Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
-
-typedef struct globals_s
-{
-  /* threshold for rare words */
-  unsigned int rwt;
-  /* counter of (frequent) words */
-  int no_w_token;
-  int no_fw_token;
-  int no_fw_types;
-  char *cmd;    /* command name */
-  sregister_pt strings;
-} globals_t;
-typedef globals_t *globals_pt;
-
-globals_pt g;
-
-/* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 static globals_pt new_globals(globals_pt old)
 {
@@ -623,7 +622,7 @@ static void write_model_file(FILE *f, model_pt m)
   array_pt tgs=m->outcomes;
   int i;
   
-  fprintf(f, "MET %d %d %+12.11e\n", array_count(m->outcomes), m->max_pds, m->cf_alpha);
+  fprintf(f, "MET %lu %d %+12.11e\n", (unsigned long) array_count(m->outcomes), m->max_pds, m->cf_alpha);
   for (i=0; i<array_count(pds); i++)
     {
       predicate_pt pd=(predicate_pt)array_get(pds, i);
@@ -1518,7 +1517,7 @@ static void usage(int mode)
   report(-1, "\n%s\n\n%s %s\nwhere OPTIONS can be\n\n", banner, g->cmd, ivs[mode].call);
   for (i=0; ops[i].usage; i++)
     {
-      if (strchr(ivs[mode].opt, ops[i].character))
+      if (strchr(ivs[mode].opt, ops[i].ch))
 	{ report(-1, "  %s\n", ops[i].usage); }
     }
   report(-1, "\n");
