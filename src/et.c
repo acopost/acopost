@@ -353,7 +353,7 @@ static void read_dictionary_file(const char*fn, model_pt m)
 	  wd->tagcount[ti]=cnt;
 	  if (wd->defaulttag<0) { wd->defaulttag=ti; }
 	}
-      wd->aclass=(char*)sregister_get(m->strings, s);
+      wd->aclass=(char*)sregister_get(m->strings, b);
       no_token+=wd->count;
     }
   report(2, "read %d/%d entries (type/token) from dictionary\n",
@@ -513,7 +513,8 @@ static void prune_wtree(model_pt m, wtree_pt t)
 static wtree_pt read_wtree(model_pt m, const char *fname)
 {
   char *s;
-  size_t lno, fno, cl=0, non=1, fos=array_count(m->features);
+  size_t lno, cl=0, non=1, fos=array_count(m->features);
+  ssize_t fno;
   FILE *f=try_to_open(fname, "r");
   wtree_pt root=new_wtree(iregister_get_length(m->tags));
   wtree_pt *ns;
