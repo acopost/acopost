@@ -7,7 +7,7 @@ AM_CFLAGS = -O2
 endif
 
 # default is double
-AM_CFLAGS += -Wall -std=c99 -D_USE_BSD -DT3_PROB_IS_FLOAT
+AM_CFLAGS += -Wall -Wsign-compare -pedantic -std=c99 -D_USE_BSD -DT3_PROB_IS_FLOAT
 
 
 bin_PROGRAMS = acopost-et acopost-met acopost-t3 acopost-tbt
