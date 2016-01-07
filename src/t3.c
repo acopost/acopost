@@ -107,12 +107,12 @@ typedef struct globals_s
   char *mf;     /* model file name */   
   char *df;     /* dictionary file name */
   char *rf;     /* name of file to tag/test */
-  size_t rwt;   /* rare word threshold */
-  size_t msl;   /* max. suffix length */
-  size_t stcs;  /* use one or two (case-sensitive) suffix trees */
-  size_t stics; /* case sensitive internal in suffix trie */
-  size_t zuetp; /* zero undefined empirical transition probs */
-  size_t bw;    /* beam width */
+  int rwt;   /* rare word threshold */
+  int msl;   /* max. suffix length */
+  int stcs;  /* use one or two (case-sensitive) suffix trees */
+  int stics; /* case sensitive internal in suffix trie */
+  int zuetp; /* zero undefined empirical transition probs */
+  int bw;    /* beam width */
   double theta; /* suffix backoff weight */
   double lambda[3]; /* transition probs smoothing weights */
 } globals_t;
@@ -123,7 +123,7 @@ typedef struct trie_s
   size_t children;             /* no of children */
   unsigned char unarychar;  /* if children=1 this is the char to follow */
   struct tries_s *unarynext;/* if children=1 daughter */
-  size_t count;                /* number of word tokens with this suffix */
+  int count;                /* number of word tokens with this suffix */
   int *tagcount;            /* counts distinguished by tags */
   prob_t *lp;               /* smoothed lexical probabilities */
   struct trie_s *mother;    /* mother node */
@@ -134,8 +134,8 @@ typedef trie_t *trie_pt;
 typedef struct word_s
 {
   char *string;      /* grapheme */
-  size_t count;      /* total number of occurances */
-  int *tagcount;     /* maps tag index -> no. of occurances */
+  int   count;       /* total number of occurences */
+  int *tagcount;     /* maps tag index -> no. of occurences */
   prob_t *lp;
 } word_t;
 typedef word_t *word_pt;
@@ -168,7 +168,7 @@ option_t ops[]={
   { 'b', "-b b  beam factor [1000]" },
   { 'd', "-d    debug mode" },
   { 'h', "-h    display help" },
-  { 'l', "-l l  maximum suffix length [6]" },
+  { 'l', "-l l  maximum suffix length [10]" },
   { 'm', "-m m  mode of operation [0]" },
   { 'q', "-q    be quite" },
   { 'r', "-r r  rare word threshold [1]" },
@@ -195,7 +195,7 @@ static globals_pt new_globals(globals_pt old)
   g->cmd=g->mf=g->df=g->rf=NULL;
   g->bw=0;
   g->rwt=1;
-  g->msl=6;
+  g->msl=10;
   g->stcs=1;
   g->stics=1;
   g->zuetp=0;
@@ -377,7 +377,7 @@ static void get_options(globals_pt g, int argc, char **argv)
 	    { report(1, "using %3.2e, %3.2e, %3.2e as lambdas\n", g->lambda[0], g->lambda[1], g->lambda[2]); }
 	  break;
 	case 'b':
-	  if (1!=sscanf(optarg, "%zd", &g->bw))
+	  if (1!=sscanf(optarg, "%d", &g->bw))
 	    { error("invalid beam width \"%s\"\n", optarg); }
 	  else
 	    { report(1, "using %d as beam width\n", g->bw); }
@@ -391,7 +391,7 @@ static void get_options(globals_pt g, int argc, char **argv)
 	  exit(0);
 	  break;
 	case 'l':
-	  if (1!=sscanf(optarg, "%zd", &g->msl) || g->msl<0)
+	  if (1!=sscanf(optarg, "%d", &g->msl) || g->msl<0)
 	    { error("invalid maximum suffix length \"%s\"\n", optarg); }
 	  else
 	    { report(1, "using %d as maximum suffix length\n", g->msl); }
@@ -406,7 +406,7 @@ static void get_options(globals_pt g, int argc, char **argv)
 	  verbosity=0;
 	  break;
 	case 'r':
-	  if (1!=sscanf(optarg, "%zd", &g->rwt))
+	  if (1!=sscanf(optarg, "%d", &g->rwt))
 	    { error("invalid rare word threshold \"%s\"\n", optarg); }
 	  else
 	    { report(1, "using %d as rare word threshold\n", g->rwt); }
@@ -514,7 +514,7 @@ void read_ngram_file(const char* fn, model_pt m)
       lno++;
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       if(r == 0) { continue; }
-      size_t cnt;
+      int cnt;
       
       for (i=0; *s=='\t'; i++, s++) { /* nada */ }
       if (i>2) { error("parse error (too many tabs) (%s:%d)\n", fn, lno); }
@@ -524,7 +524,7 @@ void read_ngram_file(const char* fn, model_pt m)
       if (t[i]<0) { error("unknown tag \"%s\" (%s:%d)\n", s, fn, lno); }
       s=strtok(NULL, " \t");
       if (!s) { error("can't find count (%s:%d)\n", fn, lno); }
-      if (1!=sscanf(s, "%zd", &cnt)) { error("can't read count (%s:%zd)\n", fn, lno); }
+      if (1!=sscanf(s, "%d", &cnt)) { error("can't read count (%s:%zd)\n", fn, lno); }
       m->count[i][ ngram_index(i, not, t[0], t[1], t[2])  ]=cnt;
       m->type[i]++;
       m->token[i]+=cnt;
@@ -543,8 +543,8 @@ void read_ngram_file(const char* fn, model_pt m)
 void compute_counts_for_boundary(model_pt m)
 {
   /* compute transition probs for artificial boundary tags */
-  size_t not=iregister_get_length(m->tags);
-  size_t i, uni=0, bi=0, tri=0, ows=0, nos=0;
+  int not=iregister_get_length(m->tags);
+  int i, uni=0, bi=0, tri=0, ows=0, nos=0;
 #define DEBUG_COMPUTE_COUNTS_FOR_BOUNDARY 0
   
   /* we don't start at zero because of the boundary tags */
@@ -877,7 +877,7 @@ static void read_dictionary_file(const char*fn, model_pt m)
       lno++;
       if(r==0) { continue; }
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
-      size_t cnt;
+      int cnt;
       word_pt wd, old;
       
       s=tokenizer(s, " \t");
@@ -898,7 +898,7 @@ static void read_dictionary_file(const char*fn, model_pt m)
 	  if (ti<0)
 	    { report(0, "invalid tag \"%s\" (%s:%d)\n", s, fn, lno); continue; }
 	  s=tokenizer(NULL, " \t");
-	  if (!s || 1!=sscanf(s, "%zd", &cnt))
+	  if (!s || 1!=sscanf(s, "%d", &cnt))
 	    { report(1, "can't find tag count (%s:%d)\n", fn, lno); continue; }
 	  wd->count+=cnt;
 	  wd->tagcount[ti]=cnt;
@@ -1064,8 +1064,8 @@ prob_t *get_lexical_probs(model_pt m, char *s)
 void viterbi(model_pt m, array_pt words, array_pt tags)
 {
   int i, j, k, l, cai, nai=0;
-  size_t not=iregister_get_length(m->tags);
-  size_t wno=array_count(words);
+  int not=iregister_get_length(m->tags);
+  int wno=array_count(words);
   prob_t a[2][not][not];
   array_pt b = array_new(wno);
   prob_t max_a;
@@ -1073,14 +1073,14 @@ void viterbi(model_pt m, array_pt words, array_pt tags)
   ptrdiff_t b_i=1, b_j=1;
   array_pt arr_b_i;
   int *arr_b_k;
-  int *intarrs = calloc(not*not, sizeof(int));
+  // int *intarrs = calloc(wno*not*not, sizeof(int));
 
   for (i = 0; i < wno; ++i) {
 	  array_pt b2 = array_new(not);
 	  array_set(b, i, (void*) b2);
 	  for (k = 0; k < not; ++k) {
-		  int *arr = (int*)((void*)intarrs + (k * not * sizeof(int)));
-		  array_set(b2, k, arr);
+		  int *b3 = (int*) calloc(not, sizeof(int));
+		  array_set(b2, k, (void*) b3);
 	  }
   }
 
@@ -1142,7 +1142,7 @@ void viterbi(model_pt m, array_pt words, array_pt tags)
   /* find highest prob in last column */
   for (i=0; i<not; i++)
     {
-      size_t j;
+      int j;
       for (j=0; j<not; j++)
 	{
 	  /*
@@ -1188,7 +1188,7 @@ void viterbi(model_pt m, array_pt words, array_pt tags)
 	  array_free(b2);
   }
 
-  free(intarrs);
+  /* free(intarrs); */
   array_free(b);
 }
 
@@ -1407,7 +1407,7 @@ void dump_transition_probs(model_pt m)
 void tag_sentence(model_pt m, array_pt words, array_pt tags, char *l)
 {
   char *t;
-  size_t i;
+  int i;
   array_clear(words); array_clear(tags);
   for (t=strtok(l, " \t"); t; t=strtok(NULL, " \t"))
     { array_add(words, t); }
@@ -1469,7 +1469,7 @@ void testing(const char* fn, model_pt m)
       l = buf;
       if (r>0 && l[r-1]=='\n') l[r-1] = '\0';
       char *t;
-      size_t i;
+      int i;
 
       array_clear(words); array_clear(tags); array_clear(refs);
       for (t=strtok(l, " \t"), i=0; t; t=strtok(NULL, " \t"), i++)
