@@ -44,7 +44,7 @@ static int data_cmp(const void * a,const void *b,void *data)
 }
 
 static void check(const void * a)
-{    int i;
+{    size_t i;
      for (i=0; i< n-1; i++){
           if (*((ItemType *)a+i)>*((ItemType *)a+i+1))
           {
@@ -57,7 +57,7 @@ static void check(const void * a)
 
 int main(int argc, char* args[])
 { 
-	int  i, j;
+	size_t  i, j;
 
 	clock_t a, b, c, d;
 	printf("\n Adaptive Symmetry Partition Sort \n");

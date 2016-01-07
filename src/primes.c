@@ -189,7 +189,7 @@ int miller_rabin_size_t(size_t x)
 	const size_t N = sizeof(small_primes) / sizeof(small_primes[0]);
 	if( x > small_primes[N-1] )
 	{
-		int i;
+		size_t i;
 		for (i = 0; i < N; ++i)
 		{
 			if( ! ( x % small_primes[i]) )

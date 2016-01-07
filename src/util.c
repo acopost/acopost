@@ -259,10 +259,10 @@ char *ftokenizer(FILE *ff, char *sep)
 }
 
 /* ------------------------------------------------------------ */
-char *reverse(const char *s, char**buffer, size_t*n)
+char *reverse(const char *s, char**buffer, size_t *n)
 {
   size_t sl;
-  int i;
+  size_t i;
   if(!s) {
 	  return NULL;
   }
@@ -282,12 +282,11 @@ char *reverse(const char *s, char**buffer, size_t*n)
   return *buffer;
 }
 
-size_t
-readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
+int readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
 {
 	size_t tmpn;
 	char *tmplineptr;
-	size_t i;
+	int i;
 	int c;
 	if(feof(stream)) {
 		return -1;
@@ -318,7 +317,7 @@ readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
 		if(c == delim) {
 			break;
 		}
-		if(i>=(*n))
+		if(i >= (int) (*n))
 		{
 			tmpn = (*n) *2;
 			tmplineptr = (char*) realloc(*lineptr, tmpn);
@@ -333,7 +332,7 @@ readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
 	if(ferror(stream)) {
 		return -1;
 	}
-	if(i>=(*n))
+	if(i >= (int) (*n))
 	{
 		tmpn = (*n) +1;
 		tmplineptr = (char*) realloc(*lineptr, tmpn);
@@ -348,8 +347,7 @@ readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
 	return i;
 }
 
-size_t
-readline(char **lineptr, size_t  *n, FILE *stream) {
+int readline(char **lineptr, size_t  *n, FILE *stream) {
 	return readdelim(lineptr, n, '\n', stream);
 }
 

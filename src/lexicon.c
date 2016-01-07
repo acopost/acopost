@@ -121,7 +121,8 @@ extern lexicon_pt read_lexicon_file(char *fn)
   FILE *f;
   lexicon_pt l=new_lexicon();
   int lno, not;
-  size_t n, r = 0;
+  size_t n = 0;
+  int r = 0;
   char *buf = NULL;
 
   if (fn) { l->fname=strdup(fn); f=try_to_open(fn, "r"); }

@@ -262,13 +262,13 @@ static void register_predinfo(predinfo_pt p, model_pt m, event_pt ev)
   array_pt pds=m->predicates;
   array_pt ta;
   predinfo_pt pr;
-  size_t i;
+  int i;
 
   if (!table[0])
     {
       for (i=min_ptype_e; i<=max_ptype_e; i++)
 	{
-	  size_t j;
+	  int j;
 	  table[i]=array_new(256);
 	  for (j=0; j<256; j++) { array_add(table[i], array_new(32)); }	      
 	}
@@ -523,7 +523,7 @@ static void filter_predicates_from_event(void *p)
 }
 
 /* ------------------------------------------------------------ */
-static void select_features(model_pt m, array_pt evs, size_t fmin)
+static void select_features(model_pt m, array_pt evs, int fmin)
 {
   array_pt pds=m->predicates;
   size_t i;
@@ -535,8 +535,8 @@ static void select_features(model_pt m, array_pt evs, size_t fmin)
   for (i=0; i<pds_count; i++)
     {
       predicate_pt pd=(predicate_pt)array_get(pds, i);
-      size_t j;
-      size_t counter=0;
+      int j;
+      int counter=0;
       
       for (j=0; j<m->no_ocs; j++)
 	{
@@ -586,8 +586,8 @@ static void setup_cf_E(void *p, void *data)
 static void add_default_features(model_pt md, array_pt evs)
 {
   array_pt pds=md->predicates;
-  size_t i;
-  size_t minp=array_count(pds), maxp=0;
+  int i;
+  int minp=array_count(pds), maxp=0;
   predinfo_pt p;
   size_t no_etoken=0;  
   
@@ -599,7 +599,7 @@ static void add_default_features(model_pt md, array_pt evs)
   for (i=0; i<array_count(evs); i++)
     {
       event_pt ev=(event_pt)array_get(evs, i);
-      size_t no_pds;
+      int no_pds;
       
       no_etoken+=ev->count;
       add_feature(p, md, ev);
@@ -621,13 +621,13 @@ static void write_model_file(FILE *f, model_pt m)
 {
   array_pt pds=m->predicates;
   array_pt tgs=m->outcomes;
-  size_t i;
+  int i;
   
-  fprintf(f, "MET %zd %d %+12.11e\n", array_count(m->outcomes), m->max_pds, m->cf_alpha);
+  fprintf(f, "MET %d %d %+12.11e\n", array_count(m->outcomes), m->max_pds, m->cf_alpha);
   for (i=0; i<array_count(pds); i++)
     {
       predicate_pt pd=(predicate_pt)array_get(pds, i);
-      size_t j;
+      int j;
 
       print_predinfo(pd->data, f, tgs);
       fprintf(f, "\n");
@@ -703,7 +703,7 @@ static predicate_pt read_predicate(char *s, model_pt m)
 /* ------------------------------------------------------------ */
 static void index_predicates(model_pt m)
 {
-  size_t i;
+  int i;
   array_pt pds=m->predicates;
   predindex_pt idx=new_predindex(m);
   
@@ -1102,14 +1102,14 @@ static void print_context(FILE *f, int t[], char *w[], array_pt tgs)
 
 
 /* ------------------------------------------------------------ */
-static void tag_probabilities(model_pt m, hash_pt d, size_t cs, int t[], char *w[], double p[], int s[])
+static void tag_probabilities(model_pt m, hash_pt d, int cs, int t[], char *w[], double p[], int s[])
 {
   /* ok, some memory is wasted, but we avoid repetitive allocation */
   static array_pt mypds=NULL;
   array_pt tgs=m->outcomes;
   array_pt a;
-  size_t no_ocs=array_count(tgs);
-  size_t i;
+  int no_ocs=array_count(tgs);
+  int i;
 
   if (!mypds) { mypds=array_new(8); }
 
@@ -1181,10 +1181,10 @@ static int tag_in_context(model_pt m, hash_pt d, int t[], char *w[], double pt, 
   array_pt tgs=m->outcomes;
   array_pt pds=m->predicates;
   array_pt mypds=array_new(8);
-  size_t no_ocs=array_count(tgs);
+  int no_ocs=array_count(tgs);
   double p[m->no_ocs];
   int sorter[m->no_ocs];
-  size_t i;
+  int i;
   
   for (i=0; i<no_ocs; i++) { sorter[i]=i; }
   for (i=0; i<array_count(pds); i++)
@@ -1199,7 +1199,7 @@ static int tag_in_context(model_pt m, hash_pt d, int t[], char *w[], double pt, 
   fprintf(stdout, "%-30s", w[2]);
   for (i=0; i==0 || (pt>0.0 && p[sorter[i]]>=pt); i++)
     {
-      size_t si=sorter[i];
+      int si=sorter[i];
       fprintf(stdout, " %8s %7.5f", (char *)array_get(tgs, si), p[si]);
     }
   fprintf(stdout, "\n");
@@ -1209,9 +1209,9 @@ static int tag_in_context(model_pt m, hash_pt d, int t[], char *w[], double pt, 
 #endif
 
 /* ------------------------------------------------------------ */
-static void viterbi(model_pt m, hash_pt d, size_t cs, int t[], char *w[], size_t wno, size_t beam)
+static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, int beam)
 {
-  size_t not=array_count(m->outcomes);
+  int not=array_count(m->outcomes);
   int tgs[2]={-1, -1};
   char *wds[5]={0, 0, 0, 0, 0};
   double p[not];
@@ -1220,8 +1220,8 @@ static void viterbi(model_pt m, hash_pt d, size_t cs, int t[], char *w[], size_t
   int b[wno+2][not+1][not+1];
   double max_a;
   double b_a=-1.0;
-  size_t b_i=1, b_j=1;
-  size_t i;
+  int b_i=1, b_j=1;
+  int i;
 
 #define DEBUG_VITERBI 0
   memset(a, 0, (wno+2)*(not+1)*(not+1)*sizeof(double));
@@ -1229,7 +1229,7 @@ static void viterbi(model_pt m, hash_pt d, size_t cs, int t[], char *w[], size_t
   max_a=1.0;
   for (i=0; i<wno; i++)
     {
-      size_t j;
+      int j;
       double max_a_new=0.0;
 
       if (beam==0) { max_a=0.0; } else { max_a/=(double)beam; }
@@ -1243,7 +1243,7 @@ static void viterbi(model_pt m, hash_pt d, size_t cs, int t[], char *w[], size_t
 	  for (k=0; k<=not; k++)
 	    {
 	      ptrdiff_t tk=k-1;
-	      size_t l;
+	      int l;
 	      if (a[i][j][k]<max_a) { continue; }
 	      tgs[0]=tj; 
 	      tgs[1]=tk; 
@@ -1251,7 +1251,7 @@ static void viterbi(model_pt m, hash_pt d, size_t cs, int t[], char *w[], size_t
 #if DEBUG_VITERBI
 	      {
 		double sum=0.0;
-		size_t k;
+		int k;
 		report(-1, "[%8s %8s]",
 		       tgs[0]<0 ? "NULL" : (char *)array_get(m->outcomes, tgs[0]),
 		       tgs[1]<0 ? "NULL" : (char *)array_get(m->outcomes, tgs[1]));
@@ -1283,7 +1283,7 @@ static void viterbi(model_pt m, hash_pt d, size_t cs, int t[], char *w[], size_t
   /* find highest prob in last column */
   for (i=0; i<=not; i++)
     {
-      size_t j;
+      int j;
       for (j=0; j<=not; j++)
 	{ if (a[wno][i][j]>=b_a) { b_a=a[wno][i][j]; b_i=i; b_j=j; } }
     }
@@ -1304,7 +1304,7 @@ static void viterbi(model_pt m, hash_pt d, size_t cs, int t[], char *w[], size_t
 }
 
 /* ------------------------------------------------------------ */
-static void tag_sentence(model_pt m, hash_pt d, size_t cs, int t[], char *w[], size_t wno, size_t bw)
+static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, int bw)
 {
   int tgs[2]={-1, -1};
   char *wds[5]={0, 0, 0, 0, 0};
@@ -1315,7 +1315,7 @@ static void tag_sentence(model_pt m, hash_pt d, size_t cs, int t[], char *w[], s
   int tnew[bw];
   double p[m->no_ocs];
   int s[m->no_ocs];
-  size_t i;
+  int i;
 
 #define DEBUG_TAG_SENTENCE 0
 #if DEBUG_TAG_SENTENCE
@@ -1323,15 +1323,15 @@ static void tag_sentence(model_pt m, hash_pt d, size_t cs, int t[], char *w[], s
   report(-1, "tgs=%p, wds=%p, seq=%p, pseq=%p, pnew=%p, snew=%p, tnew=%p\n",
 	 tgs, wds, seq, pseq, pnew, snew, tnew);
 #endif
-  for (i=0; i<m->no_ocs; i++) { s[i]=i; }
+  for (i=0; i < m->no_ocs; i++) { s[i]=i; }
   for (i=0; i<bw; i++) { pseq[i]=1.0; }
   for (i=0; i<wno; i++)
     {
-      size_t j;
+      int j;
       int tmp[bw][wno];
-      for (j=0; j<2; j++) { wds[j]= i+j-2>=0 ? w[i+j-2] : NULL; }
+      for (j=0; j<2; j++) { wds[j]= i+j-2 >= 0 ? w[i+j-2] : NULL; }
       wds[2]=w[i];
-      for (j=3; j<5; j++) { wds[j]= i+j-2<wno ? w[i+j-2] : NULL; }
+      for (j=3; j<5; j++) { wds[j]= i+j-2 < wno ? w[i+j-2] : NULL; }
 
 #if DEBUG_TAG_SENTENCE
       for (j=0; j<5; j++) { report(-1, "%s ", wds[j] ? wds[j] : "NULL"); }
@@ -1341,7 +1341,7 @@ static void tag_sentence(model_pt m, hash_pt d, size_t cs, int t[], char *w[], s
       for (j=0; j<bw; j++) { pnew[j]=0.0; snew[j]=0; tnew[j]=0; }
       for (j=0; j<bw; j++)
 	{
-	  size_t k;
+	  int k;
 
 	  /* if pseq[j]<pnew[bw-1] the jth sequence is already worse
 	     (before adding this tag) than the worst in our n-best
@@ -1369,7 +1369,7 @@ static void tag_sentence(model_pt m, hash_pt d, size_t cs, int t[], char *w[], s
 	    report(-1, " --> %f\n", sum);
 	  }
 #endif
-	  for (k=0; k<bw && k<m->no_ocs; k++)
+	  for (k=0; k < bw && k < m->no_ocs; k++)
 	    {
 	      int ti=s[k];
 	      double pcombined=pseq[j]*p[ti];
@@ -1386,7 +1386,7 @@ static void tag_sentence(model_pt m, hash_pt d, size_t cs, int t[], char *w[], s
 	}
       for (j=0; j<bw; j++)
 	{
-	  size_t k;
+	  int k;
 	  for (k=0; k<i; k++) { tmp[j][k]=seq[snew[j]][k]; }
 	  tmp[j][i]=tnew[j];
 	  pseq[j]=pnew[j];
@@ -1532,7 +1532,7 @@ extern int main(int argc, char **argv)
   FILE *df=NULL;
   char *dictfile=NULL;
   FILE *rf=stdin;
-  size_t mi=100;
+  int mi=100;
   double dt=0.0;
   double pt=-1.0;
   int oldnice=nice(0), newnice=19;
@@ -1577,7 +1577,7 @@ extern int main(int argc, char **argv)
 	  exit(0);
 	  break;
 	case 'i':
-	  if (1!=sscanf(optarg, "%zd", &mi))
+	  if (1!=sscanf(optarg, "%d", &mi))
 	    { error("invalid max number of iterations \"%s\"\n", optarg); }
 	  else
 	    { report(1, "using %d as max number of iterations\n", mi); }
@@ -1599,7 +1599,7 @@ extern int main(int argc, char **argv)
 	    { report(1, "using %d as priority class\n", newnice); }
 	  break;
 	case 'r':
-	  if (1!=sscanf(optarg, "%d", &(g->rwt)))
+	  if (1!=sscanf(optarg, "%u", &(g->rwt)))
 	    { error("invalid rare word threshold \"%s\"\n", optarg); }
 	  else
 	    { report(1, "using %d as rare word threshold\n", g->rwt); }

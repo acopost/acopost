@@ -103,49 +103,49 @@ int array_test ()
 //    printf("--> v[0]: %i\n", *(int *)arr1->v[0]);
 
     arr4 = array_new(0);
-    printf("Testing 'array_add_unique()'... ret=%zu\n", array_add_unique(arr4, a));
-    printf("Testing 'array_add_unique()'... ret=%zu\n", array_add_unique(arr4, b));
-    printf("Testing 'array_add_unique()'... ret=%zu\n", array_add_unique(arr4, c));
-    printf("Testing 'array_add_unique()'... ret=%zu\n", array_add_unique(arr4, d));
-    printf("Testing 'array_add_unique()'... ret=%zu\n", array_add_unique(arr4, e));
-    printf("Testing 'array_add_unique()'... ret=%zu\n", array_add_unique(arr4, a));
-    printf("--> count: %zu\n", arr4->count);
+    printf("Testing 'array_add_unique()'... ret=%d\n", array_add_unique(arr4, a));
+    printf("Testing 'array_add_unique()'... ret=%d\n", array_add_unique(arr4, b));
+    printf("Testing 'array_add_unique()'... ret=%d\n", array_add_unique(arr4, c));
+    printf("Testing 'array_add_unique()'... ret=%d\n", array_add_unique(arr4, d));
+    printf("Testing 'array_add_unique()'... ret=%d\n", array_add_unique(arr4, e));
+    printf("Testing 'array_add_unique()'... ret=%d\n", array_add_unique(arr4, a));
+    printf("--> count: %d\n", arr4->count);
 
     printf("Testing 'array_add'...\n");
     array_add(arr4, a);
     array_add(arr4, b);
     array_add(arr4, c);
-    printf("--> count: %zu\n", arr4->count);
+    printf("--> count: %d\n", arr4->count);
 
     printf("Testing 'array_delete_duplicates()'...\n");
     array_delete_duplicates(arr4);
-    printf("--> count: %zu\n", arr4->count);
+    printf("--> count: %d\n", arr4->count);
 
     printf("Testing 'array_delete_item()'...\n");
     array_delete_item(arr4, a);
-    printf("--> count: %zu\n", arr4->count);
+    printf("--> count: %d\n", arr4->count);
 
     /* TODO: the test should be more stressing, many indexes, duplicates, start, end, etc. */
     printf("Testing 'array_delete_index()'...\n");
     array_delete_index(arr4, 1);
-    printf("--> count: %zu\n", arr4->count);
+    printf("--> count: %u\n", arr4->count);
 
     /* TODO: valgrind is accusing a memory leak in array_clone */
     printf("Testing 'array_clone()'...\n");
     arr3 = array_clone(arr1);
-    printf("--> arr1->size: %zu, arr1->v address: %p\n", arr1->size, arr1->v);
-    printf("--> arr3->size: %zu, arr3->v address: %p\n", arr3->size, arr3->v);
+    printf("--> arr1->size: %d, arr1->v address: %p\n", arr1->size, (void*)(arr1->v));
+    printf("--> arr3->size: %d, arr3->v address: %p\n", arr3->size, (void*)(arr3->v));
     printf("--> arr1->v[0]: %i, arr1->v[0] address: %p\n", *(int *)arr1->v[0], arr1->v[0]);
     printf("--> arr3->v[0]: %i, arr3->v[0] address: %p\n", *(int *)arr3->v[0], arr3->v[0]);
-    printf("--> &i: %p\n", i);
+    printf("--> &i: %p\n", (void*) i);
 
     printf("Testing 'array_trim()'...\n");
-    printf("--> arr1->size: from %zu", arr1->size);
+    printf("--> arr1->size: from %d", arr1->size);
     array_trim(arr1);
-    printf(" to %zu\n", arr1->size);
-    printf("--> arr4->size: from %zu", arr4->size);
+    printf(" to %d\n", arr1->size);
+    printf("--> arr4->size: from %d", arr4->size);
     array_trim(arr4);
-    printf(" to %zu\n", arr4->size);
+    printf(" to %d\n", arr4->size);
 
     printf("Testing 'array_get()'...\n");
     array_get(arr4, 0);

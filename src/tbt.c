@@ -93,20 +93,20 @@ typedef struct globals_s
 
   char *joker;  /* joker string in templates */
 
-  size_t pos;   /* correctly tagged samples */
-  size_t neg;   /* almost ;-) correctly tagged samples */
+  int pos;   /* correctly tagged samples */
+  int neg;   /* almost ;-) correctly tagged samples */
 
   int rwt;      /* rare word threshold */
   char *dft;    /* default tag for unknown words */
 
-  size_t ssl;   /* max. substring string length for prefix and suffix */
+  int ssl;   /* max. substring string length for prefix and suffix */
   double chi;   /* chi limit */
-  size_t R;     /* max. no of rules per sample */
+  int R;     /* max. no of rules per sample */
   int zres;     /* */
   int roundrobin; /* only choose every X sample for rule generation */
 
-  size_t md;    /* minimum improvement per iteration */
-  size_t mi;    /* maximum number of iterations */
+  int md;    /* minimum improvement per iteration */
+  int mi;    /* maximum number of iterations */
 
   int level;    /* size of context for rules */
   int stage;    /* stage of learning: unknown word, ... */
@@ -161,7 +161,7 @@ typedef precondition_t *precondition_pt;
 typedef struct rule_s
 {
   char *string;         /* textual representation */
-  size_t lic;           /* last iteration we considered this rule */
+  int lic;           /* last iteration we considered this rule */
   int tag;              /* new tag */ 
   int nop;              /* number of preconditions */
   precondition_t pc[MAX_NO_PC]; /* preconditions */
@@ -195,7 +195,7 @@ typedef sample_t *sample_pt;
 typedef struct word_s
 {
   char *word;         /* word */
-  size_t count;
+  int count;
   int defaulttag;     /* most frequent tag */
   int *tcount;        /* counts for all tags */
 } word_t;
@@ -285,7 +285,7 @@ static void free_sample(sample_pt sp)
 { mem_free(sp); }
 
 /* ------------------------------------------------------------ */
-static word_pt new_word(char *s, size_t not)
+static word_pt new_word(char *s, int not)
 {
   word_pt w=(word_pt)mem_malloc(sizeof(word_t));
   memset(w, 0, sizeof(word_t));
@@ -309,7 +309,7 @@ static word_pt get_word(model_pt m, char *s)
 /* ------------------------------------------------------------ */
 /* previously inlined */
 static int is_rare(model_pt m, char *s)
-{ word_pt w=get_word(m, s); return !w || w->count<=g->rwt; }
+{ word_pt w=get_word(m, s); return !w || w->count <= g->rwt; }
 
 /* ------------------------------------------------------------ */
 /* previously inlined */
@@ -332,7 +332,7 @@ static void usage(void)
 static void get_options(int argc, char **argv)
 {
   char c, b[256];
-  size_t i, j;
+  int i, j;
 
   /* prepare string for getopt */
   for (i=0, j=0; ops[i].character && j<255; i++, j++)
@@ -343,7 +343,7 @@ static void get_options(int argc, char **argv)
       switch (c)
 	{
 	case 'i':
-	  if (1!=sscanf(optarg, "%zd", &g->mi))
+	  if (1!=sscanf(optarg, "%d", &g->mi))
 	    { error("invalid maximum number of iterations \"%s\"\n", optarg); }
 	  else
 	    { report(2, "using %d as maximum number of iteration\n", g->mi); }
@@ -353,7 +353,7 @@ static void get_options(int argc, char **argv)
 	  report(2, "using \"%s\" as lexicon file\n", g->lf);
 	  break;
 	case 'm':
-	  if (1!=sscanf(optarg, "%zd", &g->md))
+	  if (1!=sscanf(optarg, "%d", &g->md))
 	    { error("invalid minimum improvement \"%s\"\n", optarg); }
 	  else
 	    { report(2, "using %d as minimum improvement\n", g->md); }
@@ -430,7 +430,7 @@ static char *precondition2string(model_pt m, precondition_pt pc)
 {
 #define BSIZE 4096
   static char b[BSIZE];
-  size_t l;
+  int l;
   
   switch (pc->type)
     {
@@ -444,13 +444,13 @@ static char *precondition2string(model_pt m, precondition_pt pc)
       if (pc->u.prefix.prefix)
 	{ l=snprintf(b, BSIZE, "prefix[%d]=%s", pc->pos, pc->u.prefix.prefix); }
       else
-	{ l=snprintf(b, BSIZE, "prefix[%d]=%zd", pc->pos, pc->u.prefix.length); }
+	{ l=snprintf(b, BSIZE, "prefix[%d]=%zu", pc->pos, pc->u.prefix.length); }
       break;      
     case PRE_SUFFIX:
       if (pc->u.suffix.suffix)
 	{ l=snprintf(b, BSIZE, "suffix[%d]=%s", pc->pos, pc->u.suffix.suffix); }
       else
-	{ l=snprintf(b, BSIZE, "suffix[%d]=%zd", pc->pos, pc->u.suffix.length); }
+	{ l=snprintf(b, BSIZE, "suffix[%d]=%zu", pc->pos, pc->u.suffix.length); }
       break;      
     case PRE_BOS:
       l=snprintf(b, BSIZE, "bos[%d]", pc->pos);
@@ -512,7 +512,7 @@ static char *rule2string(model_pt m, rule_pt r)
 #define BSIZE 4096
   static char b[BSIZE];
   char *ts=r->tag<0 ? g->joker : (char*)iregister_get_name(m->tags, r->tag);
-  size_t tsl=strlen(ts);
+  int tsl=(ssize_t) strlen(ts);
   ptrdiff_t i, bl=BSIZE-1;
   
   b[0]='\0';
@@ -523,7 +523,7 @@ static char *rule2string(model_pt m, rule_pt r)
   for (i=0; i<r->nop; i++)
     {
       char *ps=precondition2string(m, &r->pc[i]);
-      size_t l=strlen(ps);
+      int l = (int) strlen(ps);
       if (bl<=l+1)
 	{ error("internal error: rule too long to format\n"); }
       strcat(b, " ");
@@ -535,7 +535,7 @@ static char *rule2string(model_pt m, rule_pt r)
 }
 
 /* ------------------------------------------------------------ */
-static void read_precondition_into_rule(model_pt m, rule_pt r, size_t n, char *s, size_t tf)
+static void read_precondition_into_rule(model_pt m, rule_pt r, int n, char *s, int tf)
 {
   if (1==sscanf(s, "tag[%d]=", &r->pc[n].pos))
     {
@@ -549,7 +549,7 @@ static void read_precondition_into_rule(model_pt m, rule_pt r, size_t n, char *s
       s=strchr(s, '='); s++;
       r->pc[n].u.word=(tf && !strcmp(s, g->joker)) ? NULL : REGISTER_STRING(s);
     }
-  else if (tf && 2==sscanf(s, "prefix[%d]=%zd", &r->pc[n].pos, &r->pc[n].u.prefix.length))
+  else if (tf && 2==sscanf(s, "prefix[%d]=%zu", &r->pc[n].pos, &r->pc[n].u.prefix.length))
     {
       r->pc[n].type=PRE_PREFIX;
       r->pc[n].u.prefix.prefix=NULL;
@@ -561,7 +561,7 @@ static void read_precondition_into_rule(model_pt m, rule_pt r, size_t n, char *s
       r->pc[n].u.prefix.prefix=REGISTER_STRING(s);
       r->pc[n].u.prefix.length=strlen(s);
     }
-  else if (tf && 2==sscanf(s, "suffix[%d]=%zd", &r->pc[n].pos, &r->pc[n].u.suffix.length))
+  else if (tf && 2==sscanf(s, "suffix[%d]=%zu", &r->pc[n].pos, &r->pc[n].u.suffix.length))
     {
       r->pc[n].type=PRE_SUFFIX;
       r->pc[n].u.suffix.suffix=NULL;
@@ -630,7 +630,7 @@ static void read_rules_file(model_pt m)
 {
   FILE *f=fopen(g->rf, "r");
   char *s;
-  size_t lno, cno;
+  int lno, cno;
 
   if (!f)
     {
@@ -665,7 +665,7 @@ static void read_lexicon_file(model_pt m)
   FILE *f=try_to_open(g->lf, "r");
   int *tagcount;
   char *s;
-  size_t cno, lno, i, mft, mftc, not;
+  int cno, lno, i, mft, mftc, not;
   int c[4]={ 0, 0, 0, 0 };
 
   /* first pass through lexicon: find tags */
@@ -738,7 +738,7 @@ static void read_lexicon_file(model_pt m)
   for (i=0; i<not; i++)
     { int tc=tagcount[i]; if (tc>mftc) { mftc=tc; mft=i; } }
   mem_free(tagcount);
-  if (mft<0 || mft>=iregister_get_length(m->tags))
+  if (mft < 0 || mft >= (int) iregister_get_length(m->tags))
     { report(0, "warning: no tag in lexicon, using zero for mft\n"); mft=0; }
   else
     { report(2, "most frequent rare tag \"%s\" (%d occurences)\n", iregister_get_name(m->tags, mft), mftc); }
@@ -751,7 +751,7 @@ static array_pt read_cooked_file(model_pt m, char *name)
   char *fn= name ? name : "STDIN";
   FILE *f= name ? try_to_open(name, "r") : stdin;
   array_pt sts=array_new(5000);
-  size_t lno, sc=0;
+  int lno, sc=0;
   char *s;
 
   for (lno=1, s=freadline(f); s; lno++, s=freadline(f))
@@ -840,7 +840,7 @@ static int precondition_satisfied(model_pt m, array_pt sps, int pos, rule_pt r, 
     case PRE_PREFIX:
       return sp && strstr(sp->word, pc->u.prefix.prefix)==sp->word;
     case PRE_SUFFIX:
-      return sp && common_suffix_length(sp->word, pc->u.suffix.suffix)==pc->u.suffix.length;
+      return sp && (common_suffix_length(sp->word, pc->u.suffix.suffix) == pc->u.suffix.length);
     case PRE_BOS:
       return rp==-1;
     case PRE_EOS:
@@ -864,7 +864,7 @@ static int rule_matches_sample(model_pt m, array_pt sps, int pos, rule_pt r)
 {
   sample_pt sp=(sample_pt)array_get(sps, pos);
   word_pt w=get_word(m, sp->word);
-  size_t i;
+  int i;
 
   /* Only allow lexical tags for frequent words. */
   if (!is_rare(m, sp->word) && (0==w->tcount[r->tag])) { return 0; }
@@ -911,7 +911,7 @@ static void set_tag_to_tmptag(void *a)
 static int
 apply_rule(model_pt m, array_pt sts, rule_pt r, int countonly)
 {
-  size_t i, j, g=0, b=0, delta=0;
+  int i, j, g=0, b=0, delta=0;
   
   for (i=0; i<array_count(sts); i++)
     {
@@ -990,7 +990,7 @@ static void read_template_file(model_pt m)
 {
   FILE *f=try_to_open(g->tf, "r");
   char *l;
-  size_t cno, lno;
+  int cno, lno;
 
   for (cno=0, lno=1, l=freadline(f); l; lno++, l=freadline(f))
     {
@@ -1026,7 +1026,7 @@ static void free_preload_sentence(void *p)
 /* ------------------------------------------------------------ */
 static void preload_file(model_pt m, char *name, array_pt sts)
 {
-  size_t i, j;
+  int i, j;
   array_pt pls=read_cooked_file(m, g->plf);
 
   if (array_count(pls)!=array_count(sts))
@@ -1086,7 +1086,7 @@ precondition_from_template(model_pt m, array_pt sps, int pos, rule_pt t, rule_pt
       else
 	{
 	  char *s=substr(sp->word, 0, tpc->u.prefix.length);
-	  if (strlen(s)!=tpc->u.prefix.length) { return 0; }
+	  if (strlen(s) != tpc->u.prefix.length) { return 0; }
 	  rpc->u.prefix.prefix=REGISTER_STRING(s);
 	}
       rpc->u.prefix.length=tpc->u.prefix.length;
@@ -1094,7 +1094,7 @@ precondition_from_template(model_pt m, array_pt sps, int pos, rule_pt t, rule_pt
     case PRE_SUFFIX:
       if (tpc->u.suffix.suffix)
 	{
-	  if (common_suffix_length(sp->word, tpc->u.suffix.suffix)!=tpc->u.suffix.length)
+	  if (common_suffix_length(sp->word, tpc->u.suffix.suffix) != tpc->u.suffix.length)
 	    { return 0; }
 	  rpc->u.suffix.suffix=tpc->u.suffix.suffix;
 	}
@@ -1148,7 +1148,7 @@ make_rule(model_pt m, array_pt sps, int pos, rule_pt t)
 static void
 make_rules(model_pt m, array_pt sps, int pos, array_pt rs, int goodonly)
 {
-  size_t i, not=iregister_get_length(m->tags);
+  int i, not=iregister_get_length(m->tags);
   sample_pt sp=(sample_pt)array_get(sps, pos);
   word_pt w=get_word(m, sp->word);
   int israre=is_rare(m, sp->word);
@@ -1209,12 +1209,12 @@ static void register_correcting_rules(void *a, void *b)
 {
   array_pt sps=(array_pt)a, rs=array_new(8);
   model_pt m=(model_pt)b;
-  size_t i;
+  int i;
   
   for (i=0; i<array_count(sps); i++)
     {
       sample_pt sp=(sample_pt)array_get(sps, i);
-      size_t nor, l;
+      int nor, l;
 
       if (sp->reference==sp->tag) { continue; }
       make_rules(m, sps, i, rs, 1);
@@ -1241,12 +1241,12 @@ static void make_deltas(void *a, void *b)
 {
   array_pt sps=(array_pt)a, rs=array_new(8);
   model_pt m=(model_pt)b;
-  size_t i;
+  int i;
 
   for (i=0; i<array_count(sps); i++)
     {
       sample_pt sp=(sample_pt)array_get(sps, i);
-      size_t nor, l;
+      int nor, l;
       
       make_rules(m, sps, i, rs, 0);
       nor=array_count(rs);
@@ -1312,7 +1312,7 @@ static void training(model_pt m)
 {
   array_pt sts=read_cooked_file(m, g->ipf), rs=array_new(128);
   rule_pt br;
-  size_t i;
+  int i;
   
   read_template_file(m);
 
@@ -1354,7 +1354,7 @@ static void training(model_pt m)
 
   /* get best rule & update loop */
   for (i=1, br=find_best_rule(m);
-       br && br->delta>=g->md && (g->mi<0 || i<=g->mi);
+       br && br->delta >= g->md && (g->mi < 0 || i <= g->mi);
        i++, br=find_best_rule(m))
     {
       int delta=apply_rule(m, sts, br, 0);
@@ -1381,12 +1381,12 @@ static void tagging(model_pt m)
   FILE *f= g->ipf ? try_to_open(g->ipf, "r") : stdin;  
   array_pt pool=array_new(128), sps=array_new(128);
   char *l;
-  size_t lno;
+  int lno;
   
   for (lno=1, l=freadline(f); l; lno++, l=freadline(f))
     {
       char *t;
-      size_t i;
+      int i;
       array_clear(sps);
       for (i=0, t=strtok(l, " \t"); t; i++, t=strtok(NULL, " \t"))
 	{
@@ -1395,7 +1395,7 @@ static void tagging(model_pt m)
 	  /* preallocate a pool of samples, reuse later */
 	  if (i>=array_count(pool))
 	    {
-	      size_t j, asp=array_size(pool);
+	      int j, asp=array_size(pool);
 	      for (j=0; j<asp; j++)
 		{ array_add(pool, (void *)new_sample()); }
 	    }
@@ -1416,7 +1416,7 @@ static void tagging(model_pt m)
       for (i=0; i<array_count(m->rules); i++)
 	{
 	  rule_pt r=(rule_pt)array_get(m->rules, i);
-	  size_t j;
+	  int j;
 	  for (j=0; j<array_count(sps); j++)
 	    {
 	      sample_pt sp=(sample_pt)array_get(sps, j);
@@ -1462,7 +1462,7 @@ static void unknown_vs_known1(void *p, void *d1, void *d2)
 /* ------------------------------------------------------------ */
 static void testing(model_pt m)
 {
-  size_t i;
+  int i;
   int c[4]={0, 0, 0, 0};
   array_pt sts=read_cooked_file(m, g->ipf);
 
@@ -1478,7 +1478,7 @@ static void testing(model_pt m)
     report(2, "after lexicon check: %dp + %dn==%d accuracy %7.3f%%\n",
     g->pos, g->neg, g->pos+g->neg, 100.0*g->pos/(g->pos+g->neg));
   */
-  fprintf(stdout, "%5d %zd %zd %7.3f %d %d %7.3f %d %d %7.3f\n", 0,
+  fprintf(stdout, "%5d %d %d %7.3f %d %d %7.3f %d %d %7.3f\n", 0,
 	  g->pos, g->neg, g->pos+g->neg==0 ? 0.0 : 100.0*g->pos/(g->pos+g->neg),
 	  c[0], c[2], c[0]+c[2]==0 ? 0.0 : 100.0*c[0]/(c[0]+c[2]),
 	  c[1], c[3], c[1]+c[3]==0 ? 0.0 : 100.0*c[1]/(c[1]+c[3]) );
@@ -1493,7 +1493,7 @@ static void testing(model_pt m)
 	     i+1, g->pos, g->neg, g->pos+g->neg, 100.0*g->pos/(g->pos+g->neg));
       report(-2, "known %dp %dn %7.3f%% unknown %dp %dn %7.3f%%\n",
 	     c[0], c[2], 100.0*c[0]/(c[0]+c[2]), c[1], c[3], 100.0*c[1]/(c[1]+c[3]));
-      fprintf(stdout, "%5zd %zd %zd %7.3f %d %d %7.3f %d %d %7.3f\n", i+1,
+      fprintf(stdout, "%5d %d %d %7.3f %d %d %7.3f %d %d %7.3f\n", i+1,
 	      g->pos, g->neg, g->pos+g->neg==0 ? 0.0 : 100.0*g->pos/(g->pos+g->neg),
 	      c[0], c[2], c[0]+c[2]==0 ? 0.0 : 100.0*c[0]/(c[0]+c[2]),
 	      c[1], c[3], c[1]+c[3]==0 ? 0.0 : 100.0*c[1]/(c[1]+c[3]) );

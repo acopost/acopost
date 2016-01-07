@@ -76,7 +76,7 @@ void iregister_clear(iregister_pt l) {
 	hash_clear(l->g_table);
 
 	/* Clear the g_array array. */
-	size_t not=array_count(l->g_array);
+	int not=array_count(l->g_array);
 	for (i = 0; i < not; ++i) {
 		/* Free the string in m->g_array.
 		 * Do NOT use mem_free, since the memory has been obtained with strdup.
