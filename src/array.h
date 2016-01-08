@@ -42,8 +42,8 @@
 /* ------------------------------------------------------------ */
 typedef struct array_s
 {
-  int size;
-  int count;
+  size_t size;
+  size_t count;
   void **v;
 } array_t;
 typedef array_t *array_pt;
@@ -55,8 +55,8 @@ array_pt array_new_fill(size_t, void *);
 void array_free(array_pt);
 void array_clear(array_pt);
 array_pt array_clone(array_pt);
-int array_add(array_pt, void *);
-int array_add_unique(array_pt, void *);
+size_t array_add(array_pt, void *);
+size_t array_add_unique(array_pt, void *);
 void array_delete_item(array_pt, void *);
 void array_delete_duplicates(array_pt);
 void *array_delete_index(array_pt, size_t);
@@ -68,11 +68,11 @@ void array_map1(array_pt, void (*)(void *, void *), void *);
 void array_map2(array_pt, void (*)(void *, void *, void *), void *, void *);
 #define array_map_with(a, b, c) array_map1(a, b, c)
 
-int array_size(array_pt a);
-int array_count(array_pt a);
-void *array_get(array_pt a, int i);
+size_t array_size(array_pt a);
+size_t array_count(array_pt a);
+void *array_get(array_pt a, size_t i);
 
-void *array_set(array_pt, int, void *);
+void *array_set(array_pt, size_t, void *);
 
 /* ------------------------------------------------------------ */
 #endif
