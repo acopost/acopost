@@ -63,7 +63,7 @@ void iregister_clear(iregister_pt st);
 void iregister_delete(iregister_pt st);
 
 /* ------------------------------------------------------------ */
-const char *iregister_get_name(iregister_pt l, int i);
+const char *iregister_get_name(iregister_pt l, ptrdiff_t i);
 
 ptrdiff_t iregister_get_index(iregister_pt l, const char *t);
 
