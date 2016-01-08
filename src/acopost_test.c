@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2013, ACOPOST Developers Team
+  Copyright (c) 2013-2016, ACOPOST Developers Team
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -103,49 +103,49 @@ int array_test ()
 //    printf("--> v[0]: %i\n", *(int *)arr1->v[0]);
 
     arr4 = array_new(0);
-    printf("Testing 'array_add_unique()'... ret=%d\n", array_add_unique(arr4, a));
-    printf("Testing 'array_add_unique()'... ret=%d\n", array_add_unique(arr4, b));
-    printf("Testing 'array_add_unique()'... ret=%d\n", array_add_unique(arr4, c));
-    printf("Testing 'array_add_unique()'... ret=%d\n", array_add_unique(arr4, d));
-    printf("Testing 'array_add_unique()'... ret=%d\n", array_add_unique(arr4, e));
-    printf("Testing 'array_add_unique()'... ret=%d\n", array_add_unique(arr4, a));
-    printf("--> count: %d\n", arr4->count);
+    printf("Testing 'array_add_unique()'... ret=%ld\n", (unsigned long) array_add_unique(arr4, a));
+    printf("Testing 'array_add_unique()'... ret=%ld\n", (unsigned long) array_add_unique(arr4, b));
+    printf("Testing 'array_add_unique()'... ret=%ld\n", (unsigned long) array_add_unique(arr4, c));
+    printf("Testing 'array_add_unique()'... ret=%ld\n", (unsigned long) array_add_unique(arr4, d));
+    printf("Testing 'array_add_unique()'... ret=%ld\n", (unsigned long) array_add_unique(arr4, e));
+    printf("Testing 'array_add_unique()'... ret=%ld\n", (unsigned long) array_add_unique(arr4, a));
+    printf("--> count: %ld\n", (unsigned long) arr4->count);
 
     printf("Testing 'array_add'...\n");
     array_add(arr4, a);
     array_add(arr4, b);
     array_add(arr4, c);
-    printf("--> count: %d\n", arr4->count);
+    printf("--> count: %ld\n", (unsigned long) arr4->count);
 
     printf("Testing 'array_delete_duplicates()'...\n");
     array_delete_duplicates(arr4);
-    printf("--> count: %d\n", arr4->count);
+    printf("--> count: %ld\n", (unsigned long) arr4->count);
 
     printf("Testing 'array_delete_item()'...\n");
     array_delete_item(arr4, a);
-    printf("--> count: %d\n", arr4->count);
+    printf("--> count: %ld\n", (unsigned long) arr4->count);
 
     /* TODO: the test should be more stressing, many indexes, duplicates, start, end, etc. */
     printf("Testing 'array_delete_index()'...\n");
     array_delete_index(arr4, 1);
-    printf("--> count: %u\n", arr4->count);
+    printf("--> count: %ld\n", (unsigned long) arr4->count);
 
     /* TODO: valgrind is accusing a memory leak in array_clone */
     printf("Testing 'array_clone()'...\n");
     arr3 = array_clone(arr1);
-    printf("--> arr1->size: %d, arr1->v address: %p\n", arr1->size, (void*)(arr1->v));
-    printf("--> arr3->size: %d, arr3->v address: %p\n", arr3->size, (void*)(arr3->v));
-    printf("--> arr1->v[0]: %i, arr1->v[0] address: %p\n", *(int *)arr1->v[0], arr1->v[0]);
-    printf("--> arr3->v[0]: %i, arr3->v[0] address: %p\n", *(int *)arr3->v[0], arr3->v[0]);
+    printf("--> arr1->size: %ld, arr1->v address: %p\n", arr1->size, (void*)(arr1->v));
+    printf("--> arr3->size: %ld, arr3->v address: %p\n", arr3->size, (void*)(arr3->v));
+    printf("--> arr1->v[0]: %i, arr1->v[0] address: %p\n", *(int *)arr1->v[0], (void*)&arr1->v[0]);
+    printf("--> arr3->v[0]: %i, arr3->v[0] address: %p\n", *(int *)arr3->v[0], (void*)&arr3->v[0]);
     printf("--> &i: %p\n", (void*) i);
 
     printf("Testing 'array_trim()'...\n");
-    printf("--> arr1->size: from %d", arr1->size);
+    printf("--> arr1->size: from %ld", (unsigned long) arr1->size);
     array_trim(arr1);
-    printf(" to %d\n", arr1->size);
-    printf("--> arr4->size: from %d", arr4->size);
+    printf(" to %ld\n", (unsigned long) arr1->size);
+    printf("--> arr4->size: from %ld", (unsigned long) arr4->size);
     array_trim(arr4);
-    printf(" to %d\n", arr4->size);
+    printf(" to %ld\n", (unsigned long) arr4->size);
 
     printf("Testing 'array_get()'...\n");
     array_get(arr4, 0);
