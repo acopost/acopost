@@ -40,6 +40,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 /* ------------------------------------------------------------ */
 
@@ -123,12 +124,12 @@ char *reverse(const char *s, char**buffer, size_t*n);
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    This function is a replacement for POSIX.1-2008 getdelim()
 */
-int readdelim(char **lineptr, size_t *n, int delim, FILE *stream);
+ssize_t readdelim(char **lineptr, size_t *n, int delim, FILE *stream);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    This function is a replacement for POSIX.1-2008 getline()
 */
-int readline(char **lineptr, size_t *n, FILE *stream);
+ssize_t readline(char **lineptr, size_t *n, FILE *stream);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    successively returns new lines from file, NOT reentrant
