@@ -2,7 +2,7 @@
 /*   Copyright (C) 2012, Jingchao Chen                                      */
 /*   This library was written at Donghua University, China                  */
 /*   Contact: chen-jc@dhu.edu.cn or chenjingchao@yahoo.com                  */
-/*   Copyright (C) 2012-2015, Giulio Paci                                   */
+/*   Copyright (C) 2012-2016, Giulio Paci                                   */
 /*                                                                          */
 /* Permission to use, copy, modify, and distribute this software and its    */
 /* documentation with or without modifications and for any purpose and      */
@@ -29,6 +29,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "eqsort.h"
 
 void memswap(void *a, void *b, size_t n)
@@ -39,8 +40,10 @@ void memswap(void *a, void *b, size_t n)
 	{
 		register char t;
 		t = *(char*)a;
-		*(char*)a++ = *(char*)b;
-		*(char*)b++ = t;
+		*(char*)a = *(char*)b;
+		*(char*)b = t;
+		a = (char*)a+1;
+		b = (char*)b+1;
 	} while ( --__N );
 	}
 }
@@ -63,25 +66,25 @@ void memswap(void *a, void *b, size_t n)
 #define beta1 256
 #define beta2 512
 // Symmetry Partition Sort
-void SymPartitionSort(void *a, size_t s, size_t n, size_t es, int (*cmp)(const void *,const void *,void *), void *data)
-{   void *pm,*pb,*pc,*pi,*pj;
+void SymPartitionSort(void *a, ssize_t s, size_t n, size_t es, int (*cmp)(const void *,const void *,void *), void *data)
+{   char *pm,*pb,*pc,*pi,*pj;
     int i,v,vL,m,left,right,sp,eq,ineq,rc;
     left=right=0;
     while(1){
         if(n < 8){ //Insertion sort on small arrays
              for (s=1; s < n; s++)
-		for (pb = a+s*es; cmp(pb-es,pb,data) > 0; ) {
+		for (pb = (char*)a+s*es; cmp(pb-es,pb,data) > 0; ) {
                         swap(pb,pb-es); pb-=es; 
-                        if(pb <= a) break;
+                        if(pb <= (char*)a) break;
                 }
              return;
         }
         m= s<0 ? -s:s;
         if(m <= 2){//First,middle,last items are ordered and placed 1st,2nd and last
             v = beta2 > n ? n : 63;
-            pc=a+(v-1)*es;
-            pm=a+es; 
-            swap(pm,a+(v/2)*es);
+            pc=(char*)a+(v-1)*es;
+            pm=(char*)a+es; 
+            swap(pm,(char*)a+(v/2)*es);
             if(cmp(a, pm,data) > 0) {swap(a,pm);}
 	    if((cmp(pm, pc,data) > 0)) {
                       swap(pm,pc);
@@ -94,11 +97,11 @@ void SymPartitionSort(void *a, size_t s, size_t n, size_t es, int (*cmp)(const v
                if(s < 0) {  //Move sorted items to left end
                       if(v<n) {left=m; s=-s;}
                       else    {left=(m+1)/2; right=m/2;} 
-                      memswap(a, a+(n-m)*es, left*es);
+                      memswap(a, (char*)a+(n-m)*es, left*es);
                       left--;
                }
                if(s>0){
-                      pb=a+m*es; pc=a+v*es;  
+                      pb=(char*)a+m*es; pc=(char*)a+v*es;  
                       if(v < n){ //Extract sampling items 
                           sp=(n/v)*es; pj=pb; pi=pb;  
                           for(; pi < pc; pi+=es, pj+=sp) swap(pi,pj);
@@ -107,7 +110,7 @@ void SymPartitionSort(void *a, size_t s, size_t n, size_t es, int (*cmp)(const v
                       do{ pb-=es; pc-=es; swap(pb,pc); i--;} while (i);
                       left=(m-1)/2; 
                }
-               pm=a+left*es; pc=pm+(v-m)*es;
+               pm=(char*)a+left*es; pc=pm+(v-m)*es;
             }
 //Fat partition begins
         pb=pi=pm+es;  
@@ -134,7 +137,7 @@ void SymPartitionSort(void *a, size_t s, size_t n, size_t es, int (*cmp)(const v
         pc=pb;
         while (pm < pi ) { pc-=es; swap(pc,pm); pm+=es;} 
 //Fat partition ends
-            vL=(pb-a)/es; 
+            vL=(pb-(char*)a)/es; 
             if(right < v-vL) SymPartitionSort(pb, -right, v-vL, es, cmp, data);
             vL=vL-eq/es; 
             if(v < n){
@@ -150,26 +153,26 @@ void SymPartitionSort(void *a, size_t s, size_t n, size_t es, int (*cmp)(const v
 
 // Adaptive Symmetry Partition Sort
 void eqsort(void *a, size_t n, size_t es, int (*cmp)(const void *,const void *,void *),void *data)
-{   void *pb,*pc,*pi,*pj;
+{   char *pb,*pc,*pi,*pj;
     int i,j,ne,rc,D_inv,left,m,Rev=0;
   
 //Find 1st run
     ne = n * es;
     for (i=es; i < ne; i+=es){
-	    if((rc=cmp(a+i-es,a+i,data)) != 0 ){
+	    if((rc=cmp((char*)a+i-es,(char*)a+i,data)) != 0 ){
              if(Rev==0) Rev= rc < 0 ? 1 : -1;//Rev=1: increasing, -1: decreasing
              else if(rc*Rev > 0) break;
          }
     }
     D_inv= Rev*(i/es);   //D_inv: difference of inversions & orders
     for(j=i+es; j < ne; j+=(97*es)){
-	    if((rc=cmp(a+j-es,a+j,data)) < 0) D_inv++;
+	    if((rc=cmp((char*)a+j-es,(char*)a+j,data)) < 0) D_inv++;
          if(rc>0) D_inv--;
     }
-    pb=a+i-es;
+    pb=(char*)a+i-es;
     if(abs(D_inv) > n/512 ) {     
          if(Rev*D_inv < 0) {pb=a; Rev=-Rev;}  //If 1st run is reverse, re-find it
-            pc=a+n*es; pj=pb;
+            pc=(char*)a+n*es; pj=pb;
             while(1){
                 pj=pj+10*es; pi=pj-es;
                 if(pj >= pc) break;
@@ -178,7 +181,7 @@ void eqsort(void *a, size_t n, size_t es, int (*cmp)(const void *,const void *,v
                 if(pj-pi < 4*es) continue;
                 if(pb!=a) { //Find knots in 1st and 2nd run 
                       j=((pj-pi)/es)/2;
-                      m=((pb-a)/es)/4;
+                      m=((pb-(char*)a)/es)/4;
                       if (j > m ) j=m;
                       for(i=0; i<j; i++) if(Rev*cmp(pb-i*es,pi+i*es,data) <= 0) break;
                       if(i>=j) continue;
@@ -187,13 +190,13 @@ void eqsort(void *a, size_t n, size_t es, int (*cmp)(const void *,const void *,v
                 // Merge two runs by moving 2nd knot to 1st knot 
                 if(pi!=pb) while(pi < pj ) { swap(pb,pi); pb+=es; pi+=es;}
                 else pb=pj;
-                pb-=es;
+                pb=(char*)pb-es;
             }
     }   
-    left=(pb-a)/es+1;
+    left=((char*)pb-(char*)a)/es+1;
     if(Rev==-1){ //if the longest run reverse, reverse it
         pc=a;
-        while(pc < pb ) {swap(pc,pb); pc+=es; pb-=es; }
+        while(pc < pb ) {swap(pc,pb); pc=(char*)pc+es; pb=(char*)pb-es; }
     }
     if(left < n) SymPartitionSort(a, left, n, es, cmp, data);
 }
