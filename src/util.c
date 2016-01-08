@@ -282,11 +282,11 @@ char *reverse(const char *s, char**buffer, size_t *n)
   return *buffer;
 }
 
-int readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
+ssize_t readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
 {
 	size_t tmpn;
 	char *tmplineptr;
-	int i;
+	ssize_t i;
 	int c;
 	if(feof(stream)) {
 		return -1;
@@ -317,7 +317,7 @@ int readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
 		if(c == delim) {
 			break;
 		}
-		if(i >= (int) (*n))
+		if(i >= (ssize_t) (*n))
 		{
 			tmpn = (*n) *2;
 			tmplineptr = (char*) realloc(*lineptr, tmpn);
@@ -332,7 +332,7 @@ int readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
 	if(ferror(stream)) {
 		return -1;
 	}
-	if(i >= (int) (*n))
+	if(i >= (ssize_t) (*n))
 	{
 		tmpn = (*n) +1;
 		tmplineptr = (char*) realloc(*lineptr, tmpn);
@@ -347,7 +347,7 @@ int readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
 	return i;
 }
 
-int readline(char **lineptr, size_t  *n, FILE *stream) {
+ssize_t readline(char **lineptr, size_t  *n, FILE *stream) {
 	return readdelim(lineptr, n, '\n', stream);
 }
 
