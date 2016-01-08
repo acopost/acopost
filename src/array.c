@@ -2,7 +2,7 @@
   One-dimensional Arrays
 
   Copyright (c) 2001-2002, Ingo Schröder
-  Copyright (c) 2007-2013, ACOPOST Developers Team
+  Copyright (c) 2007-2016, ACOPOST Developers Team
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,7 @@ array_pt array_new (size_t size)
 {
   array_pt arr = (array_pt)mem_malloc(sizeof(array_t));
 
-  arr->size = (int) size;
+  arr->size = size;
   arr->count = 0;
   arr->v = (void **)mem_malloc(size*sizeof(void *));
   memset(arr->v, 0, sizeof(void *)*size);
@@ -61,7 +61,7 @@ array_pt array_new (size_t size)
 /* fills an array with a given value                            */
 void array_fill (array_pt arr, void *p)
 {
-  int i;
+  size_t i;
 
   for (i=0; i < arr->size; i++)
     arr->v[i] = p;
@@ -73,7 +73,7 @@ array_pt array_new_fill (size_t size, void *p)
 {
   array_pt arr = array_new(size);
 
-  arr->count = (int) size;
+  arr->count = size;
   array_fill(arr, p);
 
   return arr;
@@ -108,7 +108,7 @@ array_pt array_clone (array_pt arr)
 
 /* ------------------------------------------------------------ */
 /* adds a given value to an array                               */
-int array_add (array_pt arr, void *p)
+size_t array_add (array_pt arr, void *p)
 {
   /* TODO: allocation starts at 8 and then goes *2, perhaps it would be
    * better to use a sequence fibonacci-like or prime-like */
@@ -132,9 +132,9 @@ int array_add (array_pt arr, void *p)
 /* ------------------------------------------------------------ */
 /* adds a given value to an array only if the value is not
    already present                                              */
-int array_add_unique (array_pt arr, void *p)
+size_t array_add_unique (array_pt arr, void *p)
 {
-  int k;
+  size_t k;
 
   for (k = 0; k < arr->count; k++) {
 	  if (arr->v[k] == p) {
@@ -167,7 +167,7 @@ void array_delete_item (array_pt arr, void *p)
 /* TODO: guarantee that it is safe */
 void array_delete_duplicates (array_pt arr)
 {
-  int i, j, k, oldcount;
+  size_t i, j, k, oldcount;
 
   for (k = 0; k < arr->count; k++)
     {
@@ -191,11 +191,12 @@ void array_delete_duplicates (array_pt arr)
 void *array_delete_index (array_pt arr, size_t idx)
 {
   void *p = arr->v[idx];
-  int i;
+  size_t i;
 
   for (i = idx+1; i < arr->count; i++)
     arr->v[i-1] = arr->v[i];
-  arr->count--;
+  if(arr->count > 0 )
+    arr->count--;
 
   return p;
 }
@@ -251,7 +252,7 @@ void array_filter (array_pt arr, int (*func)(void *))
 /* ------------------------------------------------------------ */
 void array_map (array_pt arr, void (*func)(void *))
 {
-  int i;
+  size_t i;
 
   for (i = 0; i < arr->count; i++)
     func(arr->v[i]);
@@ -260,7 +261,7 @@ void array_map (array_pt arr, void (*func)(void *))
 /* ------------------------------------------------------------ */
 void array_map1 (array_pt arr, void (*func)(void *, void *), void *p)
 {
-  int i;
+  size_t i;
 
   for (i = 0; i < arr->count; i++)
     func(arr->v[i], p);
@@ -269,14 +270,14 @@ void array_map1 (array_pt arr, void (*func)(void *, void *), void *p)
 /* ------------------------------------------------------------ */
 void array_map2 (array_pt arr, void (*func)(void *, void *, void *), void *p1, void *p2)
 {
-  int i;
+  size_t i;
 
   for (i = 0; i < arr->count; i++)
     func(arr->v[i], p1, p2);
 }
 
 /* ------------------------------------------------------------ */
-void *array_set (array_pt arr, int i, void *p)
+void *array_set (array_pt arr, size_t i, void *p)
 {
   void *old;
 
@@ -303,14 +304,14 @@ void *array_set (array_pt arr, int i, void *p)
 
 /* returns the size of the array */
 /* TODO: remove function? */
-int array_size (array_pt arr)
+size_t array_size (array_pt arr)
 {
     return arr->size;
 }
 
 /* returns the count of the array */
 /* TODO: remove function? */
-int array_count (array_pt arr)
+size_t array_count (array_pt arr)
 {
     return arr->count;
 }
@@ -318,7 +319,7 @@ int array_count (array_pt arr)
 /* returns element 'i' from the array */
 /* TODO: could be made safe by checking if it is in limits,
    otherwise the programmer can access directly the array */
-void *array_get (array_pt arr, int i)
+void *array_get (array_pt arr, size_t i)
 {
 #ifdef DEVELOPMENT_CHECKS
     if (i < 0 || i > ((arr->size)-1))
