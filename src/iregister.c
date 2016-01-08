@@ -20,7 +20,7 @@ struct iregister_s {
 };
 
 /* ------------------------------------------------------------ */
-const char *iregister_get_name(iregister_pt l, int i)
+const char *iregister_get_name(iregister_pt l, ptrdiff_t i)
 {
 	return (char *)array_get(l->g_array, i);
 }
@@ -34,7 +34,7 @@ ptrdiff_t iregister_get_index(iregister_pt l, const char *t)
 /* ------------------------------------------------------------ */
 ptrdiff_t iregister_add_name(iregister_pt l, const char *t)
 {
-	ptrdiff_t  i=iregister_get_index(l, t);
+	ptrdiff_t i=iregister_get_index(l, t);
 
 	if (i<0) 
 	{ 
@@ -72,11 +72,11 @@ void iregister_delete(iregister_pt l) {
 }
 
 void iregister_clear(iregister_pt l) {
-	int i;
+	size_t i;
 	hash_clear(l->g_table);
 
 	/* Clear the g_array array. */
-	int not=array_count(l->g_array);
+	size_t not=array_count(l->g_array);
 	for (i = 0; i < not; ++i) {
 		/* Free the string in m->g_array.
 		 * Do NOT use mem_free, since the memory has been obtained with strdup.
