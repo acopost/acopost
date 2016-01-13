@@ -66,6 +66,7 @@ void array_filter(array_pt, int (*)(void *));
 void array_map(array_pt, void (*)(void *));
 void array_map1(array_pt, void (*)(void *, void *), void *);
 void array_map2(array_pt, void (*)(void *, void *, void *), void *, void *);
+void array_map3(array_pt, void (*)(void *, void *, void *, void *), void *, void *, void *);
 #define array_map_with(a, b, c) array_map1(a, b, c)
 
 size_t array_size(array_pt a);
