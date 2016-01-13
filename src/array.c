@@ -277,6 +277,15 @@ void array_map2 (array_pt arr, void (*func)(void *, void *, void *), void *p1, v
 }
 
 /* ------------------------------------------------------------ */
+void array_map3 (array_pt arr, void (*func)(void *, void *, void *, void *), void *p1, void *p2, void *p3)
+{
+  size_t i;
+
+  for (i = 0; i < arr->count; i++)
+	  func(arr->v[i], p1, p2, p3);
+}
+
+/* ------------------------------------------------------------ */
 void *array_set (array_pt arr, size_t i, void *p)
 {
   void *old;
