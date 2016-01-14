@@ -33,7 +33,6 @@
   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE.
 
-  
 */
 
 /*
@@ -91,6 +90,12 @@ typedef float prob_t;
 typedef double prob_t;
 #define MAXPROB MAXDOUBLE
 #endif
+
+/* ------------------------------------------------------------ */
+
+#define MODE_TAG     0
+#define MODE_TEST    1
+#define MODE_TRAIN   2
 
 typedef struct option_s
 {
@@ -189,10 +194,11 @@ static globals_pt new_globals(globals_pt old)
 
   if (old) { memcpy(g, old, sizeof(globals_t)); return g; }
 
-  g->mode=0;
+  g->mode=MODE_TAG;
   /* _IOFBF fully buffered; _IOLBF line buffered; _IONBF not buffered */
   g->bmode=-1;
-  g->cmd=g->mf=g->df=g->rf=NULL;
+  g->cmd=NULL;
+  g->mf=g->df=g->rf=NULL;
   g->bw=0;
   g->rwt=1;
   g->msl=10;
@@ -1596,9 +1602,7 @@ int main(int argc, char **argv)
   m->strings = sregister_new(500);
   get_options(g, argc, argv);
 
-  report(1, "\n");
-  report(1, "%s\n", banner);
-  report(1, "\n");
+  report(1, "\n%s\n\n", banner);
 
   read_ngram_file(g->mf, m);
   compute_counts_for_boundary(m);
@@ -1617,12 +1621,17 @@ int main(int argc, char **argv)
 
   switch (g->mode)
     {
-    case 0: tagging(g->rf, g, m); break;
-    case 1: testing(g->rf, m); break;
-    case 7: dump_transition_probs(m); break; 
-    case 8: debugging(m); break; 
-/*    case 9: sleep(30); break;*/
-    default: report(0, "unknown mode of operation %d\n", g->mode);
+    case MODE_TAG:
+      tagging(g->rf, g, m); break;
+    case MODE_TEST:
+      testing(g->rf, m); break;
+    case 7:
+      dump_transition_probs(m); break; 
+    case 8:
+      debugging(m); break;
+/*   case 9: sleep(30); break; */
+    default:
+      report(0, "unknown mode of operation %d\n", g->mode);
     }
 
   report(1, "done\n");
