@@ -635,7 +635,10 @@ static rule_pt register_rule(model_pt m, rule_pt r)
 static int read_rules_file(model_pt m, char*fn)
 {
   FILE *f=fopen(fn, "r");
+  ssize_t r;
   char *s;
+  char *buf = NULL;
+  size_t n = 0;
   int lno, cno;
 
   if (!f)
@@ -643,8 +646,14 @@ static int read_rules_file(model_pt m, char*fn)
 	    return -1;
     }
   
-  for (cno=0, lno=1, s=freadline(f); s; lno++, s=freadline(f)) 
+  lno=0;
+  cno=0;
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      s = buf;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       rule_t rt;
 
       s=tokenizer(s, " \t");
@@ -659,6 +668,10 @@ static int read_rules_file(model_pt m, char*fn)
       array_add(m->rules, (void *)new_rule(&rt));
     }
   fclose(f);
+  if(buf) {
+	  free(buf);
+	  buf = NULL;
+  }
   lno=array_count(m->rules);
   report(2, "read %d rule(s) (%d comment(s)) from \"%s\"\n", lno, cno, fn);
   return lno;
@@ -669,13 +682,19 @@ static void read_dictionary_file(const char*fn, model_pt m)
 {
   FILE *f=try_to_open(fn, "r");
   int *tagcount;
+  ssize_t r;
   char *s;
+  char *buf = NULL;
+  size_t n = 0;
   int cno, lno, i, mft, mftc, not;
   int c[4]={ 0, 0, 0, 0 };
 
   /* first pass through lexicon: find tags */
-  for (s=freadline(f); s; s=freadline(f))
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      s = buf;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       for (s=strtok(s, " \t"), s=strtok(NULL, " \t");
            s;
            s=strtok(NULL, " \t"), s=strtok(NULL, " \t"))
@@ -689,8 +708,15 @@ static void read_dictionary_file(const char*fn, model_pt m)
   if (fseek(f, 0, SEEK_SET)) { error("can't rewind file \"%s\"\n", fn); }
 
   /* second pass through file: collect details */
-  for (cno=0, lno=1, s=freadline(f); s; lno++, s=freadline(f)) 
+  
+  lno=0;
+  cno=0;
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      s = buf;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       word_pt w;
       ptrdiff_t bcnt, btag;
       char *t;
@@ -733,6 +759,10 @@ static void read_dictionary_file(const char*fn, model_pt m)
       else { c[2]++; c[3]+=w->count; } 	
     }
   fclose(f);
+  if(buf) {
+	  free(buf);
+	  buf = NULL;
+  }
 
   report(2, "read lexicon file \"%s\" (%d comment(s)):\n", fn, cno);
   report(2, "      rare: %10d type(s) %10d tokens\n", c[0]-c[2], c[1]-c[3]);
@@ -759,10 +789,18 @@ static array_pt read_cooked_file(model_pt m, char *name)
   FILE *f= name ? try_to_open(name, "r") : stdin;
   array_pt sts=array_new(5000);
   int lno, sc=0;
+  ssize_t r;
   char *s;
+  char *buf = NULL;
+  size_t n = 0;
 
-  for (lno=1, s=freadline(f); s; lno++, s=freadline(f))
+  lno = 0;
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      s = buf;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       array_pt st=array_new(8);
       char *w, *t;
 
@@ -784,6 +822,10 @@ static array_pt read_cooked_file(model_pt m, char *name)
       array_add(sts, st);
     }
   fclose(f);
+  if(buf) {
+	  free(buf);
+	  buf = NULL;
+  }
   report(2, "read %d sentences with %d word/tag pairs from \"%s\"\n",
 	 array_count(sts), sc, fn);
   return sts;
@@ -998,28 +1040,42 @@ static void apply_rule_to_sts(void *p, void *d1, void *d2, void *d3)
 static void read_template_file(model_pt m, char* fn)
 {
   FILE *f=try_to_open(fn, "r");
-  char *l;
   int cno, lno;
 
-  for (cno=0, lno=1, l=freadline(f); l; lno++, l=freadline(f))
+  ssize_t r;
+  char *s;
+  char *buf = NULL;
+  size_t n = 0;
+
+  cno = 0;
+  lno = 0;
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      s = buf;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       rule_t rt;
       rule_pt r;
       
-      l=tokenizer(l, " \t");
-      if (!l) { continue; }
-      if (l[0]=='#' || l[1]=='#') { cno++; continue; }
-      rt.tag= strcmp(l, jokerstring) ? iregister_add_name(m->tags, l) : -1;
-      for (rt.nop=0, l=tokenizer(NULL, " \t");
-	   rt.nop<MAX_NO_PC && l;
-	   rt.nop++, l=tokenizer(NULL, " \t"))
-      { read_precondition_into_rule(m, &rt, rt.nop, l, 1); }
-      if (l) { error("template too long (%s:%d)\n", fn, lno); }      
+      s=tokenizer(s, " \t");
+      if (!s) { continue; }
+      if (s[0]=='#' || s[1]=='#') { cno++; continue; }
+      rt.tag= strcmp(s, jokerstring) ? iregister_add_name(m->tags, s) : -1;
+      for (rt.nop=0, s=tokenizer(NULL, " \t");
+	   rt.nop<MAX_NO_PC && s;
+	   rt.nop++, s=tokenizer(NULL, " \t"))
+      { read_precondition_into_rule(m, &rt, rt.nop, s, 1); }
+      if (s) { error("template too long (%s:%d)\n", fn, lno); }      
       r=new_rule(&rt);
       r->string=REGISTER_STRING(rule2string(m, r));
       array_add(m->templates, (void *)r); 
     }
   fclose(f);
+  if(buf) {
+	  free(buf);
+	  buf = NULL;
+  }
   lno=array_count(m->templates);
   report(2, "read %d template(s) (%d comment(s)) from \"%s\"\n", lno, cno, fn);
 }
@@ -1389,15 +1445,23 @@ static void tagging(model_pt m, globals_pt g)
 {
   FILE *f= g->ipf ? try_to_open(g->ipf, "r") : stdin;  
   array_pt pool=array_new(128), sps=array_new(128);
-  char *l;
+  ssize_t r;
+  char *s;
+  char *buf = NULL;
+  size_t n = 0;
   int lno;
   
-  for (lno=1, l=freadline(f); l; lno++, l=freadline(f))
+  lno=0;
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      s = buf;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       char *t;
       int i;
       array_clear(sps);
-      for (i=0, t=strtok(l, " \t"); t; i++, t=strtok(NULL, " \t"))
+      for (i=0, t=strtok(s, " \t"); t; i++, t=strtok(NULL, " \t"))
 	{
 	  sample_pt sp;
 
@@ -1448,6 +1512,10 @@ static void tagging(model_pt m, globals_pt g)
   array_map(pool, (void (*)(void *))free_sample);
   array_free(pool);
   if (f!=stdin) { fclose(f); }
+  if(buf) {
+	  free(buf);
+	  buf = NULL;
+  }
 }
 
 /* ------------------------------------------------------------ */
@@ -1533,6 +1601,7 @@ int main(int argc, char **argv)
   if(ret == -1) {
       if (g->mode==MODE_TRAIN)
 	{ report(1, "\"%s\" seems to be a new file, good\n", g->rf); }
+      else
       error("can't read rules from rule file \"%s\"\n", g->rf);
   }
   if (g->dft)
@@ -1557,8 +1626,6 @@ int main(int argc, char **argv)
 
   /* Free strings register */
   sregister_delete(m->strings);
-  /* Free the memory held by util.c. */
-  util_teardown();
 
   exit(0);
 }
