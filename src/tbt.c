@@ -1,8 +1,8 @@
 /*
   Transformation-based tagger
-  
+
   Copyright (c) 2001-2002, Ingo Schröder
-  Copyright (c) 2007-2013, ACOPOST Developers Team
+  Copyright (c) 2007-2016, ACOPOST Developers Team
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,6 @@
 #include "config-common.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
-#include <getopt.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -54,6 +53,7 @@
 #include <ctype.h> /* islower */
 #include <math.h> /* sqrt */
 #include <errno.h>
+#include <getopt.h>
 #include "hash.h"
 #include "array.h"
 #include "util.h"
@@ -70,7 +70,7 @@
 #define MAX(a, b) ((a)>(b) ? (a) : (b))
 #endif
 
-#define REGISTER_STRING(a) (char*)sregister_get(g->strings,a) 
+#define REGISTER_STRING(a) (char*)sregister_get(m->strings,a) 
 /* #define REGISTER_STRING(a) strdup(a) */
 
 /* ------------------------------------------------------------ */
@@ -91,8 +91,6 @@ typedef struct globals_s
   int rawinput; /* flag whether input is in raw format */
   char *tf;     /* template file name */
 
-  char *joker;  /* joker string in templates */
-
   int pos;   /* correctly tagged samples */
   int neg;   /* almost ;-) correctly tagged samples */
 
@@ -110,7 +108,6 @@ typedef struct globals_s
 
   int level;    /* size of context for rules */
   int stage;    /* stage of learning: unknown word, ... */
-  sregister_pt strings;
 } globals_t;
 typedef globals_t *globals_pt;
 
@@ -171,17 +168,6 @@ typedef struct rule_s
 } rule_t;
 typedef rule_t *rule_pt;
 
-typedef struct model_s
-{
-  iregister_pt tags;  /* lookup table tags */
-  hash_pt lexicon;    /* hashtable: string->word_pt */
-  array_pt templates; /* rule templates */
-  int defaulttag;     /* most probable tag (unigram) */
-  array_pt rules;     /* learned rules, either from file or selected */
-  hash_pt rulehash;   /* lookup table for *all* rules generated */
-} model_t;
-typedef model_t *model_pt;
-
 typedef struct sample_s
 {
   char *word;         /* word */
@@ -194,12 +180,27 @@ typedef sample_t *sample_pt;
 
 typedef struct word_s
 {
-  char *word;         /* word */
-  int count;
-  int defaulttag;     /* most frequent tag */
-  int *tcount;        /* counts for all tags */
+  char *string;      /* grapheme */
+  size_t count;      /* total number of occurances */
+  int *tagcount;     /* maps tag index -> no. of occurances */
+  ptrdiff_t defaulttag;    /* most frequent tag index */
 } word_t;
 typedef word_t *word_pt;
+
+typedef struct model_s
+{
+  iregister_pt tags;  /* lookup table tags */
+
+  hash_pt dictionary; /* dictionary: string->int (best tag) */
+  array_pt templates; /* rule templates */
+
+  size_t rwt;      /* rare word threshold */
+  int defaulttag;     /* most probable tag (unigram) */
+  array_pt rules;     /* learned rules, either from file or selected */
+  hash_pt rulehash;   /* lookup table for *all* rules generated */
+  sregister_pt strings;
+} model_t;
+typedef model_t *model_pt;
 
 typedef struct option_s
 {
@@ -212,8 +213,6 @@ typedef option_t *option_pt;
 /* ------------------------------------------------------------ */
 char *banner=
 "Transformation-based Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
-
-globals_pt g;
 
 option_t ops[]={
   { 'i', 1, "-i i  maximum number of iterations [unlimited]" },
@@ -230,7 +229,7 @@ option_t ops[]={
 };
 
 char *modename[]={ "tagging", "testing", "training", NULL };
-
+static const char* jokerstring="*"; /* joker string in templates */
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 static globals_pt new_globals(globals_pt old)
@@ -243,7 +242,6 @@ static globals_pt new_globals(globals_pt old)
   g->cmd=NULL;
   g->rf=g->lf=g->ipf=g->plf=g->tf=NULL;
   g->rawinput=0;
-  g->joker="*";
   g->pos=g->neg=0;
   g->rwt=0;
   g->dft=NULL;
@@ -265,10 +263,12 @@ static model_pt new_model(void)
   memset(m, 0, sizeof(model_t));
 
   m->tags=iregister_new(128);
-  m->lexicon=hash_new(5000, .5, hash_string_hash, hash_string_equal);
+  m->dictionary=hash_new(5000, .5, hash_string_hash, hash_string_equal);
   m->templates=array_new(64);
   m->rules=array_new(1000);
   m->rulehash=hash_new(100000, .7, hash_string_hash, hash_string_equal);
+  m->rwt=0;
+  m->strings = sregister_new(500);
   return m;
 }
 
@@ -285,31 +285,34 @@ static void free_sample(sample_pt sp)
 { mem_free(sp); }
 
 /* ------------------------------------------------------------ */
-static word_pt new_word(char *s, int not)
+static word_pt new_word(char *s, size_t cnt, size_t not)
 {
   word_pt w=(word_pt)mem_malloc(sizeof(word_t));
-  memset(w, 0, sizeof(word_t));
-  w->word=s;
-  w->tcount=(int *)mem_malloc(not*sizeof(int));
-  memset(w->tcount, 0, not*sizeof(int));
+
+  w->string=s;
+  w->count=cnt;
+  w->tagcount=(int *)mem_malloc(not*sizeof(int));
+  memset(w->tagcount, 0, not*sizeof(int));
+
   return w;
 }
 
-#if 0
 /* ------------------------------------------------------------ */
-static void free_word(word_pt w)
-{ mem_free(w->tcount); mem_free(w); }
-#endif
+void delete_word(word_pt w)
+{
+  mem_free(w->tagcount);
+  mem_free(w);
+}
 
 /* ------------------------------------------------------------ */
 /* previsously inlined */
 static word_pt get_word(model_pt m, char *s)
-{ return hash_get(m->lexicon, s); }
+{ return hash_get(m->dictionary, s); }
 
 /* ------------------------------------------------------------ */
 /* previously inlined */
 static int is_rare(model_pt m, char *s)
-{ word_pt w=get_word(m, s); return !w || w->count <= g->rwt; }
+{ word_pt w=get_word(m, s); return !w || w->count <= m->rwt; }
 
 /* ------------------------------------------------------------ */
 /* previously inlined */
@@ -317,11 +320,11 @@ int word_default_tag(model_pt m, char *s)
 { word_pt w=get_word(m, s); return w ? w->defaulttag : -1; }
 
 /* ------------------------------------------------------------ */
-static void usage(void)
+static void usage(globals_pt g)
 {
-  int i;
-  report(-1, "Usage:\n");
-  report(-1, "  %s OPTIONS rulefile [inputfile]\n", g->cmd);
+  size_t i;
+  report(-1, "\n%s\n\n", banner);
+  report(-1, "Usage: %s OPTIONS rulefile [inputfile]\n", g->cmd);
   report(-1, "where OPTIONS can be\n\n");
   for (i=0; ops[i].usage; i++)
     { report(-1, "  %s\n", ops[i].usage); }
@@ -329,7 +332,7 @@ static void usage(void)
 }
 
 /* ------------------------------------------------------------ */
-static void get_options(int argc, char **argv)
+static void get_options(globals_pt g, int argc, char **argv)
 {
   char c, b[256];
   int i, j;
@@ -349,7 +352,7 @@ static void get_options(int argc, char **argv)
 	    { report(2, "using %d as maximum number of iteration\n", g->mi); }
 	  break;
 	case 'l':
-	  g->lf=REGISTER_STRING(optarg);
+	  g->lf=strdup(optarg);
 	  report(2, "using \"%s\" as lexicon file\n", g->lf);
 	  break;
 	case 'm':
@@ -371,29 +374,32 @@ static void get_options(int argc, char **argv)
 	    { report(2, "running in %s mode\n", modename[g->mode]); }
 	  break;
 	case 'p':
-	  g->plf=REGISTER_STRING(optarg);
+	  g->plf=strdup(optarg);
 	  report(2, "using \"%s\" as preload file\n", g->plf);
 	  break;
 	case 'r':
 	  g->rawinput=1;
 	  break;
 	case 't':
-	  g->tf=REGISTER_STRING(optarg);
+	  g->tf=strdup(optarg);
 	  report(2, "using \"%s\" as template file\n", g->tf);
 	  break;
 	case 'u':
-	  g->dft=REGISTER_STRING(optarg);
+	  g->dft=strdup(optarg);
 	  report(2, "using \"%s\" as default tag for unknown word\n", g->dft);
 	  break;
 	case 'v':
 	  if (1!=sscanf(optarg, "%d", &verbosity))
 	    { error("invalid verbosity \"%s\"\n", optarg); }
 	  break;
+	default:
+	  error("unknown option \"-%c\"\n", c);
+	  break;
 	}
     }
 
   if (optind+2<argc || optind>=argc)
-    { usage(); error("wrong number of arguments\n"); }
+    { usage(g); error("wrong number of arguments\n"); }
   g->rf=strdup(argv[optind]);
   report(2, "using \"%s\" as rule file\n", g->rf);
   optind++;
@@ -435,10 +441,10 @@ static char *precondition2string(model_pt m, precondition_pt pc)
   switch (pc->type)
     {
     case PRE_TAG:
-      l=snprintf(b, BSIZE, "tag[%d]=%s", pc->pos, pc->u.tag<0 ? g->joker : iregister_get_name(m->tags, pc->u.tag));
+      l=snprintf(b, BSIZE, "tag[%d]=%s", pc->pos, pc->u.tag<0 ? jokerstring : iregister_get_name(m->tags, pc->u.tag));
       break;
     case PRE_WORD:
-      l=snprintf(b, BSIZE, "word[%d]=%s", pc->pos, pc->u.word ? pc->u.word : g->joker);
+      l=snprintf(b, BSIZE, "word[%d]=%s", pc->pos, pc->u.word ? pc->u.word : jokerstring);
       break;
     case PRE_PREFIX:
       if (pc->u.prefix.prefix)
@@ -468,7 +474,7 @@ static char *precondition2string(model_pt m, precondition_pt pc)
 	case PRE_ALL:
 	  l=snprintf(b, BSIZE, "digit[%d]=all", pc->pos); break;
 	case PRE_ANY:
-	  l=snprintf(b, BSIZE, "digit[%d]=%s", pc->pos, g->joker); break;
+	  l=snprintf(b, BSIZE, "digit[%d]=%s", pc->pos, jokerstring); break;
 	default:
 	  error("invalid DIGIT subtype %d\n", pc->u.digit);
 	  l=BSIZE+1;
@@ -484,7 +490,7 @@ static char *precondition2string(model_pt m, precondition_pt pc)
 	case PRE_ALL:
 	  l=snprintf(b, BSIZE, "cap[%d]=all", pc->pos); break;
 	case PRE_ANY:
-	  l=snprintf(b, BSIZE, "cap[%d]=%s", pc->pos, g->joker); break;
+	  l=snprintf(b, BSIZE, "cap[%d]=%s", pc->pos, jokerstring); break;
 	default:
 	  error("invalid CAP subtype %d\n", pc->u.cap);
 	  l=BSIZE+1;
@@ -511,7 +517,7 @@ static char *rule2string(model_pt m, rule_pt r)
 {
 #define BSIZE 4096
   static char b[BSIZE];
-  char *ts=r->tag<0 ? g->joker : (char*)iregister_get_name(m->tags, r->tag);
+  const char *ts=r->tag<0 ? jokerstring : (char*)iregister_get_name(m->tags, r->tag);
   int tsl=(ssize_t) strlen(ts);
   ptrdiff_t i, bl=BSIZE-1;
   
@@ -541,13 +547,13 @@ static void read_precondition_into_rule(model_pt m, rule_pt r, int n, char *s, i
     {
       r->pc[n].type=PRE_TAG;
       s=strchr(s, '='); s++;
-      r->pc[n].u.tag=(tf && !strcmp(s, g->joker)) ? -1 : iregister_add_name(m->tags, REGISTER_STRING(s));
+      r->pc[n].u.tag=(tf && !strcmp(s, jokerstring)) ? -1 : iregister_add_name(m->tags, REGISTER_STRING(s));
     }
   else if (1==sscanf(s, "word[%d]=", &r->pc[n].pos))
     {
       r->pc[n].type=PRE_WORD;
       s=strchr(s, '='); s++;
-      r->pc[n].u.word=(tf && !strcmp(s, g->joker)) ? NULL : REGISTER_STRING(s);
+      r->pc[n].u.word=(tf && !strcmp(s, jokerstring)) ? NULL : REGISTER_STRING(s);
     }
   else if (tf && 2==sscanf(s, "prefix[%d]=%zu", &r->pc[n].pos, &r->pc[n].u.prefix.length))
     {
@@ -626,17 +632,15 @@ static rule_pt register_rule(model_pt m, rule_pt r)
 }
 
 /* ------------------------------------------------------------ */
-static void read_rules_file(model_pt m)
+static int read_rules_file(model_pt m, char*fn)
 {
-  FILE *f=fopen(g->rf, "r");
+  FILE *f=fopen(fn, "r");
   char *s;
   int lno, cno;
 
   if (!f)
     {
-      if (g->mode==MODE_TRAIN)
-	{ report(1, "\"%s\" seems to be a new file, good\n", g->rf); return; }
-      error("can't read rules from rule file \"%s\"\n", g->rf);
+	    return -1;
     }
   
   for (cno=0, lno=1, s=freadline(f); s; lno++, s=freadline(f)) 
@@ -650,19 +654,20 @@ static void read_rules_file(model_pt m)
       for (rt.nop=0, s=tokenizer(NULL, " \t");
 	   s && rt.nop<MAX_NO_PC;
 	   rt.nop++, s=tokenizer(NULL, " \t"))
-	{ read_precondition_into_rule(m, &rt, rt.nop, s, 0); }
-      if (s) { report(0, "rule too long (%s:%d)\n", g->rf, lno); }      
+      { read_precondition_into_rule(m, &rt, rt.nop, s, 0); }
+      if (s) { report(0, "rule too long (%s:%d)\n", fn, lno); }      
       array_add(m->rules, (void *)new_rule(&rt));
     }
   fclose(f);
   lno=array_count(m->rules);
-  report(2, "read %d rule(s) (%d comment(s)) from \"%s\"\n", lno, cno, g->rf);
+  report(2, "read %d rule(s) (%d comment(s)) from \"%s\"\n", lno, cno, fn);
+  return lno;
 }
 
 /* ------------------------------------------------------------ */
-static void read_lexicon_file(model_pt m)
+static void read_dictionary_file(const char*fn, model_pt m)
 {
-  FILE *f=try_to_open(g->lf, "r");
+  FILE *f=try_to_open(fn, "r");
   int *tagcount;
   char *s;
   int cno, lno, i, mft, mftc, not;
@@ -680,8 +685,10 @@ static void read_lexicon_file(model_pt m)
   tagcount=(int *)mem_malloc(not*sizeof(int));
   memset(tagcount, 0, not*sizeof(int));
 
-  if (fseek(f, 0, SEEK_SET)) { error("can't rewind file \"%s\"\n", g->lf); }
-  
+  /* rewind file */
+  if (fseek(f, 0, SEEK_SET)) { error("can't rewind file \"%s\"\n", fn); }
+
+  /* second pass through file: collect details */
   for (cno=0, lno=1, s=freadline(f); s; lno++, s=freadline(f)) 
     {
       word_pt w;
@@ -692,7 +699,7 @@ static void read_lexicon_file(model_pt m)
       if (!s) { continue; }
       if (s[0]=='#' && s[1]=='#') { cno++; continue; }
       s=REGISTER_STRING(s);
-      w=new_word(s, not);
+      w=new_word(s, 0, not);
       bcnt=btag=-1;
       for (t=tokenizer(NULL, " \t"); t;  t=tokenizer(NULL, " \t"))
 	{
@@ -700,25 +707,25 @@ static void read_lexicon_file(model_pt m)
 	  
 	  t=tokenizer(NULL, " \t");
 	  if (!t || 1!=sscanf(t, "%td", &cnt))
-	    { report(1, "can't find tag count (%s:%d)\n", g->lf, lno); continue; }
+	    { report(1, "can't find tag count (%s:%d)\n", fn, lno); continue; }
 	  if (cnt>bcnt) { bcnt=cnt; btag=ti; }
-	  w->tcount[ti]=cnt;
+	  w->tagcount[ti]=cnt;
 	  w->count+=cnt;
 	}
       if (btag<0) 
-	{ report(0, "invalid lexicon entry (%s:%d)\n", g->lf, lno); continue; }
+      { report(0, "invalid lexicon entry (%s:%d)\n", fn, lno); continue; }
       c[0]++; c[1]+=w->count;
       w->defaulttag=btag;
-      if (hash_put(m->lexicon, s, (void *)w))
-	{ report(0, "duplicate lexicon entry \"%s\" (%s:%d)\n", s, g->lf, lno); }
+      if (hash_put(m->dictionary, s, (void *)w))
+	{ report(0, "duplicate lexicon entry \"%s\" (%s:%d)\n", s, fn, lno); }
 
       /* */
-      if (g->rwt>0 && w->count<=g->rwt)
+      if (m->rwt>0 && w->count<=m->rwt)
 	{	  
 	  /* don't consider for default tag if word is not rare */
 	  for (i=0; i<not; i++)
 	    {
-	      int tc=w->tcount[i];
+	      int tc=w->tagcount[i];
 	      if (tc==0) { continue; }
 	      tagcount[i]+=tc;
 	    }
@@ -727,7 +734,7 @@ static void read_lexicon_file(model_pt m)
     }
   fclose(f);
 
-  report(2, "read lexicon file \"%s\" (%d comment(s)):\n", g->lf, cno);
+  report(2, "read lexicon file \"%s\" (%d comment(s)):\n", fn, cno);
   report(2, "      rare: %10d type(s) %10d tokens\n", c[0]-c[2], c[1]-c[3]);
   report(2, "  frequent: %10d type(s) %10d tokens\n", c[2], c[3]);
   report(2, "            ------------------------------------\n");
@@ -783,10 +790,11 @@ static array_pt read_cooked_file(model_pt m, char *name)
 }
 
 /* ------------------------------------------------------------ */
-static void assign_lexical_tag(void *p, void *data)
+static void assign_lexical_tag(void *p, void *data, void *globaldata)
 { 
   sample_pt sp=(sample_pt)p;
   model_pt m=(model_pt)data;
+  globals_pt g=(globals_pt)globaldata;
   int mft;
 
   if (is_rare(m, sp->word)) { mft=m->defaulttag; }
@@ -801,8 +809,8 @@ static void assign_lexical_tag(void *p, void *data)
 }
 
 /* ------------------------------------------------------------ */
-static void assign_lexical_tags(void *p, void *data)
-{ array_map1((array_pt)p, assign_lexical_tag, data); }
+static void assign_lexical_tags(void *p, void *data, void *globaldata)
+{ array_map2((array_pt)p, assign_lexical_tag, data, globaldata); }
 
 /* ------------------------------------------------------------ */
 static int xxx_subtype(char *s, char *t)
@@ -867,13 +875,13 @@ static int rule_matches_sample(model_pt m, array_pt sps, int pos, rule_pt r)
   int i;
 
   /* Only allow lexical tags for frequent words. */
-  if (!is_rare(m, sp->word) && (0==w->tcount[r->tag])) { return 0; }
+  if (!is_rare(m, sp->word) && (0==w->tagcount[r->tag])) { return 0; }
   for (i=0; i<r->nop; i++)
     {
 #if 0
-      if (!strcmp(sp->word, "a") && !strcmp(rule2string(m, r), "NE rare[0] suffix[0]=a"))
+	if (!strcmp(sp->word, "a") && !strcmp(rule2string(m, r), "NE rare[0] suffix[0]=a"))
 	{
-	  int x=w?w->tcount[r->tag]:0;
+	  int x=w?w->tagcount[r->tag]:0;
 	  report(-1, "RMS: %d ->%s%s[%d]/%s<- %d\n", i,
 		 sp->word, is_rare(m, sp->word)?"*":"", x, iregister_get_name(m->tags, sp->tmptag),
 		 precondition_satisfied(m, sps, pos, r, i));
@@ -886,11 +894,11 @@ static int rule_matches_sample(model_pt m, array_pt sps, int pos, rule_pt r)
 }
 
 /* ------------------------------------------------------------ */
-static void append_rule_to_rule_file(model_pt m, rule_pt r)
+static void append_rule_to_rule_file(model_pt m, char*fn, rule_pt r)
 {
-  FILE *f=fopen(g->rf, "a");
+  FILE *f=fopen(fn, "a");
   if (!f)
-    { error("can't open file \"%s\" in append mode: %s\n", g->rf, strerror(errno)); }
+    { error("can't open file \"%s\" in append mode: %s\n", fn, strerror(errno)); }
   
   fprintf(f, "%s\n", r->string);
   fclose(f);
@@ -937,7 +945,7 @@ apply_rule(model_pt m, array_pt sts, rule_pt r, int countonly)
 	    if (!strcmp(rule2string(m, r), "NE rare[0] suffix[0]=a"))
 	      {
 		word_pt w=get_word(m, sp->word);
-		int x=w?w->tcount[r->tag]:0;
+		int x=w?w->tagcount[r->tag]:0;
 		report(-1, "POS1: %d %s/%s ->%s%s[%d]/%s<- %s/%s\n", j,
 		       spm1?spm1->word:"B", ttm1,
 		       sp->word, is_rare(m, sp->word)?"*":"", x, iregister_get_name(m->tags, sp->tmptag),
@@ -958,7 +966,7 @@ apply_rule(model_pt m, array_pt sts, rule_pt r, int countonly)
 	    if (!strcmp(rule2string(m, r), "NE rare[0] suffix[0]=a"))
 	      {
 		word_pt w=get_word(m, sp->word);
-		int x=w?w->tcount[r->tag]:0;
+		int x=w?w->tagcount[r->tag]:0;
 		report(-1, "NEG1: %d %s/%s ->%s%s[%d]/%s<- %s/%s\n", j,
 		       spm1?spm1->word:"B", ttm1,
 		       sp->word, is_rare(m, sp->word)?"*":"", x, iregister_get_name(m->tags, sp->tmptag),
@@ -975,20 +983,21 @@ apply_rule(model_pt m, array_pt sts, rule_pt r, int countonly)
 }
 
 /* ------------------------------------------------------------ */
-static void apply_rule_to_sts(void *p, void *d1, void *d2)
+static void apply_rule_to_sts(void *p, void *d1, void *d2, void *d3)
 {
   rule_pt r=(rule_pt)p;
   array_pt sts=(array_pt)d1;
   model_pt m=(model_pt)d2;
+  globals_pt g=(globals_pt)d3;
   int delta=apply_rule(m, sts, r, 0);  
   g->pos+=delta;
   g->neg-=delta;
 }
 
 /* ------------------------------------------------------------ */
-static void read_template_file(model_pt m)
+static void read_template_file(model_pt m, char* fn)
 {
-  FILE *f=try_to_open(g->tf, "r");
+  FILE *f=try_to_open(fn, "r");
   char *l;
   int cno, lno;
 
@@ -999,20 +1008,20 @@ static void read_template_file(model_pt m)
       
       l=tokenizer(l, " \t");
       if (!l) { continue; }
-      if (l[0]=='#' && l[1]=='#') { cno++; continue; }
-      rt.tag= strcmp(l, g->joker) ? iregister_add_name(m->tags, l) : -1;
+      if (l[0]=='#' || l[1]=='#') { cno++; continue; }
+      rt.tag= strcmp(l, jokerstring) ? iregister_add_name(m->tags, l) : -1;
       for (rt.nop=0, l=tokenizer(NULL, " \t");
 	   rt.nop<MAX_NO_PC && l;
 	   rt.nop++, l=tokenizer(NULL, " \t"))
-	{ read_precondition_into_rule(m, &rt, rt.nop, l, 1); }
-      if (l) { error("template too long (%s:%d)\n", g->tf, lno); }      
+      { read_precondition_into_rule(m, &rt, rt.nop, l, 1); }
+      if (l) { error("template too long (%s:%d)\n", fn, lno); }      
       r=new_rule(&rt);
       r->string=REGISTER_STRING(rule2string(m, r));
       array_add(m->templates, (void *)r); 
     }
   fclose(f);
   lno=array_count(m->templates);
-  report(2, "read %d template(s) (%d comment(s)) from \"%s\"\n", lno, cno, g->tf);
+  report(2, "read %d template(s) (%d comment(s)) from \"%s\"\n", lno, cno, fn);
 }
 
 /* ------------------------------------------------------------ */
@@ -1024,10 +1033,10 @@ static void free_preload_sentence(void *p)
 }
 
 /* ------------------------------------------------------------ */
-static void preload_file(model_pt m, char *name, array_pt sts)
+static void preload_file(model_pt m, globals_pt g, char *fn, array_pt sts)
 {
   int i, j;
-  array_pt pls=read_cooked_file(m, g->plf);
+  array_pt pls=read_cooked_file(m, fn);
 
   if (array_count(pls)!=array_count(sts))
     { error("sentence file and preload file have different sizes\n"); }
@@ -1164,21 +1173,21 @@ make_rules(model_pt m, array_pt sps, int pos, array_pt rs, int goodonly)
       if (!r) { continue; }
       /* single correcting rule */
       if (goodonly)
-	{ if (israre || w->tcount[r->tag]>0) { array_add(rs, new_rule(r)); } }
+	{ if (israre || w->tagcount[r->tag]>0) { array_add(rs, new_rule(r)); } }
       else
 	{
 	  /* template with specific tag: maybe worsening rule */
 	  if (t->tag>=0)
 	    {
 	      r->tag=t->tag;
-	      if (israre || w->tcount[r->tag]>0)
+	      if (israre || w->tagcount[r->tag]>0)
 		{ array_add(rs, new_rule(r)); }
 	    }
 	  /* template without specific tag: all target tags */
 	  else
 	    {
 	      for (r->tag=0; r->tag<not; r->tag++)
-		{ if (israre || w->tcount[r->tag]>0) { array_add(rs, new_rule(r)); } }
+		{ if (israre || w->tagcount[r->tag]>0) { array_add(rs, new_rule(r)); } }
 	    }
 	}
     }
@@ -1272,7 +1281,7 @@ static void make_deltas(void *a, void *b)
 	    if (!strcmp(rule2string(m, hr), "NE rare[0] suffix[0]=a"))
 	      {
 		word_pt w=get_word(m, sp->word);
-		int x=w?w->tcount[hr->tag]:0;
+		int x=w?w->tagcount[hr->tag]:0;
 		report(-1, "POS2: %d %s/%s ->%s%s[%d]/%s<- %s/%s\n", i,
 		       spm1?spm1->word:"B", ttm1,
 		       sp->word, is_rare(m, sp->word)?"*":"", x, iregister_get_name(m->tags, sp->tmptag),
@@ -1293,7 +1302,7 @@ static void make_deltas(void *a, void *b)
 	    if (!strcmp(rule2string(m, hr), "NE rare[0] suffix[0]=a"))
 	      {
 		word_pt w=get_word(m, sp->word);
-		int x=w?w->tcount[hr->tag]:0;
+		int x=w?w->tagcount[hr->tag]:0;
 		report(-1, "NEG2: %d %s/%s ->%s%s[%d]/%s<- %s/%s\n", i,
 		       spm1?spm1->word:"B", ttm1,
 		       sp->word, is_rare(m, sp->word)?"*":"", x, iregister_get_name(m->tags, sp->tmptag),
@@ -1308,19 +1317,19 @@ static void make_deltas(void *a, void *b)
 }
 
 /* ------------------------------------------------------------ */
-static void training(model_pt m)
+static void training(model_pt m, globals_pt g)
 {
   array_pt sts=read_cooked_file(m, g->ipf), rs=array_new(128);
   rule_pt br;
   int i;
   
-  read_template_file(m);
+  read_template_file(m, g->tf);
 
   /* either pre-tagged file or apply lexical guess */
-  if (g->plf) { preload_file(m, g->plf, sts); report(2, "after preload:"); }
+  if (g->plf) { preload_file(m, g, g->plf, sts); report(2, "after preload:"); }
   else
     {
-      array_map1(sts, assign_lexical_tags, m);
+      array_map2(sts, assign_lexical_tags, m, g);
       if (array_count(m->rules)==0)
 	{
 	  /* enforce the default rare tag with a rule*/
@@ -1330,7 +1339,7 @@ static void training(model_pt m)
 	  rt.pc[0].type=PRE_RARE;
 	  rt.pc[0].pos=0;
 	  rt.string=rule2string(m, &rt);
-	  append_rule_to_rule_file(m, &rt);
+	  append_rule_to_rule_file(m, g->rf, &rt);
 	  report(2, "adding lexical default rule \"%s\"\n", rt.string);
 	}
       report(2, "after lexicon check:");
@@ -1341,7 +1350,7 @@ static void training(model_pt m)
   /* apply rules if any */
   if (array_count(m->rules)>0)
     {
-      array_map2(m->rules, apply_rule_to_sts, sts, m);
+	    array_map3(m->rules, apply_rule_to_sts, sts, m, g);
       report(2, "after rule application: %dp + %dn==%d accuracy %7.3f%%\n",
 	     g->pos, g->neg, g->pos+g->neg,
 	     g->pos+g->neg==0 ? 0.0 : 100.0*g->pos/(g->pos+g->neg));
@@ -1361,7 +1370,7 @@ static void training(model_pt m)
       
       report(1, "best rule is %s delta %d good %d - bad %d == %d\n",
 	     br->string, br->delta, br->good, br->bad, br->good-br->bad);
-      append_rule_to_rule_file(m, br);
+      append_rule_to_rule_file(m, g->rf, br);
       if (br->delta!=delta)
 	{ error("ERROR: internal delta mismatch %d %d\n", br->delta, delta); }
       g->pos+=delta; g->neg-=delta;
@@ -1376,7 +1385,7 @@ static void training(model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-static void tagging(model_pt m)
+static void tagging(model_pt m, globals_pt g)
 {
   FILE *f= g->ipf ? try_to_open(g->ipf, "r") : stdin;  
   array_pt pool=array_new(128), sps=array_new(128);
@@ -1401,7 +1410,7 @@ static void tagging(model_pt m)
 	    }
 	  sp=(sample_pt)array_get(pool, i);
 	  sp->word=t;
-	  if (g->rawinput) { assign_lexical_tag((void *)sp, (void *)m); }
+	  if (g->rawinput) { assign_lexical_tag((void *)sp, (void *)m, (void *)g); }
 	  else
 	    {
 	      t=strtok(NULL, " \t");
@@ -1460,16 +1469,16 @@ static void unknown_vs_known1(void *p, void *d1, void *d2)
 { array_map2((array_pt)p, unknown_vs_known2, d1, d2); }
 
 /* ------------------------------------------------------------ */
-static void testing(model_pt m)
+static void testing(model_pt m, globals_pt g)
 {
   int i;
   int c[4]={0, 0, 0, 0};
   array_pt sts=read_cooked_file(m, g->ipf);
 
   /* either pre-tagged file or apply lexical guess */
-  if (g->plf) { preload_file(m, g->plf, sts); report(2, "after preload:"); }
+  if (g->plf) { preload_file(m, g, g->plf, sts); report(2, "after preload:"); }
   else
-    { array_map1(sts, assign_lexical_tags, m); report(2, "after lexicon check:"); }
+  { array_map2(sts, assign_lexical_tags, m, g); report(2, "after lexicon check:"); }
   report(-2, " %dp + %dn==%d accuracy %7.3f%%\n", g->pos, g->neg, g->pos+g->neg,
 	 g->pos+g->neg==0 ? 0.0 : 100.0*g->pos/(g->pos+g->neg));
 
@@ -1487,7 +1496,7 @@ static void testing(model_pt m)
     {
       rule_pt r=(rule_pt)array_get(m->rules, i);
       int c[4]={0, 0, 0, 0};
-      apply_rule_to_sts(r, sts, m);
+      apply_rule_to_sts(r, sts, m, g);
       array_map2(sts, unknown_vs_known1, c, m);
       report(2, "after rule %d: %dp + %dn==%d accuracy %7.3f%% ",
 	     i+1, g->pos, g->neg, g->pos+g->neg, 100.0*g->pos/(g->pos+g->neg));
@@ -1504,19 +1513,28 @@ static void testing(model_pt m)
 int main(int argc, char **argv)
 {
   model_pt m=new_model();
-  
-  g=new_globals(NULL);
+
+  globals_pt g=new_globals(NULL);
   g->cmd=strdup(acopost_basename(argv[0], NULL));
-  g->strings = sregister_new(500);
-  get_options(argc, argv);
- 
-  report(-1, "\n%s\n\n", banner);
+  get_options(g, argc, argv);
+
+  m->rwt = g->rwt;
+
+  report(1, "\n%s\n\n", banner);
 
   /* TODO: find better seed */
   srand48(0);
-  
-  read_rules_file(m);
-  if (g->lf) { read_lexicon_file(m); }
+
+  if (g->lf) {
+  read_dictionary_file(g->lf, m);
+  }
+
+  int ret = read_rules_file(m, g->rf);
+  if(ret == -1) {
+      if (g->mode==MODE_TRAIN)
+	{ report(1, "\"%s\" seems to be a new file, good\n", g->rf); }
+      error("can't read rules from rule file \"%s\"\n", g->rf);
+  }
   if (g->dft)
     {
       m->defaulttag=iregister_add_name(m->tags, g->dft);
@@ -1525,25 +1543,24 @@ int main(int argc, char **argv)
 
   switch (g->mode)
     {
-    case MODE_TAG: 
-      tagging(m); break;
-    case MODE_TEST: 
-      testing(m); break;
+    case MODE_TAG:
+      tagging(m, g); break;
+    case MODE_TEST:
+      testing(m, g); break;
     case MODE_TRAIN: 
-      training(m); break;
-    default: 
+      training(m, g); break;
+    default:
       report(0, "unknown mode of operation %d\n", g->mode);
     }
-  
+
   report(1, "done\n");
-  
+
   /* Free strings register */
-  sregister_delete(g->strings);
+  sregister_delete(m->strings);
   /* Free the memory held by util.c. */
   util_teardown();
-  
+
   exit(0);
 }
 
-/* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
