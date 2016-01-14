@@ -170,13 +170,14 @@ static globals_pt new_globals(globals_pt old)
   if (old) { memcpy(g, old, sizeof(globals_t)); return g; }
 
   g->mode=MODE_TAG;
-  g->cmd=g->kf=g->uf=g->df=g->rf=NULL;
+  g->cmd=NULL;
+  g->kf=g->uf=g->df=g->rf=NULL;
   
   return g;
 }
 
 /* ------------------------------------------------------------ */
-static model_pt new_model()
+static model_pt new_model(void)
 {
   model_pt m=(model_pt)mem_malloc(sizeof(model_t));
   memset(m, 0, sizeof(model_t));
@@ -190,7 +191,7 @@ static model_pt new_model()
 static word_pt new_word(char *s, size_t cnt, size_t not)
 {
   word_pt w=(word_pt)mem_malloc(sizeof(word_t));
-  
+
   w->string=s;
   w->count=cnt;
   w->tagcount=(int *)mem_malloc(not*sizeof(int));
@@ -775,9 +776,7 @@ int main(int argc, char **argv)
   m->strings = sregister_new(500);
   get_options(g, argc, argv);
 
-  report(1, "\n");
-  report(1, "%s\n", banner);
-  report(1, "\n");
+  report(1, "\n%s\n\n", banner);
 
   read_dictionary_file(g->df, m);
 
@@ -798,7 +797,7 @@ int main(int argc, char **argv)
 
   /* Free the memory held by util.c. */
   util_teardown();
-  
+
   exit(0);
 }
 
