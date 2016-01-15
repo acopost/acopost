@@ -838,10 +838,18 @@ static size_t read_samples(FILE *f, array_pt sms, array_pt wds,
 			array_pt tgs)
 {
   size_t lno, no_sts=0;
+  ssize_t r;
   char *s;
+  char *buf = NULL;
+  size_t n = 0;
 
-  for (lno=1, s=freadline(f); s; lno++, s=freadline(f))
+  lno = 0;
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      s = buf;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       char *w, *t;
       size_t wdc;
       
@@ -857,6 +865,10 @@ static size_t read_samples(FILE *f, array_pt sms, array_pt wds,
 	}
       if (wdc) { array_add(sms, new_sample(NULL, -1)); no_sts++; }
     }
+  if(buf) {
+	  free(buf);
+	  buf = NULL;
+  }
   return no_sts;
 }
 
@@ -892,15 +904,24 @@ static void write_dictionary_file(FILE *f, array_pt wds, array_pt wcs,
 static hash_pt read_dictionary_file(model_pt m, FILE *f, size_t cs)
 {
   hash_pt d;
-  char *l;
   size_t lno;
+  ssize_t r;
+  char *s;
+  char *buf = NULL;
+  size_t n = 0;
+
   
   if (!f) { return NULL; }
   d=hash_new(1000, .5, hash_string_hash, hash_string_equal);
-  for (lno=1, l=freadline(f); l; lno++, l=freadline(f))
+  lno = 0;
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      s = buf;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       array_pt tgs=NULL;
-      char *s, *w=tokenizer(l, " \t");
+      char *s, *w=tokenizer(s, " \t");
       size_t wc=0;
       
       if (!w) { continue; }
@@ -922,6 +943,10 @@ static hash_pt read_dictionary_file(model_pt m, FILE *f, size_t cs)
 	}
     }
   fclose(f);
+  if(buf) {
+	  free(buf);
+	  buf = NULL;
+  }
   report(1, "read %d lexicon entries, discarded %d entries\n", hash_size(d), lno-hash_size(d));
   return d;
 }
@@ -1411,17 +1436,24 @@ static void tagging(FILE *mf, FILE *df, FILE *rf, double pt, size_t bw, size_t c
 {
   model_pt m=read_model_file(mf);
   hash_pt dic=read_dictionary_file(m, df, cs);
-  char *w, *l;
+  char *w;
   size_t wcount=32;
   char **ws=mem_malloc(sizeof(char *)*wcount);
   int *ts=mem_malloc(sizeof(int)*wcount);
+  ssize_t r;
+  char *s;
+  char *buf = NULL;
+  size_t n = 0;
 
   memset(ws, 0, sizeof(char *)*wcount);
-  for (l=ftokenizer(rf, "\n"); l; l=ftokenizer(NULL, "\n"))
+  while ((r = readline(&buf,&n,rf)) != -1)
     {
+      s = buf;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       size_t i, wdc;
 
-      for (wdc=0, w=strtok(l, " \t"); w; wdc++, w=strtok(NULL, " \t"))
+      for (wdc=0, w=strtok(s, " \t"); w; wdc++, w=strtok(NULL, " \t"))
 	{
 	  if (wdc>=wcount)
 	    {
@@ -1445,6 +1477,10 @@ static void tagging(FILE *mf, FILE *df, FILE *rf, double pt, size_t bw, size_t c
 	}
       fprintf(stdout, "\n");
     }
+  if(buf) {
+	  free(buf);
+	  buf = NULL;
+  }
   mem_free(ws);
   mem_free(ts);
 }
@@ -1458,11 +1494,19 @@ static void testing(FILE *mf, FILE *df, FILE *rf, double pt, size_t bw, size_t c
   char **ws=mem_malloc(sizeof(char *)*wcount);
   int *ts=mem_malloc(sizeof(int)*wcount);
   int *tref=mem_malloc(sizeof(int)*wcount);
+  ssize_t r;
   char *s;
+  char *buf = NULL;
+  size_t n = 0;
 
   memset(ws, 0, sizeof(char *)*wcount);
-  for (lno=1, s=ftokenizer(rf, "\n"); s; lno++, s=ftokenizer(NULL, "\n"))
+  lno = 0;
+  while ((r = readline(&buf,&n,rf)) != -1)
     {
+      s = buf;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       char *w, *t;
       size_t wdc, i;
       
@@ -1502,6 +1546,10 @@ static void testing(FILE *mf, FILE *df, FILE *rf, double pt, size_t bw, size_t c
 	    }
 	}
     }
+  if(buf) {
+	  free(buf);
+	  buf = NULL;
+  }
   mem_free(ws);
   mem_free(ts);
   mem_free(tref);
@@ -1652,8 +1700,6 @@ extern int main(int argc, char **argv)
 
   /* Free strings register */
   sregister_delete(g->strings);
-  /* Free the memory held by util.c. */
-  util_teardown();
   
   exit(0);
 }
