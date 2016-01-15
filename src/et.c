@@ -427,7 +427,7 @@ static size_t register_feature_value(feature_pt f, char *s, sregister_pt strings
 }
 
 /* ------------------------------------------------------------ */
-static size_t find_feature_value_from_sentence(model_pt m, feature_pt f, char **ws, int *ts, ptrdiff_t i, size_t wno)
+static ptrdiff_t find_feature_value_from_sentence(model_pt m, feature_pt f, char **ws, int *ts, ptrdiff_t i, size_t wno)
 {
   ptrdiff_t rp=i+f->arg1;  
   word_pt w;
@@ -688,7 +688,7 @@ static void tagging(const char* fn, model_pt m)
 	    {
 	      feature_pt f=tree->feature;
 	      wtree_pt next;
-	      int fi;
+	      ptrdiff_t fi;
 
 	      if (!f) { report(4, "leaf node reached, breaking out\n"); break; }
 
@@ -781,7 +781,7 @@ void testing(model_pt m)
       while ((w=strtok(NULL, " \t\n")))
 	{
 	  feature_pt f=t->feature;
-	  size_t fi=find_feature_value(f, w);
+	  ptrdiff_t fi=find_feature_value(f, w);
 	  if (fi<0) { report(1, "can't find \"%s\", breaking out\n", w); break; }
 	  t=(wtree_pt)array_get(t->children, fi);
 	  if (!t) { report(1, "can't find child for %zd, breaking out\n", fi); break; }
