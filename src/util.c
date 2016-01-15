@@ -217,48 +217,6 @@ char *tokenizer(char *s, const char *sep)
 }
 
 /* ------------------------------------------------------------ */
-char *ftokenizer(FILE *ff, const char *sep)
-{
-#define BS (16*1024-1)
-  static char b[BS+1];
-  static FILE *f=NULL;
-  static char *s;
-  static char *t;  
-  char *r;
-  int len;
-  
-  if (ff) { f=ff; s=b; t=b; *t='\0'; }
-
-  s+=strspn(s, sep);
-  if (!*s)
-    {
-      t=b+fread(b, 1, BS, f); 
-      *t='\0';
-      s=b+strspn(b, sep);
-      if (!*s) { return NULL; }
-    }
-  /* s points to start of token
-     t points to \0 at end of valid buffer
-   */
-  len=strcspn(s, sep);
-  if (s+len==t)
-    {
-      /* current token is limited by end of valid buffer */
-      memmove(b, s, len);
-      t=b+len;
-      s=b;
-      t+=fread(t, 1, BS-len, f); 
-      *t='\0';
-      len=strcspn(s, sep);
-    }
-  s[len]='\0';
-  r=s;
-  s+=len;
-  if (s!=t) { s++; }
-  return r;
-}
-
-/* ------------------------------------------------------------ */
 char *reverse(const char *s, char**buffer, size_t *n)
 {
   size_t sl;
