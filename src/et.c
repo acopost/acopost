@@ -516,12 +516,12 @@ static void prune_wtree(model_pt m, wtree_pt t)
 static wtree_pt read_wtree(model_pt m, const char *fname)
 {
   size_t lno, cl=0, non=1, fos=array_count(m->features);
-  ssize_t fno;
+  size_t fno;
   FILE *f=try_to_open(fname, "r");
   wtree_pt root=new_wtree(iregister_get_length(m->tags));
   wtree_pt *ns;
   ssize_t r;
-  char *s;
+  char *s = NULL;
   char *buf = NULL;
   size_t n = 0;
   int in_header = 1;
@@ -547,7 +547,7 @@ static wtree_pt read_wtree(model_pt m, const char *fname)
     }
 
   fno=array_count(m->features)-fos;
-  if (fno<=0) { error("%s:%zd: no features found\n", fname, lno); }
+  if (fno==0) { error("%s:%zd: no features found\n", fname, lno); }
   root->feature=array_get(m->features, fos);
   
   /* this is the separating blank line */
@@ -594,7 +594,8 @@ static wtree_pt read_wtree(model_pt m, const char *fname)
       array_set(mom->children, i, wt);
       for (t=strtok(NULL, " \t"); t; t=strtok(NULL, " \t"))
 	{
-	  size_t c, ti=iregister_add_name(m->tags, t);
+	  unsigned long c;
+	  ptrdiff_t ti=iregister_add_name(m->tags, t);
 
 	  /* leaf node */
 	  t=strtok(NULL, " \t");
@@ -606,7 +607,7 @@ static wtree_pt read_wtree(model_pt m, const char *fname)
 	}
       ns[l]=wt;
     }
-  for (fno=cl; fno>=0; fno--) { prune_wtree(m, ns[fno]); }
+  for (fno=0; fno<=cl; fno++) { prune_wtree(m, ns[cl-fno]); }
   mem_free(ns);
   if(buf) {
 	  free(buf);
@@ -627,7 +628,7 @@ static void read_unknown_wtree(const char *fn, model_pt m)
 { m->unknown=read_wtree(m, fn); }
 
 /* ------------------------------------------------------------ */
-void print_wtree(wtree_pt t, int indent)
+void print_wtree(wtree_pt t, size_t indent)
 {
   feature_pt f=t->feature;
   size_t i;
