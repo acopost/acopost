@@ -515,20 +515,32 @@ static void prune_wtree(model_pt m, wtree_pt t)
 /* ------------------------------------------------------------ */
 static wtree_pt read_wtree(model_pt m, const char *fname)
 {
-  char *s;
   size_t lno, cl=0, non=1, fos=array_count(m->features);
   ssize_t fno;
   FILE *f=try_to_open(fname, "r");
   wtree_pt root=new_wtree(iregister_get_length(m->tags));
   wtree_pt *ns;
-    
+  ssize_t r;
+  char *s;
+  char *buf = NULL;
+  size_t n = 0;
+  int in_header = 1;
+
   /* first read list of features */
-  for (lno=1, s=freadline(f);
-       s && (!*s || (s[0]=='#' && s[1]=='#'));
-       lno++, s=freadline(f))
-    { /* skip over empty line and comments */ }
-  for (/* nada */; s && *s; lno++, s=freadline(f))
+  lno = 0;
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      s = buf;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
+      /* skip over empty lines and comments in header */
+      if(in_header) {
+	      if((r > 1) && (s[0]=='#' && s[1]=='#')) { continue; }
+	      if((r == 1) && (s[0]=='\0')) { continue; }
+	      in_header = 0;
+      }
+      if((r == 1) && (s[0]=='\0')) { break; }
       feature_pt ft=parse_feature(m, s);
       if (!ft) { error("%s:%zd: can't parse feature \"%s\"\n", fname, lno, s); }
       array_add(m->features, ft);
@@ -546,8 +558,14 @@ static wtree_pt read_wtree(model_pt m, const char *fname)
   ns[0]=root;
   
   /* now parse the tree */
-  for (cl=1, lno++, s=freadline(f); s; lno++, s=freadline(f))
+  cl = 1;
+  lno = 0;
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      s = buf;
+      lno++;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       char *t;
       size_t i, l;
       wtree_pt mom, wt;
@@ -590,6 +608,10 @@ static wtree_pt read_wtree(model_pt m, const char *fname)
     }
   for (fno=cl; fno>=0; fno--) { prune_wtree(m, ns[fno]); }
   mem_free(ns);
+  if(buf) {
+	  free(buf);
+	  buf = NULL;
+  }
 
   report(1, "read wtree with %zd nodes from \"%s\"\n", non, fname);
   
@@ -623,16 +645,22 @@ void print_wtree(wtree_pt t, int indent)
 }
 
 /* ------------------------------------------------------------ */
-static void tagging(const char* fn, globals_pt g, model_pt m)
+static void tagging(const char* fn, model_pt m)
 {
   size_t not=iregister_get_length(m->tags), nop=0;
   FILE *f= fn ? try_to_open(fn, "r") : stdin;
   char **words=NULL;
   int *tags=NULL;
+  ssize_t r;
   char *s;
+  char *buf = NULL;
+  size_t n = 0;
 
-  for (s=freadline(f); s; s=freadline(f))
+  while ((r = readline(&buf,&n,f)) != -1)
     {
+      s = buf;
+      if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
+      if(r == 0) { continue; }
       char *t;
       size_t i, wno;
       DEBUG(2, "GOT %s\n", s);
@@ -691,6 +719,10 @@ static void tagging(const char* fn, globals_pt g, model_pt m)
       printf("\n");
     }
   if (words) { mem_free(words); mem_free(tags); }  
+  if(buf) {
+	  free(buf);
+	  buf = NULL;
+  }
   if (f!=stdin) { fclose(f); }
 }
 
@@ -785,7 +817,7 @@ int main(int argc, char **argv)
 
   switch (g->mode)
     {
-    case MODE_TAG: tagging(g->rf, g, m); break;
+    case MODE_TAG: tagging(g->rf, m); break;
     case MODE_TEST: testing(m); break;
     default: report(0, "unknown mode of operation %d\n", g->mode);
     }
@@ -794,9 +826,6 @@ int main(int argc, char **argv)
 
   delete_model(m);
   delete_globals(g);
-
-  /* Free the memory held by util.c. */
-  util_teardown();
 
   exit(0);
 }
