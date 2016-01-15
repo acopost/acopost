@@ -107,16 +107,6 @@ char *acopost_basename(char *name, char *suffix);
 char *tokenizer(char *s, const char *sep);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   successively returns tokens separated by one or more chars
-   from sep string, NOT reentrant
-   typical use:
-   for (t=ftokenizer(f, " \t"); t; t=ftokenizer(NULL, " \t"))
-     { ... }
-*/
-char *ftokenizer(FILE *f, const char *sep);
-
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    reverses a string s, returns a pointer to buffer
 */
 char *reverse(const char *s, char**buffer, size_t*n);
