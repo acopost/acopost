@@ -122,15 +122,6 @@ ssize_t readdelim(char **lineptr, size_t *n, int delim, FILE *stream);
 ssize_t readline(char **lineptr, size_t *n, FILE *stream);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   successively returns new lines from file, NOT reentrant
-   typical use:
-   for (t=freadline(f); t; t=freadline(f))
-     { ... }
-*/
-extern char *freadline(FILE *f);
-
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    returns substring of s with maximum length length
    - if length>0: starting at pos
      substr("12345", 1, 3)="234"
@@ -159,11 +150,6 @@ size_t common_prefix_length(const char *, const char *);
    returns length of common suffix
 */
 size_t common_suffix_length(const char *, const char *);
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   frees the memory held by util.c.
-*/
-void util_teardown();
 
 /* ------------------------------------------------------------ */
 #endif
