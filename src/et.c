@@ -58,13 +58,13 @@
 /* ------------------------------------------------------------ */
 
 #if 0
-#define DEBUG(mode, msg...) report(mode, msg)
+#define DEBUG(mode, msg, ...) report(mode, msg, __VA_ARGS__)
 /*
   see http://gcc.gnu.org/onlinedocs/gcc-3.0.1/gcc_5.html#SEC82
   #define DEBUG(mode, msg...) fprintf (mode, msg, ## __VA_ARGS__)
 */
 #else
-#define DEBUG(mode, msg...) 
+#define DEBUG(mode, msg, ...)
 #endif
 
 /* ------------------------------------------------------------ */
