@@ -54,47 +54,6 @@
 #include "mem.h"
 
 /* ------------------------------------------------------------ */
-static char *g_buffer=NULL;
-
-/* ------------------------------------------------------------ */
-char *freadline(FILE *f)
-{
-  static int csize=5;
-  char *s;
-  int sl;
-
-  if (!g_buffer) { g_buffer=(char *)mem_malloc(csize); }
-
-  s=fgets(g_buffer, csize, f);
-  if (!s) { return NULL; }
-  sl=strlen(s);
-/*   fprintf(stderr, ">> csize=%d sl=%d s[sl-1]=%d s=\"%s\" %p g_buffer=\"%s\"\n",  */
-/* 	  csize, sl, s[sl-1], s, s, g_buffer); */
-  while (s[sl-1]!='\n')
-    {
-      int oldsize=csize;
-      csize*=2;
-      g_buffer=(char *)mem_realloc(g_buffer, csize);
-/*       fprintf(stderr, ">> fgets at %d %d\n", oldsize-1, g_buffer[oldsize-1]); */
-      s=fgets(g_buffer+oldsize-1, oldsize+1, f);
-      if (!s) { return g_buffer; }
-      sl=strlen(s);
-/*       fprintf(stderr, ">> csize=%d sl=%d s[sl-1]=%d s=\"%s\" %p g_buffer=\"%s\"\n",  */
-/* 	      csize, sl, s[sl-1], s, s, g_buffer); */
-    }
-  s[sl-1]='\0';
-  return g_buffer;
-}
-
-/* ------------------------------------------------------------ */
-void util_teardown()
-{
-  if (g_buffer) {
-    mem_free(g_buffer);
-  }
-}
-
-/* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 /* 0 errors only, 1 normal, ..., 6 really chatty */
 int verbosity=1;
