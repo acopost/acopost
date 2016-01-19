@@ -1,5 +1,18 @@
+* Remove segmentation faults
+* Uniform the binaries CLI
+  we already added prefixes, so it should not be a big issue trying to make
+  the options more uniform and changing the CLI; we should however write
+  a manual to cope with the differences in the interface.
+* Update UserGuide
 * Implement acopost as a library
 ** Make main functions re-entrant and avoid global variables
+*** tokenizer/strtok (tokenizer revert the changes to the input string when
+    finished)
+*** substr
+*** lowercase
+** No library function should call exit
+   Currently the only functions doing this are try_to_open() and the
+   functions calling it
 * Support UTF-8
   Currently util.c, tbt.c, t3.c, met.c, et.c contain hard-coded
   latin1 strings, that are used to deal with ä, ö, ü, Ä, Ö, and Ü
