@@ -122,7 +122,8 @@ ssize_t readdelim(char **lineptr, size_t *n, int delim, FILE *stream);
 ssize_t readline(char **lineptr, size_t *n, FILE *stream);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   returns substring of s with maximum length length
+   returns substring of s with maximum length length,
+   NOT reentrant
    - if length>0: starting at pos
      substr("12345", 1, 3)="234"
    - if length<0: ending with pos 
