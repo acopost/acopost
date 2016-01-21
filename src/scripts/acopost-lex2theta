@@ -17,6 +17,7 @@ sub usage
 }
 
 $rwt = 5;
+GetOptions
 (
  'r=i' => \$rwt,
  'h|help'        => sub { usage (); exit },
