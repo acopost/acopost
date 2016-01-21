@@ -35,11 +35,6 @@
 
 */
 
-/*
-  TODO:
-
-*/
-
 /* ------------------------------------------------------------ */
 #include "config-common.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
@@ -78,6 +73,14 @@
 #define MODE_TAG     0
 #define MODE_TEST    1
 #define MODE_TRAIN   2
+
+typedef struct option_s
+{
+  char character;
+  char arg;
+  char *usage;
+} option_t;
+typedef option_t *option_pt;
 
 typedef struct globals_s
 {
@@ -202,19 +205,13 @@ typedef struct model_s
 } model_t;
 typedef model_t *model_pt;
 
-typedef struct option_s
-{
-  char character;
-  char arg;
-  char *usage;
-} option_t;
-typedef option_t *option_pt;
-
 /* ------------------------------------------------------------ */
 char *banner=
 "Transformation-based Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
 
 option_t ops[]={
+  { 'h', 0, "-h    display help" },
+  { 'v', 1, "-v v  verbosity [1]" },
   { 'i', 1, "-i i  maximum number of iterations [unlimited]" },
   { 'l', 1, "-l l  lexicon file [none]" },
   { 'm', 1, "-m m  minimum improvement per iteration [1]" },
@@ -224,7 +221,6 @@ option_t ops[]={
   { 'r', 0, "-r    assume raw format for input [cooked format]" },
   { 't', 1, "-t t  template file [none]" },
   { 'u', 1, "-u u  unknown word default tag [lexicon based]" },
-  { 'v', 1, "-v v  verbosity [1]" },
   { '\0', 0, NULL },
 };
 
@@ -320,11 +316,11 @@ int word_default_tag(model_pt m, char *s)
 { word_pt w=get_word(m, s); return w ? w->defaulttag : -1; }
 
 /* ------------------------------------------------------------ */
-static void usage(globals_pt g)
+static void usage(const char* cmd)
 {
   size_t i;
   report(-1, "\n%s\n\n", banner);
-  report(-1, "Usage: %s OPTIONS rulefile [inputfile]\n", g->cmd);
+  report(-1, "Usage: %s OPTIONS rulefile [inputfile]\n", cmd);
   report(-1, "where OPTIONS can be\n\n");
   for (i=0; ops[i].usage; i++)
     { report(-1, "  %s\n", ops[i].usage); }
@@ -345,6 +341,9 @@ static void get_options(globals_pt g, int argc, char **argv)
     {
       switch (c)
 	{
+	case 'h':
+	  usage(g->cmd);
+	  exit(0);
 	case 'i':
 	  if (1!=sscanf(optarg, "%d", &g->mi))
 	    { error("invalid maximum number of iterations \"%s\"\n", optarg); }
@@ -399,7 +398,7 @@ static void get_options(globals_pt g, int argc, char **argv)
     }
 
   if (optind+2<argc || optind>=argc)
-    { usage(g); error("wrong number of arguments\n"); }
+    { usage(g->cmd); error("wrong number of arguments\n"); }
   g->rf=strdup(argv[optind]);
   report(2, "using \"%s\" as rule file\n", g->rf);
   optind++;
