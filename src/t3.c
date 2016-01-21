@@ -96,6 +96,7 @@ typedef double prob_t;
 #define MODE_TAG     0
 #define MODE_TEST    1
 #define MODE_TRAIN   2
+#define MODE_DEBUG   8
 
 typedef struct option_s
 {
@@ -169,21 +170,21 @@ char *banner=
 "Trigram POS Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
 
 option_t ops[]={
+  { 'h', "-h    display help" },
+  { 'v', "-v v  verbosity [1]" },
   { 'a', "-a a  lambdas" },
   { 'b', "-b b  beam factor [1000]" },
   { 'd', "-d    debug mode" },
-  { 'h', "-h    display help" },
   { 'l', "-l l  maximum suffix length [10]" },
-  { 'm', "-m m  mode of operation [0]" },
   { 'q', "-q    be quite" },
   { 'r', "-r r  rare word threshold [1]" },
   { 's', "-s s  theta for suffix backoff [SD of tag probabilities]" },
-  { 't', "-t    test mode" },
   { 'u', "-u    use line-buffered IO for input" },
-  { 'v', "-v v  verbosity [1]" },
   { 'x', "-x    case-insensitive suffix tries [sensitive]"},
   { 'y', "-y    case-insensitive when branching in suffix trie [sensitive]"},
   { 'z', "-z    zero empirical transition probs if undefined [1/#tags]"},
+  { 't', "-t    test mode" },
+  { 'm', "-m m  mode of operation [0]" },
   { '\0', NULL },
 };
 
@@ -211,7 +212,7 @@ static globals_pt new_globals(globals_pt old)
 }
 
 /* ------------------------------------------------------------ */
-static model_pt new_model()
+static model_pt new_model(void)
 {
   model_pt m=(model_pt)mem_malloc(sizeof(model_t));
   memset(m, 0, sizeof(model_t));
@@ -223,7 +224,7 @@ static word_pt new_word(char *s, size_t cnt, size_t not)
 {
   word_pt w=(word_pt)mem_malloc(sizeof(word_t));
   size_t i;
-  
+
   w->string=s;
   w->count=cnt;
   w->tagcount=(int *)mem_malloc(not*sizeof(int));
@@ -281,7 +282,6 @@ void delete_trie(trie_pt tr)
   mem_free(tr->next);
   mem_free(tr);
 }
-
 
 /* ------------------------------------------------------------ */
 void trie_add_daughter(trie_pt tr, unsigned char c, trie_pt daughter)
@@ -356,11 +356,11 @@ void add_word_to_trie(void *key, void *value, void* gp, void *data)
 
 
 /* ------------------------------------------------------------ */
-static void usage(globals_pt g)
+static void usage(const char*cmd)
 {
   size_t i;
   report(-1, "\n%s\n\n", banner);
-  report(-1, "Usage: %s OPTIONS modelfile dictionaryfile [inputfile]\n", g->cmd);
+  report(-1, "Usage: %s OPTIONS modelfile dictionaryfile [inputfile]\n", cmd);
   report(-1, "where OPTIONS can be\n\n");
   for (i=0; ops[i].usage; i++)
     { report(-1, "  %s\n", ops[i].usage); }
@@ -373,7 +373,7 @@ static void get_options(globals_pt g, int argc, char **argv)
   char c;
   unsigned long tmp;
 
-  while ((c=getopt(argc, argv, "a:b:dhl:m:qr:s:tuv:xyz"))!=EOF)
+  while ((c=getopt(argc, argv, "hv:a:b:dl:qr:s:uxyztm:"))!=EOF)
     {
       switch (c)
 	{
@@ -389,12 +389,8 @@ static void get_options(globals_pt g, int argc, char **argv)
 	  else
 	    { g->bw = tmp; report(1, "using %lu as beam width\n", (unsigned long) g->bw); }
 	  break;
-	case 'd':
-	  report(1, "running in debug mode\n");
-	  g->mode=8;
-	  break;
 	case 'h':
-	  usage(g);
+	  usage(g->cmd);
 	  exit(0);
 	  break;
 	case 'l':
@@ -402,12 +398,6 @@ static void get_options(globals_pt g, int argc, char **argv)
 	    { error("invalid maximum suffix length \"%s\"\n", optarg); }
 	  else
 	    { g->msl = tmp; report(1, "using %lu as maximum suffix length\n", (unsigned long) g->msl); }
-	  break;
-	case 'm':
-	  if (1!=sscanf(optarg, "%d", &g->mode))
-	    { error("invalid mode of operation \"%s\"\n", optarg); }
-	  else
-	    { report(1, "using %d as mode of operation\n", g->mode); }
 	  break;
 	case 'q':
 	  verbosity=0;
@@ -424,8 +414,18 @@ static void get_options(globals_pt g, int argc, char **argv)
 	  else
 	    { report(1, "using %6.4f as suffix backoff theta\n", g->theta); }
 	  break;
+	case 'd':
+	  report(1, "running in debug mode\n");
+	  g->mode=MODE_DEBUG;
+	  break;
+	case 'm':
+	  if (1!=sscanf(optarg, "%d", &g->mode))
+	    { error("invalid mode of operation \"%s\"\n", optarg); }
+	  else
+	    { report(1, "using %d as mode of operation\n", g->mode); }
+	  break;
 	case 't':
-	  g->mode=1;
+	  g->mode=MODE_TEST;
 	  break;
 	case 'u':
 	  g->bmode=_IOLBF;
@@ -449,7 +449,7 @@ static void get_options(globals_pt g, int argc, char **argv)
 	}
     }
 
-  if (optind>=argc-1) { usage(g); error("too few arguments\n"); }
+  if (optind>=argc-1) { usage(g->cmd); error("too few arguments\n"); }
   g->mf=strdup(argv[optind]);
   g->df=strdup(argv[optind+1]);
   if (optind+2<argc && strcmp("-", argv[optind+2]))
@@ -861,7 +861,7 @@ void compute_transition_probs(globals_pt g, model_pt m)
     }
   report(1, "computed smoothed transition probabilities\n");
 
-  if (g->mode!=8)
+  if (g->mode!=MODE_DEBUG)
     {
       /* bigrams and trigrams counts aren't needed anymore */
       mem_free(m->count[1]); m->count[1]=NULL;
@@ -1010,7 +1010,7 @@ void smooth_suffix_probs(globals_pt g, model_pt m, trie_pt tr, trie_pt dad)
       tr->lp[i]=p;
     }
 
-  if (g->mode!=8) { mem_free(tr->tagcount); tr->tagcount=NULL; }
+  if (g->mode!=MODE_DEBUG) { mem_free(tr->tagcount); tr->tagcount=NULL; }
 
   if (tr->children==1) { smooth_suffix_probs(g, m, (trie_pt)tr->unarynext, tr); }
   else if (tr->next)
@@ -1627,7 +1627,7 @@ int main(int argc, char **argv)
       testing(g->rf, m); break;
     case 7:
       dump_transition_probs(m); break; 
-    case 8:
+    case MODE_DEBUG:
       debugging(m); break;
 /*   case 9: sleep(30); break; */
     default:
@@ -1638,6 +1638,7 @@ int main(int argc, char **argv)
 
   delete_model(m);
   delete_globals(g);
+
   exit(0);
 }
 
