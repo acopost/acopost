@@ -11,10 +11,10 @@ AM_CFLAGS += -Wall -Wsign-compare -pedantic -std=c99 -D_USE_BSD -DT3_PROB_IS_FLO
 
 
 bin_PROGRAMS = acopost-et acopost-met acopost-t3 acopost-tbt
-noinst_PROGRAMS = lextest acopost_test eqsort_test util_test
+noinst_PROGRAMS = lextest acopost_test eqsort_test util_test options_test
 
-noinst_HEADERS = array.h config-common.h gis.h hash.h lexicon.h mem.h primes.h util.h sregister.h iregister.h eqsort.h
-LIBRARY_FILES = array.c mem.c util.c hash.c primes.c sregister.c iregister.c eqsort.c
+noinst_HEADERS = array.h config-common.h gis.h hash.h lexicon.h mem.h primes.h util.h sregister.h iregister.h eqsort.h options.h
+LIBRARY_FILES = array.c mem.c util.c hash.c primes.c sregister.c iregister.c eqsort.c options.c
 
 acopost_et_SOURCES = et.c $(LIBRARY_FILES)
 acopost_et_LDFLAGS = -lm
@@ -39,6 +39,9 @@ eqsort_test_LDFLAGS = -lm
 
 util_test_SOURCES = util_test.c $(LIBRARY_FILES)
 util_test_LDFLAGS = -lm
+
+options_test_SOURCES = options_test.c $(LIBRARY_FILES)
+options_test_LDFLAGS = -lm
 
 
 
