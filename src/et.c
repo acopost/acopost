@@ -157,8 +157,9 @@ char *banner=
 "Example-based Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
 
 option_t ops[]={
-  { 't', "-t    test mode" },
+  { 'h', "-h    display help" },
   { 'v', "-v v  verbosity [1]" },
+  { 't', "-t    test mode" },
   { '\0', NULL },
 };
 
@@ -236,11 +237,11 @@ static wtree_pt new_wtree(size_t not)
 }
 
 /* ------------------------------------------------------------ */
-static void usage(globals_pt g)
+static void usage(const char* cmd)
 {
   size_t i;
   report(-1, "\n%s\n\n", banner);
-  report(-1, "Usage: %s OPTIONS knownwtree unknownwtree dictionaryfile [inputfile]\n", g->cmd);
+  report(-1, "Usage: %s OPTIONS knownwtree unknownwtree dictionaryfile [inputfile]\n", cmd);
   report(-1, "where OPTIONS can be\n\n");
   for (i=0; ops[i].usage; i++)
     { report(-1, "  %s\n", ops[i].usage); }
@@ -252,12 +253,16 @@ static void get_options(globals_pt g, int argc, char **argv)
 {
   char c;
 
-  while ((c=getopt(argc, argv, "tv:"))!=EOF)
+  while ((c=getopt(argc, argv, "htv:"))!=EOF)
     {
       switch (c)
 	{
 	case 't':
 	  g->mode=MODE_TEST;
+	  break;
+	case 'h':
+	  usage(g->cmd);
+	  exit(0);
 	  break;
 	case 'v':
 	  if (1!=sscanf(optarg, "%d", &verbosity))
@@ -269,7 +274,7 @@ static void get_options(globals_pt g, int argc, char **argv)
 	}
     }
 
-  if (optind+2>=argc) { usage(g); error("too few arguments\n"); }
+  if (optind+2>=argc) { usage(g->cmd); error("too few arguments\n"); }
   g->kf=strdup(argv[optind]);
   g->uf=strdup(argv[optind+1]);
   g->df=strdup(argv[optind+2]);
