@@ -69,8 +69,8 @@
 
 /* ------------------------------------------------------------ */
 
-#define MODE_TAG 1
-#define MODE_TEST 2
+#define MODE_TAG     0
+#define MODE_TEST    1
 
 typedef struct option_s
 {
