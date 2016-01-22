@@ -37,6 +37,8 @@
 
 /* ------------------------------------------------------------ */
 #include "config-common.h"
+#include "options.h"
+#include "option_mode.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
 #include <stdio.h>
@@ -69,51 +71,18 @@
 /* #define REGISTER_STRING(a) strdup(a) */
 
 /* ------------------------------------------------------------ */
-
-#define MODE_TAG     0
-#define MODE_TEST    1
-#define MODE_TRAIN   2
-
-typedef struct option_s
-{
-  char character;
-  char arg;
-  char *usage;
-} option_t;
-typedef option_t *option_pt;
-
 typedef struct globals_s
 {
-  int mode;     /* mode: MODE_{TAG, TEST, ...} */
-  char *cmd;    /* command name */   
-  char *rf;     /* rule file name */   
-  char *lf;     /* lexicon file name */
-
-  char *ipf;    /* input file name */
-  char *plf;    /* preload file name */
   int rawinput; /* flag whether input is in raw format */
-  char *tf;     /* template file name */
-
   int pos;   /* correctly tagged samples */
   int neg;   /* almost ;-) correctly tagged samples */
 
-  int rwt;      /* rare word threshold */
-  char *dft;    /* default tag for unknown words */
-
-  int ssl;   /* max. substring string length for prefix and suffix */
-  double chi;   /* chi limit */
-  int R;     /* max. no of rules per sample */
-  int zres;     /* */
-  int roundrobin; /* only choose every X sample for rule generation */
-
-  int md;    /* minimum improvement per iteration */
-  int mi;    /* maximum number of iterations */
-
-  int level;    /* size of context for rules */
-  int stage;    /* stage of learning: unknown word, ... */
+  char *rf;     /* rule file name */
+  char *ipf;    /* input file name */
+  char *plf;    /* preload file name */
+  char *tf;     /* template file name */
 } globals_t;
 typedef globals_t *globals_pt;
-
 #define PRE_TAG 1
 #define PRE_TIR 2
 #define PRE_WORD 3
@@ -205,52 +174,7 @@ typedef struct model_s
 } model_t;
 typedef model_t *model_pt;
 
-/* ------------------------------------------------------------ */
-char *banner=
-"Transformation-based Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
-
-option_t ops[]={
-  { 'h', 0, "-h    display help" },
-  { 'v', 1, "-v v  verbosity [1]" },
-  { 'i', 1, "-i i  maximum number of iterations [unlimited]" },
-  { 'l', 1, "-l l  lexicon file [none]" },
-  { 'm', 1, "-m m  minimum improvement per iteration [1]" },
-  { 'n', 1, "-n n  rare wore threshold [0]" },
-  { 'o', 1, "-o o  mode of operation 0 tagging, 1 testing, 2 training [0]" },
-  { 'p', 1, "-p p  preload file [none]" },
-  { 'r', 0, "-r    assume raw format for input [cooked format]" },
-  { 't', 1, "-t t  template file [none]" },
-  { 'u', 1, "-u u  unknown word default tag [lexicon based]" },
-  { '\0', 0, NULL },
-};
-
-char *modename[]={ "tagging", "testing", "training", NULL };
 static const char* jokerstring="*"; /* joker string in templates */
-/* ------------------------------------------------------------ */
-/* ------------------------------------------------------------ */
-static globals_pt new_globals(globals_pt old)
-{
-  globals_pt g=(globals_pt)mem_malloc(sizeof(globals_t));
-
-  if (old) { memcpy(g, old, sizeof(globals_t)); return g; }
-
-  g->mode=MODE_TAG;
-  g->cmd=NULL;
-  g->rf=g->lf=g->ipf=g->plf=g->tf=NULL;
-  g->rawinput=0;
-  g->pos=g->neg=0;
-  g->rwt=0;
-  g->dft=NULL;
-  g->ssl=5;
-  g->chi=99999999.0;
-  g->R=-1;
-  g->zres=-1;
-  g->roundrobin=1;
-  g->md=1;
-  g->mi=-1;
-  g->level=0;
-  return g;
-}
 
 /* ------------------------------------------------------------ */
 static model_pt new_model(void)
@@ -314,107 +238,6 @@ static int is_rare(model_pt m, char *s)
 /* previously inlined */
 int word_default_tag(model_pt m, char *s)
 { word_pt w=get_word(m, s); return w ? w->defaulttag : -1; }
-
-/* ------------------------------------------------------------ */
-static void usage(const char* cmd)
-{
-  size_t i;
-  report(-1, "\n%s\n\n", banner);
-  report(-1, "Usage: %s OPTIONS rulefile [inputfile]\n", cmd);
-  report(-1, "where OPTIONS can be\n\n");
-  for (i=0; ops[i].usage; i++)
-    { report(-1, "  %s\n", ops[i].usage); }
-  report(-1, "\n");
-}
-
-/* ------------------------------------------------------------ */
-static void get_options(globals_pt g, int argc, char **argv)
-{
-  char c, b[256];
-  int i, j;
-
-  /* prepare string for getopt */
-  for (i=0, j=0; ops[i].character && j<255; i++, j++)
-    { b[j]=ops[i].character; if (ops[i].arg) { j++; b[j]=':'; } }
-  b[j]='\0';
-  while ((c=getopt(argc, argv, b))!=EOF)
-    {
-      switch (c)
-	{
-	case 'h':
-	  usage(g->cmd);
-	  exit(0);
-	case 'i':
-	  if (1!=sscanf(optarg, "%d", &g->mi))
-	    { error("invalid maximum number of iterations \"%s\"\n", optarg); }
-	  else
-	    { report(2, "using %d as maximum number of iteration\n", g->mi); }
-	  break;
-	case 'l':
-	  g->lf=strdup(optarg);
-	  report(2, "using \"%s\" as lexicon file\n", g->lf);
-	  break;
-	case 'm':
-	  if (1!=sscanf(optarg, "%d", &g->md))
-	    { error("invalid minimum improvement \"%s\"\n", optarg); }
-	  else
-	    { report(2, "using %d as minimum improvement\n", g->md); }
-	  break;
-	case 'n':
-	  if (1!=sscanf(optarg, "%d", &g->rwt))
-	    { error("invalid rare word threshold \"%s\"\n", optarg); }
-	  else
-	    { report(2, "rare words occur %d times or fewer\n", g->rwt); }
-	  break;
-	case 'o':
-	  if (1!=sscanf(optarg, "%d", &g->mode) || g->mode<MODE_TAG || g->mode>MODE_TRAIN)
-	    { error("invalid mode of operation \"%s\"\n", optarg); }
-	  else
-	    { report(2, "running in %s mode\n", modename[g->mode]); }
-	  break;
-	case 'p':
-	  g->plf=strdup(optarg);
-	  report(2, "using \"%s\" as preload file\n", g->plf);
-	  break;
-	case 'r':
-	  g->rawinput=1;
-	  break;
-	case 't':
-	  g->tf=strdup(optarg);
-	  report(2, "using \"%s\" as template file\n", g->tf);
-	  break;
-	case 'u':
-	  g->dft=strdup(optarg);
-	  report(2, "using \"%s\" as default tag for unknown word\n", g->dft);
-	  break;
-	case 'v':
-	  if (1!=sscanf(optarg, "%d", &verbosity))
-	    { error("invalid verbosity \"%s\"\n", optarg); }
-	  break;
-	default:
-	  error("unknown option \"-%c\"\n", c);
-	  break;
-	}
-    }
-
-  if (optind+2<argc || optind>=argc)
-    { usage(g->cmd); error("wrong number of arguments\n"); }
-  g->rf=strdup(argv[optind]);
-  report(2, "using \"%s\" as rule file\n", g->rf);
-  optind++;
-  if (optind<argc && strcmp("-", argv[optind]))
-    { g->ipf=strdup(argv[optind]); }
-  report(2, "using \"%s\" as input file\n", g->ipf ? g->ipf : "STDIN");
-
-  if (g->mode==MODE_TRAIN && !g->tf)
-    { error("you must specify a template file (-t) for training\n"); }
-  if (g->mode!=MODE_TRAIN && g->tf)
-    { error("no template file needed in %s mode\n", modename[g->mode]); }
-  if (g->mode==MODE_TAG && g->plf)
-    { error("no preload file needed in %s mode\n", modename[g->mode]); }
-  if (g->mode!=MODE_TAG && g->rawinput)
-    { error("input must be in cooked format for %s\n", modename[g->mode]); }
-}
 
 /* ------------------------------------------------------------ */
 static rule_pt new_rule(rule_pt old)
@@ -1372,7 +1195,10 @@ static void make_deltas(void *a, void *b)
 }
 
 /* ------------------------------------------------------------ */
-static void training(model_pt m, globals_pt g)
+
+/* md: minimum improvement per iteration */
+/* mi: maximum number of iterations */
+static void training(model_pt m, globals_pt g, int mi, int md)
 {
   array_pt sts=read_cooked_file(m, g->ipf), rs=array_new(128);
   rule_pt br;
@@ -1418,7 +1244,7 @@ static void training(model_pt m, globals_pt g)
 
   /* get best rule & update loop */
   for (i=1, br=find_best_rule(m);
-       br && br->delta >= g->md && (g->mi < 0 || i <= g->mi);
+       br && br->delta >= md && (mi < 0 || i <= mi);
        i++, br=find_best_rule(m))
     {
       int delta=apply_rule(m, sts, br, 0);
@@ -1576,55 +1402,143 @@ static void testing(model_pt m, globals_pt g)
     }
 }
 
+
+static globals_pt new_globals(globals_pt old)
+{
+  globals_pt g=(globals_pt)mem_malloc(sizeof(globals_t));
+
+  if (old) { memcpy(g, old, sizeof(globals_t)); return g; }
+
+  g->rf=g->ipf=g->plf=g->tf=NULL;
+  g->rawinput=0;
+  g->pos=g->neg=0;
+  return g;
+}
+
 /* ------------------------------------------------------------ */
 int main(int argc, char **argv)
 {
-  model_pt m=new_model();
+  model_pt model=new_model();
+
+  int h = 0;
+  unsigned long v = 1;
+  long i = -1;
+  long m = 1;
+  long r = 0;
+  int R = 0;
+  char *d = NULL;
+  char *p = NULL;
+  char *t = NULL;
+  char *u = NULL;
+  enum OPTION_OPERATION_MODE o = OPTION_OPERATION_TAG;
+  option_callback_data_t cd = {
+    &o,
+    option_operation_mode_parser,
+    option_operation_mode_serializer
+  };
+  option_context_t options = {
+	  "Transformation-based Tagger (c) Ingo Schröder and others, http://acopost.sf.net/",
+	  argv[0],
+	  " OPTIONS rulefile [inputfile]",
+	  (option_entry_t[]) {
+		  { 'h', OPTION_NONE, (void*)&h, "display this help" },
+		  { 'v', OPTION_UNSIGNED_LONG, (void*)&v, "verbosity level [1]" },
+		  { 'i', OPTION_SIGNED_LONG, (void*)&i, "maximum number of iterations [unlimited]" },
+		  { 'd', OPTION_STRING, (void*)&d, "lexicon file [none]" },
+		  { 'm', OPTION_SIGNED_LONG, (void*)&m, "minimum improvement per iteration [1]" },
+		  { 'r', OPTION_SIGNED_LONG, (void*)&r, "rare word threshold [0]" },
+		  { 'o', OPTION_CALLBACK, (void*)&cd, "mode of operation 0/tag, 1/test, 2/train [tag]" },
+		  { 'p', OPTION_STRING, (void*)&p, "preload file [none]" },
+		  { 'R', OPTION_NONE, (void*)&R, "assume raw format for input [cooked format]" },
+		  { 't', OPTION_STRING, (void*)&t, "template file [none]" },
+		  { 'u', OPTION_STRING, (void*)&u, "unknown word default tag [lexicon based]" },
+		  { '\0', OPTION_NONE, NULL, NULL }
+	  }
+  };
+  int idx = options_parse(&options, "--", argc, argv);
+  if(h) {
+	  options_print_usage(&options, stdout);
+	  return 0;
+  }
 
   globals_pt g=new_globals(NULL);
-  g->cmd=strdup(acopost_basename(argv[0], NULL));
-  get_options(g, argc, argv);
+  g->rawinput = R;
+  model->rwt = r;
+  g->tf = t;
+  g->plf = p;
+  if (idx<argc)
+  {
+	  g->rf=argv[idx];
+	  idx++;
+  } else {
+	  options_print_usage(&options, stderr);
+	  error("missing rules file\n");
+  }
+  if (idx<argc && strcmp("-", argv[idx]))
+  {
+	  g->ipf=argv[idx+1];
+  }
+  if(o!=OPTION_OPERATION_TAG && o!=OPTION_OPERATION_TRAIN && o!=OPTION_OPERATION_TEST)
+  {
+	  error("invalid mode of operation \"%d\"\n", o);
+  }
+  if (o==OPTION_OPERATION_TRAIN && !g->tf)
+  {
+	  error("you must specify a template file (-t) for training\n");
+  }
+  if (o!=OPTION_OPERATION_TRAIN && g->tf)
+  {
+	  error("no template file needed in train mode\n");
+  }
+  if (o==OPTION_OPERATION_TAG && g->plf)
+  {
+	  error("no preload file needed in tag mode\n");
+  }
+  if (o!=OPTION_OPERATION_TAG && g->rawinput)
+  {
+	  error("input must be in cooked format for tag\n");
+  }
+  if (u)
+  {
+	  model->defaulttag=iregister_add_name(model->tags, u);
+	  report(2, "overriding default tag for unknown word: %s\n", u);
+  }
 
-  m->rwt = g->rwt;
-
-  report(1, "\n%s\n\n", banner);
+  if(v >= 1) {
+	  options_print_configuration(&options, stderr);
+  }
 
   /* TODO: find better seed */
   srand48(0);
 
-  if (g->lf) {
-  read_dictionary_file(g->lf, m);
+  if (d) {
+	  read_dictionary_file(d, model);
   }
 
-  int ret = read_rules_file(m, g->rf);
+  int ret = read_rules_file(model, g->rf);
   if(ret == -1) {
-      if (g->mode==MODE_TRAIN)
+      if (o==OPTION_OPERATION_TRAIN)
 	{ report(1, "\"%s\" seems to be a new file, good\n", g->rf); }
       else
       error("can't read rules from rule file \"%s\"\n", g->rf);
   }
-  if (g->dft)
-    {
-      m->defaulttag=iregister_add_name(m->tags, g->dft);
-      report(2, "overriding default tag for unknown word: %s\n", g->dft);
-    }
 
-  switch (g->mode)
+  switch (o)
     {
-    case MODE_TAG:
-      tagging(m, g); break;
-    case MODE_TEST:
-      testing(m, g); break;
-    case MODE_TRAIN: 
-      training(m, g); break;
+    case OPTION_OPERATION_TAG:
+      tagging(model, g); break;
+    case OPTION_OPERATION_TEST:
+      testing(model, g); break;
+    case OPTION_OPERATION_TRAIN: 
+      training(model, g, i, m); break;
     default:
-      report(0, "unknown mode of operation %d\n", g->mode);
+      report(0, "unknown mode of operation %d\n", o);
     }
 
   report(1, "done\n");
 
   /* Free strings register */
-  sregister_delete(m->strings);
+  sregister_delete(model->strings);
 
   exit(0);
 }
