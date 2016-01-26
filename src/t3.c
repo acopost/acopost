@@ -96,6 +96,7 @@ typedef double prob_t;
 #define MODE_TAG     0
 #define MODE_TEST    1
 #define MODE_TRAIN   2
+#define MODE_DUMP    7
 #define MODE_DEBUG   8
 
 typedef struct option_s
@@ -1625,7 +1626,7 @@ int main(int argc, char **argv)
       tagging(g->rf, g, m); break;
     case MODE_TEST:
       testing(g->rf, m); break;
-    case 7:
+    case MODE_DUMP:
       dump_transition_probs(m); break; 
     case MODE_DEBUG:
       debugging(m); break;
