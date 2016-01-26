@@ -37,6 +37,8 @@
 
 /* ------------------------------------------------------------ */
 #include "config-common.h"
+#include "options.h"
+#include "option_mode.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
 #include <stdio.h>
@@ -66,29 +68,6 @@
 #else
 #define DEBUG(mode, msg, ...)
 #endif
-
-/* ------------------------------------------------------------ */
-
-#define MODE_TAG     0
-#define MODE_TEST    1
-
-typedef struct option_s
-{
-  char ch;
-  char *usage;
-} option_t;
-typedef option_t *option_pt;
-
-typedef struct globals_s
-{
-  int mode;     /* mode: tagging, training, testing */
-  char *cmd;    /* command name */   
-  char *kf;     /* wtree file for known words */
-  char *uf;     /* wtree file for unknown words */
-  char *df;     /* dictionary file name */
-  char *rf;     /* name of file to tag/test */
-} globals_t;
-typedef globals_t *globals_pt;
 
 #define FT_TAG 1
 #define FT_CLASS 2
@@ -153,31 +132,6 @@ typedef struct model_s
 typedef model_t *model_pt;
 
 /* ------------------------------------------------------------ */
-char *banner=
-"Example-based Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
-
-option_t ops[]={
-  { 'h', "-h    display help" },
-  { 'v', "-v v  verbosity [1]" },
-  { 't', "-t    test mode" },
-  { '\0', NULL },
-};
-
-/* ------------------------------------------------------------ */
-static globals_pt new_globals(globals_pt old)
-{
-  globals_pt g=(globals_pt)mem_malloc(sizeof(globals_t));
-
-  if (old) { memcpy(g, old, sizeof(globals_t)); return g; }
-
-  g->mode=MODE_TAG;
-  g->cmd=NULL;
-  g->kf=g->uf=g->df=g->rf=NULL;
-  
-  return g;
-}
-
-/* ------------------------------------------------------------ */
 static model_pt new_model(void)
 {
   model_pt m=(model_pt)mem_malloc(sizeof(model_t));
@@ -234,52 +188,6 @@ static wtree_pt new_wtree(size_t not)
   t->children=array_new(32);
 
   return t;
-}
-
-/* ------------------------------------------------------------ */
-static void usage(const char* cmd)
-{
-  size_t i;
-  report(-1, "\n%s\n\n", banner);
-  report(-1, "Usage: %s OPTIONS knownwtree unknownwtree dictionaryfile [inputfile]\n", cmd);
-  report(-1, "where OPTIONS can be\n\n");
-  for (i=0; ops[i].usage; i++)
-    { report(-1, "  %s\n", ops[i].usage); }
-  report(-1, "\n");
-}
-
-/* ------------------------------------------------------------ */
-static void get_options(globals_pt g, int argc, char **argv)
-{
-  char c;
-
-  while ((c=getopt(argc, argv, "htv:"))!=EOF)
-    {
-      switch (c)
-	{
-	case 't':
-	  g->mode=MODE_TEST;
-	  break;
-	case 'h':
-	  usage(g->cmd);
-	  exit(0);
-	  break;
-	case 'v':
-	  if (1!=sscanf(optarg, "%d", &verbosity))
-	    { error("invalid verbosity \"%s\"\n", optarg); }
-	  break;
-	default:
-	  error("unknown option \"-%c\"\n", c);
-	  break;
-	}
-    }
-
-  if (optind+2>=argc) { usage(g->cmd); error("too few arguments\n"); }
-  g->kf=strdup(argv[optind]);
-  g->uf=strdup(argv[optind+1]);
-  g->df=strdup(argv[optind+2]);
-  if (optind+3<argc && strcmp("-", argv[optind+3]))
-    { g->rf=strdup(argv[optind+3]); }
 }
 
 
@@ -724,12 +632,15 @@ static void tagging(const char* fn, model_pt m)
 	}
       printf("\n");
     }
-  if (words) { mem_free(words); mem_free(tags); }  
-  if(buf) {
-	  free(buf);
-	  buf = NULL;
+  if (words) { mem_free(words); mem_free(tags); }
+  if(buf!=NULL){
+    free(buf);
+    buf = NULL;
+    n = 0;
   }
-  if (f!=stdin) { fclose(f); }
+  if (fn) {
+    fclose(f);
+  }
 }
 
 /* ------------------------------------------------------------ */
@@ -761,16 +672,6 @@ void delete_model(model_pt m)
   mem_free(m);
 }
 
-
-void delete_globals(globals_pt g)
-{
-  free(g->cmd);
-  free(g->kf);
-  free(g->uf);
-  free(g->df);
-  free(g->rf);
-  mem_free(g);
-}
 /* ------------------------------------------------------------ */
 void testing(model_pt m)
 {
@@ -807,31 +708,89 @@ void testing(model_pt m)
 /* ------------------------------------------------------------ */
 int main(int argc, char **argv)
 {
-  model_pt m=new_model();
+  model_pt model=new_model();
 
-  globals_pt g=new_globals(NULL);
-  g->cmd=strdup(acopost_basename(argv[0], NULL));
-  m->strings = sregister_new(500);
-  get_options(g, argc, argv);
+  int h = 0;
+  unsigned long v = 1;
+  char *d = NULL;
+  enum OPTION_OPERATION_MODE o = OPTION_OPERATION_TAG;
+  option_callback_data_t cd = {
+    &o,
+    option_operation_mode_parser,
+    option_operation_mode_serializer
+  };
+  option_context_t options = {
+	  "Example-based Tagger (c) Ingo Schröder and others, http://acopost.sf.net/",
+	  argv[0],
+	  " OPTIONS knownwtree unknownwtree [inputfile]",
+	  (option_entry_t[]) {
+		  { 'h', OPTION_NONE, (void*)&h, "display this help" },
+		  { 'v', OPTION_UNSIGNED_LONG, (void*)&v, "verbosity level [1]" },
+		  { 'd', OPTION_STRING, (void*)&d, "lexicon file [none]" },
+		  { 'o', OPTION_CALLBACK, (void*)&cd, "mode of operation 0/tag, 1/test [tag]" },
+		  { '\0', OPTION_NONE, NULL, NULL }
+	  }
+  };
+  int idx = options_parse(&options, "--", argc, argv);
+  if(h) {
+	  options_print_usage(&options, stdout);
+	  return 0;
+  }
+  if(d == NULL) {
+	  options_print_usage(&options, stderr);
+	  error("missing lexicon file\n");
+  }
+  char *kf = NULL;
+  char *uf = NULL;
+  char *ipf = NULL;
+  if (idx<argc)
+  {
+	  kf=argv[idx];
+	  idx++;
+  } else {
+	  options_print_usage(&options, stderr);
+	  error("missing knowntree file\n");
+  }
+  if (idx<argc)
+  {
+	  uf=argv[idx];
+	  idx++;
+  } else {
+	  options_print_usage(&options, stderr);
+	  error("missing unknowntree file\n");
+  }
+  if (idx<argc && strcmp("-", argv[idx]))
+  {
+	  ipf=argv[idx+1];
+  }
+  if(o!=OPTION_OPERATION_TAG && o!=OPTION_OPERATION_TEST)
+  {
+	  error("invalid mode of operation \"%d\"\n", o);
+  }
+  if(v >= 1) {
+	  options_print_configuration(&options, stderr);
+  }
 
-  report(1, "\n%s\n\n", banner);
+  model->strings = sregister_new(500);
 
-  read_dictionary_file(g->df, m);
+  read_dictionary_file(d, model);
 
-  read_known_wtree(g->kf, m);
-  read_unknown_wtree(g->uf, m);
+  read_known_wtree(kf, model);
+  read_unknown_wtree(uf, model);
 
-  switch (g->mode)
+  switch (o)
     {
-    case MODE_TAG: tagging(g->rf, m); break;
-    case MODE_TEST: testing(m); break;
-    default: report(0, "unknown mode of operation %d\n", g->mode);
+    case OPTION_OPERATION_TAG:
+      tagging(ipf, model); break;
+    case OPTION_OPERATION_TEST:
+      testing(model); break;
+    default:
+      report(0, "unknown mode of operation\n");
     }
 
   report(1, "done\n");
 
-  delete_model(m);
-  delete_globals(g);
+  delete_model(model);
 
   exit(0);
 }
