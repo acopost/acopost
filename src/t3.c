@@ -48,6 +48,8 @@
 
 /* ------------------------------------------------------------ */
 #include "config-common.h"
+#include "options.h"
+#include "option_mode.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
 #include <stdio.h>
@@ -93,38 +95,6 @@ typedef double prob_t;
 
 /* ------------------------------------------------------------ */
 
-#define MODE_TAG     0
-#define MODE_TEST    1
-#define MODE_TRAIN   2
-#define MODE_DUMP    7
-#define MODE_DEBUG   8
-
-typedef struct option_s
-{
-  char ch;
-  char *usage;
-} option_t;
-typedef option_t *option_pt;
-
-typedef struct globals_s
-{
-  int mode;     /* mode: tagging, training, testing */
-  int bmode;    /* IO buffer type */
-  char *cmd;    /* command name */   
-  char *mf;     /* model file name */   
-  char *df;     /* dictionary file name */
-  char *rf;     /* name of file to tag/test */
-  size_t rwt;   /* rare word threshold */
-  size_t msl;   /* max. suffix length */
-  int stcs;  /* use one or two (case-sensitive) suffix trees */
-  int stics; /* case sensitive internal in suffix trie */
-  int zuetp; /* zero undefined empirical transition probs */
-  size_t bw;    /* beam width */
-  double theta; /* suffix backoff weight */
-  double lambda[3]; /* transition probs smoothing weights */
-} globals_t;
-typedef globals_t *globals_pt;
-
 typedef struct trie_s
 {
   size_t children;             /* no of children */
@@ -162,55 +132,13 @@ typedef struct model_s
   trie_pt upper_trie; /* suffix trie for uppercase words */
   size_t lc_count;
   size_t uc_count;
+  size_t rwt;   /* rare word threshold */
+  size_t msl;   /* max. suffix length */
+  int stcs;  /* use one or two (case-sensitive) suffix trees */
+  int stics; /* case sensitive internal in suffix trie */
   sregister_pt strings;
 } model_t;
 typedef model_t *model_pt;
-
-/* ------------------------------------------------------------ */
-char *banner=
-"Trigram POS Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
-
-option_t ops[]={
-  { 'h', "-h    display help" },
-  { 'v', "-v v  verbosity [1]" },
-  { 'a', "-a a  lambdas" },
-  { 'b', "-b b  beam factor [1000]" },
-  { 'd', "-d    debug mode" },
-  { 'l', "-l l  maximum suffix length [10]" },
-  { 'q', "-q    be quite" },
-  { 'r', "-r r  rare word threshold [1]" },
-  { 's', "-s s  theta for suffix backoff [SD of tag probabilities]" },
-  { 'u', "-u    use line-buffered IO for input" },
-  { 'x', "-x    case-insensitive suffix tries [sensitive]"},
-  { 'y', "-y    case-insensitive when branching in suffix trie [sensitive]"},
-  { 'z', "-z    zero empirical transition probs if undefined [1/#tags]"},
-  { 't', "-t    test mode" },
-  { 'm', "-m m  mode of operation [0]" },
-  { '\0', NULL },
-};
-
-/* ------------------------------------------------------------ */
-static globals_pt new_globals(globals_pt old)
-{
-  globals_pt g=(globals_pt)mem_malloc(sizeof(globals_t));
-
-  if (old) { memcpy(g, old, sizeof(globals_t)); return g; }
-
-  g->mode=MODE_TAG;
-  /* _IOFBF fully buffered; _IOLBF line buffered; _IONBF not buffered */
-  g->bmode=-1;
-  g->cmd=NULL;
-  g->mf=g->df=g->rf=NULL;
-  g->bw=0;
-  g->rwt=1;
-  g->msl=10;
-  g->stcs=1;
-  g->stics=1;
-  g->zuetp=0;
-  g->theta=-1.0;
-  g->lambda[0]=g->lambda[1]=g->lambda[2]=-1.0;
-  return g;
-}
 
 /* ------------------------------------------------------------ */
 static model_pt new_model(void)
@@ -324,9 +252,8 @@ trie_pt trie_get_daughter(trie_pt tr, unsigned char c)
 }
 
 /* ------------------------------------------------------------ */
-void add_word_to_trie(void *key, void *value, void* gp, void *data)
+void add_word_to_trie(void *key, void *value, void *data)
 {
-  globals_pt g = (globals_pt) gp;
   char *s=(char *)key;
   word_pt wd=(word_pt)value;
   model_pt m=(model_pt)data;
@@ -335,11 +262,11 @@ void add_word_to_trie(void *key, void *value, void* gp, void *data)
   char *t;
   size_t i;
 
-  if (wd->count > g->rwt) { return; }
+  if (wd->count > m->rwt) { return; }
   add_word_info_to_trie_node(m, tr, wd);
-  for (t = s+strlen(s)-1, i = g->msl; t >= s && i > 0; t--, i--)
+  for (t = s+strlen(s)-1, i = m->msl; t >= s && i > 0; t--, i--)
     {
-      unsigned char c = g->stics ? *t : tolower(*t);
+      unsigned char c = m->stics ? *t : tolower(*t);
       trie_pt daughter=trie_get_daughter(tr, c);
 
       if (!daughter)
@@ -351,110 +278,6 @@ void add_word_to_trie(void *key, void *value, void* gp, void *data)
       tr=daughter;
       add_word_info_to_trie_node(m, tr, wd);
     }
-}
-
-
-
-
-/* ------------------------------------------------------------ */
-static void usage(const char*cmd)
-{
-  size_t i;
-  report(-1, "\n%s\n\n", banner);
-  report(-1, "Usage: %s OPTIONS modelfile dictionaryfile [inputfile]\n", cmd);
-  report(-1, "where OPTIONS can be\n\n");
-  for (i=0; ops[i].usage; i++)
-    { report(-1, "  %s\n", ops[i].usage); }
-  report(-1, "\n");
-}
-
-/* ------------------------------------------------------------ */
-static void get_options(globals_pt g, int argc, char **argv)
-{
-  char c;
-  unsigned long tmp;
-
-  while ((c=getopt(argc, argv, "hv:a:b:dl:qr:s:uxyztm:"))!=EOF)
-    {
-      switch (c)
-	{
-	case 'a':
-	  if (3!=sscanf(optarg, "%lf %lf %lf", &g->lambda[0], &g->lambda[1], &g->lambda[2]))
-	    { error("invalid transition smoothing lambdas \"%s\"\n", optarg); }
-	  else
-	    { report(1, "using %3.2e, %3.2e, %3.2e as lambdas\n", g->lambda[0], g->lambda[1], g->lambda[2]); }
-	  break;
-	case 'b':
-	  if (1!=sscanf(optarg, "%lu", &tmp))
-	    { error("invalid beam width \"%s\"\n", optarg); }
-	  else
-	    { g->bw = tmp; report(1, "using %lu as beam width\n", (unsigned long) g->bw); }
-	  break;
-	case 'h':
-	  usage(g->cmd);
-	  exit(0);
-	  break;
-	case 'l':
-	  if (1!=sscanf(optarg, "%lu", &tmp) || g->msl<0)
-	    { error("invalid maximum suffix length \"%s\"\n", optarg); }
-	  else
-	    { g->msl = tmp; report(1, "using %lu as maximum suffix length\n", (unsigned long) g->msl); }
-	  break;
-	case 'q':
-	  verbosity=0;
-	  break;
-	case 'r':
-	  if (1!=sscanf(optarg, "%lu", &tmp))
-	    { error("invalid rare word threshold \"%s\"\n", optarg); }
-	  else
-	    { g->rwt = tmp; report(1, "using %lu as rare word threshold\n", (unsigned long) g->rwt); }
-	  break;
-	case 's':
-	  if (1!=sscanf(optarg, "%lf", &g->theta))
-	    { error("invalid suffix backoff theta \"%s\"\n", optarg); }
-	  else
-	    { report(1, "using %6.4f as suffix backoff theta\n", g->theta); }
-	  break;
-	case 'd':
-	  report(1, "running in debug mode\n");
-	  g->mode=MODE_DEBUG;
-	  break;
-	case 'm':
-	  if (1!=sscanf(optarg, "%d", &g->mode))
-	    { error("invalid mode of operation \"%s\"\n", optarg); }
-	  else
-	    { report(1, "using %d as mode of operation\n", g->mode); }
-	  break;
-	case 't':
-	  g->mode=MODE_TEST;
-	  break;
-	case 'u':
-	  g->bmode=_IOLBF;
-	  break;
-	case 'v':
-	  if (1!=sscanf(optarg, "%d", &verbosity))
-	    { error("invalid verbosity \"%s\"\n", optarg); }
-	  break;
-	case 'x':
-	  g->stcs=0;
-	  break;
-	case 'y':
-	  g->stics=0;
-	  break;
-	case 'z':
-	  g->zuetp=1;
-	  break;
-	default:
-	  error("unknown option \"-%c\"\n", c);
-	  break;
-	}
-    }
-
-  if (optind>=argc-1) { usage(g->cmd); error("too few arguments\n"); }
-  g->mf=strdup(argv[optind]);
-  g->df=strdup(argv[optind+1]);
-  if (optind+2<argc && strcmp("-", argv[optind+2]))
-    { g->rf=strdup(argv[optind+2]); }
 }
 
 /* ------------------------------------------------------------ */
@@ -685,22 +508,21 @@ void compute_counts_for_boundary(model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-static void enter_rare_word_tag_counts(void *key, void *value, void* gp, void *d1, void *d2)
+static void enter_rare_word_tag_counts(void *key, void *value, void *d1, void *d2)
 {
-  globals_pt g = (globals_pt) gp;
   word_pt wd=(word_pt)value;
   model_pt m=(model_pt)d1;
   int *lowcount=(int *)d2;
   size_t not=iregister_get_length(m->tags);
   size_t i;
 
-  if (wd->count>g->rwt) { return; }
+  if (wd->count>m->rwt) { return; }
   for (i=0; i<not; i++)
     { lowcount[i]+=wd->tagcount[i]; }
 }
 
 /* ------------------------------------------------------------ */
-void compute_theta(globals_pt g, model_pt m)
+void compute_theta(model_pt m)
 {
   /* TODO: check whether to include 0 */
 #define START_AT_TAG 1
@@ -710,7 +532,7 @@ void compute_theta(globals_pt g, model_pt m)
   size_t ttc, i;
 
   for (i=0; i<not; i++) { lowcount[i]=0; }
-  hash_map3(m->dictionary, enter_rare_word_tag_counts, (void *) g, m, lowcount);
+  hash_map2(m->dictionary, enter_rare_word_tag_counts, m, lowcount);
   for (ttc=0, i=START_AT_TAG; i<not; i++)
     { ttc+=lowcount[i]; }
   for (sum=0.0, i=START_AT_TAG; i<not; i++)
@@ -798,7 +620,7 @@ void compute_lambdas(model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-void compute_transition_probs(globals_pt g, model_pt m)
+void compute_transition_probs(model_pt m, int zuetp, int debugmode)
 {
   size_t not=iregister_get_length(m->tags);
   /*
@@ -814,7 +636,7 @@ void compute_transition_probs(globals_pt g, model_pt m)
       l_2 \hat{P}(t_k | t_j) +      <--- zero if f(t_j)=0 (unlikely)
       l_3 \hat{P}(t_k | t_i, t_j)   <--- zero if f(t_i, t_j)=0 (likely)  
   */
-  double inv_not= g->zuetp ? 0.0 : 1.0/(double)not;
+  double inv_not= zuetp ? 0.0 : 1.0/(double)not;
   size_t i;
 #define DEBUG_COMPUTE_TRANSITION_PROBS 0
   
@@ -862,7 +684,7 @@ void compute_transition_probs(globals_pt g, model_pt m)
     }
   report(1, "computed smoothed transition probabilities\n");
 
-  if (g->mode!=MODE_DEBUG)
+  if (debugmode)
     {
       /* bigrams and trigrams counts aren't needed anymore */
       mem_free(m->count[1]); m->count[1]=NULL;
@@ -953,12 +775,12 @@ void count_nodes(trie_pt tr, int s[])
 }
 
 /* ------------------------------------------------------------ */
-void build_suffix_trie(globals_pt g, model_pt m)
+void build_suffix_trie(model_pt m)
 {
   m->lower_trie=new_trie(iregister_get_length(m->tags), NULL);
   m->upper_trie=new_trie(iregister_get_length(m->tags), NULL);
 
-  hash_map2(m->dictionary, add_word_to_trie, g, m);
+  hash_map1(m->dictionary, add_word_to_trie, m);
   report(1, "built suffix tries with %d lowercase and %d uppercase nodes\n",
 	 m->lc_count, m->uc_count);
 
@@ -975,7 +797,7 @@ void build_suffix_trie(globals_pt g, model_pt m)
 }
 
 /* ------------------------------------------------------------ */
-void smooth_suffix_probs(globals_pt g, model_pt m, trie_pt tr, trie_pt dad)
+static void smooth_suffix_probs(model_pt m, trie_pt tr, trie_pt dad, int debugmode)
 {
   size_t not=iregister_get_length(m->tags);
   double one_plus_theta=1.0+m->theta;
@@ -1011,16 +833,16 @@ void smooth_suffix_probs(globals_pt g, model_pt m, trie_pt tr, trie_pt dad)
       tr->lp[i]=p;
     }
 
-  if (g->mode!=MODE_DEBUG) { mem_free(tr->tagcount); tr->tagcount=NULL; }
+  if (!debugmode) { mem_free(tr->tagcount); tr->tagcount=NULL; }
 
-  if (tr->children==1) { smooth_suffix_probs(g, m, (trie_pt)tr->unarynext, tr); }
+  if (tr->children==1) { smooth_suffix_probs(m, (trie_pt)tr->unarynext, tr, debugmode); }
   else if (tr->next)
     {
       for (i=0; i<256; i++)
 	{
 	  trie_pt son=tr->next[i];
 	  if (!son) { continue; }
-	  smooth_suffix_probs(g, m, son, tr);
+	  smooth_suffix_probs(m, son, tr, debugmode);
 	}
     }
 
@@ -1028,10 +850,10 @@ void smooth_suffix_probs(globals_pt g, model_pt m, trie_pt tr, trie_pt dad)
 }
 
 /* ------------------------------------------------------------ */
-void compute_unknown_word_probs(globals_pt g, model_pt m)
+void compute_unknown_word_probs(model_pt m, int debugmode)
 {
-  if (m->lower_trie) { smooth_suffix_probs(g, m, m->lower_trie, NULL); }
-  if (m->upper_trie) { smooth_suffix_probs(g, m, m->upper_trie, NULL); }
+  if (m->lower_trie) { smooth_suffix_probs(m, m->lower_trie, NULL, debugmode); }
+  if (m->upper_trie) { smooth_suffix_probs(m, m->upper_trie, NULL, debugmode); }
   report(1, "suffix probabilities smoothing done [theta %4.3e]\n", m->theta);
 }
 
@@ -1117,7 +939,7 @@ void viterbi(model_pt m, array_pt words, array_pt tags)
       for (j=0; j<not; j++)
 	{ for (k=0; k<not; k++) { a[nai][j][k]=-MAXPROB; } }
 
-      /* TODO: precompute log(g->bw) */
+      /* TODO: precompute log(m->bw) */
       if (m->bw==0) { max_a=-MAXPROB; } else { max_a-=log((prob_t)m->bw); }
       for (l=0; l<not; l++)
 	{
@@ -1440,22 +1262,22 @@ void tag_sentence(model_pt m, array_pt words, array_pt tags, char *l)
 }
 
 /* ------------------------------------------------------------ */
-static void tagging(const char* fn, globals_pt g, model_pt m)
+static void tagging(const char* fn, int bmode, model_pt m)
 {
-  FILE *f= fn ? try_to_open(fn, "r") : stdin;  
+  FILE *f= fn ? try_to_open(fn, "r") : stdin;
   array_pt words=array_new(128), tags=array_new(128);
   char *s;
   ssize_t r;
   char *buf = NULL;
   size_t n = 0;
 
-  if (g->bmode>=0 && !setvbuf(f, NULL, g->bmode, 0))
+  if (bmode>=0 && !setvbuf(f, NULL, bmode, 0))
     { report(0, "setvbuf error: %s\n", strerror(errno)); }
   while ((r = readline(&buf,&n,f)) != -1)
     {
       s = buf;
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
-      if (!r) continue;
+      if(r == 0) { continue; }
       tag_sentence(m, words, tags, s);
     }
   array_free(words); array_free(tags);
@@ -1537,8 +1359,6 @@ void testing(const char* fn, model_pt m)
   }
 }
 
-
-
 /* ------------------------------------------------------------ */
 void delete_model(model_pt m)
 {
@@ -1581,64 +1401,145 @@ void delete_model(model_pt m)
   mem_free(m);
 }
 
-
-void delete_globals(globals_pt g)
-{
-  free(g->cmd);
-  free(g->mf);
-  free(g->df);
-  free(g->rf);
-  mem_free(g);
+static int lambdas_parser(char* arg, void* lambdas) {
+	double* l = (double*) lambdas;
+	if (3!=sscanf(arg, "%lf %lf %lf", l, l+1, l+2))
+	{
+		return 1;
+	}
+	return 0;
 }
 
-
+static int lambdas_serializer(void* lambdas, FILE* out) {
+	double* l = (double*) lambdas;
+	fprintf(out, "%lf %lf %lf", l[0], l[1], l[2]);
+	return 0;
+}
 
 /* ------------------------------------------------------------ */
 int main(int argc, char **argv)
 {
-  model_pt m=new_model();
+  model_pt model=new_model();
 
-  globals_pt g=new_globals(NULL);
-  g->cmd=strdup(acopost_basename(argv[0], NULL));
-  m->strings = sregister_new(500);
-  get_options(g, argc, argv);
+  int h = 0;
+  unsigned long v = 1;
+  long r = 1;
+  double s = -1.0;
+  long L = 10;
+  long b = 0;
+  int U = 0;
+  int x = 0;
+  int y = 0;
+  int z = 0;
+  char *d = NULL;
+  double a[3];
+  a[0] = -1.0;
+  a[1] = -1.0;
+  a[2] = -1.0;
+  option_callback_data_t cdlambdas = {
+    a,
+    lambdas_parser,
+    lambdas_serializer
+  };
+  enum OPTION_OPERATION_MODE o = OPTION_OPERATION_TAG;
+  option_callback_data_t cd = {
+    &o,
+    option_operation_mode_parser,
+    option_operation_mode_serializer
+  };
+  option_context_t options = {
+	  "Trigram POS Tagger (c) Ingo Schröder and others, http://acopost.sf.net/",
+	  argv[0],
+	  " OPTIONS modelfile [inputfile]",
+	  (option_entry_t[]) {
+		  { 'h', OPTION_NONE, (void*)&h, "display this help" },
+		  { 'v', OPTION_UNSIGNED_LONG, (void*)&v, "verbosity level [1]" },
+		  { 'r', OPTION_SIGNED_LONG, (void*)&r, "rare word threshold [0]" },
+		  { 'd', OPTION_STRING, (void*)&d, "lexicon file [none]" },
+		  { 'U', OPTION_NONE, (void*)&U, "use line-buffered IO for input" },
+		  { 'x', OPTION_NONE, (void*)&x, "case-insensitive suffix tries [sensitive]" },
+		  { 'y', OPTION_NONE, (void*)&y, "case-insensitive when branching in suffix trie [sensitive]" },
+		  { 'z', OPTION_NONE, (void*)&z, "zero empirical transition probs if undefined [1/#tags]" },
+		  { 'o', OPTION_CALLBACK, (void*)&cd, "mode of operation 0/tag, 1/test, 7/dump, 8/debug [tag]" },
 
-  report(1, "\n%s\n\n", banner);
+		  { 'a', OPTION_CALLBACK, (void*)&cdlambdas, "transition smoothing lambdas" },
+		  { 'b', OPTION_SIGNED_LONG, (void*)&b, "beam factor [1000]" },
+		  { 'L', OPTION_SIGNED_LONG, (void*)&L, "maximum suffix length [10]" },
+		  { 's', OPTION_DOUBLE, (void*)&s, "theta for suffix backoff [SD of tag probabilities]" },
+		  { '\0', OPTION_NONE, NULL, NULL }
+	  }
+  };
+  int idx = options_parse(&options, "--", argc, argv);
+  if(h) {
+	  options_print_usage(&options, stdout);
+	  return 0;
+  }
+  if(d == NULL) {
+	  options_print_usage(&options, stderr);
+	  error("missing lexicon file\n");
+  }
+  char *mf = NULL;
+  char *ipf = NULL;
+  if (idx<argc)
+  {
+	  mf=argv[idx];
+	  idx++;
+  } else {
+	  options_print_usage(&options, stderr);
+	  error("missing rules file\n");
+  }
+  if (idx<argc && strcmp("-", argv[idx]))
+  {
+	  ipf=argv[idx+1];
+  }
+  if(o!=OPTION_OPERATION_TAG && o!=OPTION_OPERATION_TEST && o!=OPTION_OPERATION_DUMP && o!=OPTION_OPERATION_DEBUG)
+  {
+	  error("invalid mode of operation \"%d\"\n", o);
+  }
+  if(v >= 1) {
+	  options_print_configuration(&options, stderr);
+  }
+  model->rwt = r;
+  model->stcs = !x;
+  model->stics = !y;
 
-  read_ngram_file(g->mf, m);
-  compute_counts_for_boundary(m);
+  model->strings = sregister_new(500);
 
-  if (g->lambda[0]<0.0) { compute_lambdas(m); }
-  else { int i; for (i=0; i<3; i++) { m->lambda[i]=g->lambda[i]; } }
-  compute_transition_probs(g, m);
 
-  m->bw = g->bw;
+  read_ngram_file(mf, model);
+  compute_counts_for_boundary(model);
 
-  read_dictionary_file(g->df, m);
-  if (g->theta<0.0) { compute_theta(g, m); }
-  else { m->theta=g->theta; }
-  build_suffix_trie(g, m);
-  compute_unknown_word_probs(g, m);
+  model->bw = b;
+  if (a[0]<0.0) { compute_lambdas(model); }
+  else { int i; for (i=0; i<3; i++) { model->lambda[i]=a[i]; } }
+  compute_transition_probs(model, z, (o == OPTION_OPERATION_DEBUG));
 
-  switch (g->mode)
+
+  read_dictionary_file(d, model);
+  if (s<0.0) { compute_theta(model); }
+  else { model->theta=s; }
+  build_suffix_trie(model);
+  compute_unknown_word_probs(model, (o == OPTION_OPERATION_DEBUG));
+
+  switch (o)
     {
-    case MODE_TAG:
-      tagging(g->rf, g, m); break;
-    case MODE_TEST:
-      testing(g->rf, m); break;
-    case MODE_DUMP:
-      dump_transition_probs(m); break; 
-    case MODE_DEBUG:
-      debugging(m); break;
+    case OPTION_OPERATION_TAG:
+      /* _IOFBF fully buffered; _IOLBF line buffered; _IONBF not buffered */
+      tagging(ipf, U ? _IOLBF : -1, model); break;
+    case OPTION_OPERATION_TEST:
+      testing(ipf, model); break;
+    case OPTION_OPERATION_DUMP:
+      dump_transition_probs(model); break; 
+    case OPTION_OPERATION_DEBUG:
+      debugging(model); break;
 /*   case 9: sleep(30); break; */
     default:
-      report(0, "unknown mode of operation %d\n", g->mode);
+      report(0, "unknown mode of operation\n");
     }
 
   report(1, "done\n");
 
-  delete_model(m);
-  delete_globals(g);
+  delete_model(model);
 
   exit(0);
 }
