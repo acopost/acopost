@@ -921,7 +921,7 @@ static hash_pt read_dictionary_file(model_pt m, FILE *f, size_t cs)
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       if(r == 0) { continue; }
       array_pt tgs=NULL;
-      char *s, *w=tokenizer(s, " \t");
+      char *w=tokenizer(s, " \t");
       size_t wc=0;
       
       if (!w) { continue; }
