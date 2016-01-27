@@ -165,9 +165,10 @@
   \acopost: User manual
 
   \LARGE
-  Version 1.8.6
+  Version 2.0.0
 
   \normalsize\normalfont
+  ACOPOST Developers Team, \\
   Ingo Schr\"{o}der and others
 \end{center}
 
@@ -191,7 +192,7 @@ originating from a different machine learning paradigm.
 
 An evaluation of the individual part-of-speech taggers and of novel 
 combination techniques can be found in an accompanying  technical
-report \citep{Schroeder:2002b}.
+report~\citep{Schroeder:2002b}.
 
 % ------------------------------------------------------------------------
 \section{Installation}
@@ -202,27 +203,33 @@ from the project homepage hosted at
 
 \acopost comes as a gzipped tar archive of the source code named
 acopost-$x.y.z$.tar.gz where $x.y.z$ is the version number. 
-No pre-compiiled binaries are available but don't worry: 
-Compiling is easy. You only need a C compiler (gcc is recommended) and
+No pre-compiiled binaries are available but the typical
+
+\begin{quote}
+\begin{verbatim}
+./configure && make && make install
+\end{verbatim}
+\end{quote}
+
+procedure should work in most Unix-like environments.
+You only need a modern C compiler (gcc is recommended),
 the \verb+make+ program which are both most probably already installed
-on your machine if you're using UNIX.\footnote{%
-  I have not tried to compile \acopost on MS Windows but I am
-  interested in reports from Windows users.
-  }
-Some scripts use the Perl programming language\footnote{%
+and a Bourne shell.
+
+Some scripts use the Perl programming language~\footnote{%
   See \URL{http://www.perl.org/} and \URL{http://www.perl.com/}. 
-} which you want to have installed anyway.
+}.
 
 Find a convenient place in your directory tree and unzip the
 archive which unpacks into a new directory acopost-$x.y.z$: 
 
 \begin{quote}
 \begin{verbatim}
-PROMPT> gunzip -c acopost-1.8.6.tar.gz | tar fxv -
-acopost-1.8.6/
-acopost-1.8.6/src/
-acopost-1.8.6/src/Makefile
-acopost-1.8.6/src/array.c
+PROMPT> gunzip -c acopost-2.0.0.tar.gz | tar fxv -
+acopost-2.0.0/
+acopost-2.0.0/src/
+acopost-2.0.0/src/Makefile
+acopost-2.0.0/src/array.c
 ...
 \end{verbatim}
 \end{quote}
@@ -234,29 +241,32 @@ directories:
 \item 
   Text file \verb+README+ with a short intro and latest changes.
 \item 
-  Directory \verb+bin+ which contains the Perl scripts and where the
-  binaries are installed after compilation.
-\item 
   Directory \verb+src+ which contains the C files.
 \item 
   Directory \verb+doc+ which contains the documentation, this user
-  guide and a technical report \citep{Schroeder:2002b}.
+  guide and a technical report~\citep{Schroeder:2002b}.
 \item 
   Directory \verb+examples+ which contains some example files.
 \end{itemize}
 
-To compile, change to the \verb+src+ directory and type
+To configure, type
+\verb+./configure+. If everything works out ok, this command will create
+a Makefile in the current directory. By default \verb+./configure+ will create
+a Makefile that will install everything in \verb+/usr/local+.
+You can change this behaviour by specifing a different destination path using \verb+--prefix+ option:
+\verb+./configure --prefix=<path>+.
+To compile, type
 \verb+make+. If everything works out ok, issue the command 
 \verb+make install+ which installs the binaries into the directory 
-\verb+../bin+. Congratulations! You're done. 
+\verb+<path>/bin+. Congratulations! You're done. 
 
-If something goes wrong, try to fix it by adpating the \verb+Makefile+
-or the source code. Don't forget to tell me about your problems so
-that I can provide a better solution with the next release.
+If something goes wrong, try to fix it by configure options
+or the source code. Don't forget to tell us about your problems so
+that we can provide a better solution with the next release.
 
 You can now chose to add the \verb+bin+ directory as a full path to
 your \verb+PATH+ variable, to move/copy all binaries from the
-\verb+bin+ directory to a directory already in your \verb+PATH+
+\verb+<path>/bin+ directory to a directory already in your \verb+PATH+
 variable or simply decide to always use the full path to an \acopost
 program. 
 
@@ -264,10 +274,10 @@ program.
 \section{File formats}
 \label{S:FileFormats}
 
-I tried to keep everything as simple as possible in order to be able
-to use other tools on the corpora, \eg UNIX tools like 
-\verb+grep+, \verb+sed+, \verb+wc+ etc.\ or Perl. Therefore, I chose
-line-based formats for the corpora, \ie each line of texts (separated
+File formats have been designed to allow one
+to use standard text editing tools on the corpora, \eg UNIX tools like 
+\verb+grep+, \verb+sed+, \verb+wc+ etc.\ or Perl. Therefore,
+line-based formats are used for the corpora, \ie each line of texts (separated
 by the newline character \verb+\n+) holds exactly one sentence. The
 items in a sentence are separated by one or more white space
 characters, \ie tabular \verb+\t+ or space characters. Punctuation
@@ -330,7 +340,7 @@ Nothing yet.
 % ------------------------------------------------------------------------
 \section{Program references}
 
-Note that not all programs in the \verb+bin+ directory are described
+Note that not all programs in \acopost are described
 here. This may be the case due to one of the following reasons. 
 
 \begin{itemize}
@@ -348,7 +358,7 @@ here. This may be the case due to one of the following reasons.
 
 \subsubsection{Purpose}
 
-Report the complementary error rate \citep{Brill+Wu:98} of two versions
+Report the complementary error rate~\citep{Brill+Wu:98} of two versions
 of a tagged corpus.  
 
 \subsubsection{Usage}
@@ -755,7 +765,8 @@ PROMPT>
 
 \subsubsection{Purpose}
 
-Nothing yet.
+Assign tags to a natural language text in raw format using the
+maximum entropy paradigm.
 
 \subsubsection{Usage}
 
