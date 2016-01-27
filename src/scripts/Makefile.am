@@ -8,7 +8,6 @@ PERLPROGS = \
      acopost-cooked2raw \
      acopost-cooked2tt \
      acopost-cooked2wtree \
-     acopost-lex2theta \
      acopost-raw2tntraw \
      acopost-tt2cooked \
      acopost-wsj2cooked  \
@@ -20,10 +19,13 @@ PERLPROGS = \
      acopost-split-corpus \
      acopost-unknown-word-ratio
 
+noinst_PERLPROGS = \
+     acopost-lex2theta
+
 PYTHONPROGS = \
      acopost-cooked2lex.py
 
 
 dist_bin_SCRIPTS = $(PERLPROGS)
-dist_noinst_SCRIPTS = $(PYTHONPROGS)
+dist_noinst_SCRIPTS = $(PYTHONPROGS) $(noinst_PERLPROGS)
 
