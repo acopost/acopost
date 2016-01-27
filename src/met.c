@@ -1240,8 +1240,8 @@ static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, 
   char *wds[5]={0, 0, 0, 0, 0};
   double p[not];
   int s[not];
-  double a[wno+2][not+1][not+1];
-  int b[wno+2][not+1][not+1];
+  double *a = (double*) malloc(sizeof(double)*(wno+2)*(not+1)*(not+1));
+  int *b = (int*) malloc(sizeof(int)*(wno+2)*(not+1)*(not+1));
   double max_a;
   double b_a=-1.0;
   int b_i=1, b_j=1;
@@ -1249,7 +1249,7 @@ static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, 
 
 #define DEBUG_VITERBI 0
   memset(a, 0, (wno+2)*(not+1)*(not+1)*sizeof(double));
-  a[0][0][0]=1.0;
+  *a=1.0;
   max_a=1.0;
   for (i=0; i<wno; i++)
     {
@@ -1268,7 +1268,7 @@ static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, 
 	    {
 	      ptrdiff_t tk=k-1;
 	      int l;
-	      if (a[i][j][k]<max_a) { continue; }
+	      if (*(a+i*(not+1)*(not+1)+j*(not+1)+k)<max_a) { continue; }
 	      tgs[0]=tj; 
 	      tgs[1]=tk; 
 	      tag_probabilities(m, d, cs, tgs, wds, p, s);
@@ -1292,11 +1292,11 @@ static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, 
 		{
 		  double new;
 		  if (p[l]==0.0) { continue; }
-		  new=a[i][j][k]*p[l];
-		  if (a[i+1][k][l+1]<new)
+		  new=*(a+i*(not+1)*(not+1)+j*(not+1)+k)*p[l];
+		  if (*(a+(i+1)*(not+1)*(not+1)+k*(not+1)+l+1)<new)
 		    {
-		      a[i+1][k][l+1]=new;
-		      b[i+1][k][l+1]=j;
+		      *(a+(i+1)*(not+1)*(not+1)+k*(not+1)+l+1)=new;
+		      *(b+(i+1)*(not+1)*(not+1)+k*(not+1)+l+1)=j;
 		      if (new>max_a_new) { max_a_new=new; }
 		    }
 		}
@@ -1309,7 +1309,7 @@ static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, 
     {
       int j;
       for (j=0; j<=not; j++)
-	{ if (a[wno][i][j]>=b_a) { b_a=a[wno][i][j]; b_i=i; b_j=j; } }
+	{ if (*(a+(wno)*(not+1)*(not+1)+i*(not+1)+j)>=b_a) { b_a=*(a+(wno)*(not+1)*(not+1)+i*(not+1)+j); b_i=i; b_j=j; } }
     }
 #if DEBUG_VITERBI
   report(-1, "best final state %s-%s\n",
@@ -1319,12 +1319,20 @@ static void viterbi(model_pt m, hash_pt d, int cs, int t[], char *w[], int wno, 
   /* best final state is (b_i, b_j) */
   for (i=wno; i>0; i--)
     {
-      int tmp=b[i][b_i][b_j];
-      /* TODO: b_j==0 is an error (beam too small?) and should be handled differntly */
+      int tmp=*(b+(i)*(not+1)*(not+1)+b_i*(not+1)+b_j);
+      /* TODO: b_j==0 is an error (beam too small?) and should be handled differently */
       t[i-1]= b_j==0 ? 0 : b_j-1;
       b_j=b_i;
       b_i=tmp;
     }
+  if(a !=NULL) {
+	  free(a);
+	  a = NULL;
+  }
+  if(b !=NULL) {
+	  free(b);
+	  b = NULL;
+  }
 }
 
 /* ------------------------------------------------------------ */
@@ -1332,13 +1340,13 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
 {
   int tgs[2]={-1, -1};
   char *wds[5]={0, 0, 0, 0, 0};
-  int seq[bw][wno];
-  double pseq[bw];
-  double pnew[bw];
-  int snew[bw];
-  int tnew[bw];
-  double p[m->no_ocs];
-  int s[m->no_ocs];
+  int *seq = (int*)malloc(sizeof(int)*(bw*wno));
+  double *pseq = (double*)malloc(sizeof(double)*bw);
+  double *pnew = (double*)malloc(sizeof(double)*bw);
+  int *snew = (int*)malloc(sizeof(int)*(bw));
+  int *tnew = (int*)malloc(sizeof(int)*(bw));
+  double *p = (double*)malloc(sizeof(double)*(m->no_ocs));
+  int *s = (int*)malloc(sizeof(int)*(m->no_ocs));
   int i;
 
 #define DEBUG_TAG_SENTENCE 0
@@ -1375,8 +1383,8 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
 	  /* if pseq[j]==1.0 the seq is new and one run is sufficient */
 	  if (j>0 && pseq[j]==1.0) { continue; }
 	  
-	  tgs[0]= i-2>=0 ? seq[j][i-2] : -1;
-	  tgs[1]= i-1>=0 ? seq[j][i-1] : -1;
+	  tgs[0]= i-2>=0 ? *(seq + j + (i-2)*wno) : -1;
+	  tgs[1]= i-1>=0 ? *(seq + j + (i-1)*wno) : -1;
 	  tag_probabilities(m, d, cs, tgs, wds, p, s);
 #if DEBUG_TAG_SENTENCE
 	  {
@@ -1411,7 +1419,7 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
       for (j=0; j<bw; j++)
 	{
 	  int k;
-	  for (k=0; k<i; k++) { tmp[j][k]=seq[snew[j]][k]; }
+	  for (k=0; k<i; k++) { tmp[j][k]=*(seq + snew[j] + (k*wno)); }
 	  tmp[j][i]=tnew[j];
 	  pseq[j]=pnew[j];
 	}
@@ -1422,13 +1430,41 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
 	  size_t k;
 	  report(-1, "%d: %9.8e ", j, pseq[j]);
 	  for (k=0; k<=i; k++)
-	    { report(-1, " %8s", (char *)array_get(m->outcomes, seq[j][k])); }
+	    { report(-1, " %8s", (char *)array_get(m->outcomes, *(seq + j + (k*wno) ));}
 	  report(-1, "\n");
 	}      
 #endif
     }
 
-  for (i=0; i<wno; i++) { t[i]=seq[0][i]; }
+  for (i=0; i<wno; i++) { t[i]=*(seq + 0 + (i*wno) ); }
+  if(seq != NULL) {
+	  free(seq);
+	  seq = NULL;
+  }
+  if(pseq != NULL) {
+	  free(pseq);
+	  pseq = NULL;
+  }
+  if(pnew != NULL) {
+	  free(pnew);
+	  pnew = NULL;
+  }
+  if(snew != NULL) {
+	  free(snew);
+	  snew = NULL;
+  }
+  if(tnew != NULL) {
+	  free(tnew);
+	  tnew = NULL;
+  }
+  if(p != NULL) {
+	  free(p);
+	  p = NULL;
+  }
+  if(s != NULL) {
+	  free(s);
+	  s = NULL;
+  }
 }
 
 /* ------------------------------------------------------------ */
