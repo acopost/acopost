@@ -71,9 +71,6 @@ typedef struct globals_s
 {
   char *cmd;    /* command name */
   unsigned int rwt;  /* threshold for rare words */
-  int no_w_token;    /* counter of (frequent) words */
-  int no_fw_token;
-  int no_fw_types;
   sregister_pt strings;
 } globals_t;
 typedef globals_t *globals_pt;
@@ -182,16 +179,13 @@ static globals_pt new_globals(globals_pt old)
 
   g->cmd=NULL;
   g->rwt=5;
-  g->no_w_token=0;
-  g->no_fw_token=0;
-  g->no_fw_types=0;
   return g;
 }
 
 /* ------------------------------------------------------------ */
 static char *register_word(char *w, size_t t, array_pt wds, array_pt wtgs, array_pt wcs, hash_pt wh)
 {
-	char *s=(char*)sregister_get(g->strings,w);
+  char *s=(char*)sregister_get(g->strings,w);
   ptrdiff_t i=((ptrdiff_t)hash_get(wh, s))-1;
   array_pt tags;
   
@@ -758,11 +752,13 @@ static model_pt read_model_file(FILE *f)
   predicate_pt pd=NULL;
   char b[1024];
   size_t lno=1;
+  unsigned long tmp;
   
   if (!fgets(b, 1024, f))
     { error("can't read from model file\n"); }
-  if (3!=sscanf(b, "MET %d %d %lf", &m->no_ocs, &m->max_pds, &m->cf_alpha))
+  if (3!=sscanf(b, "MET %lu %d %lf", &tmp, &m->max_pds, &m->cf_alpha))
     { error("can't read signature from model file\n"); }
+  m->no_ocs = tmp;
   m->inv_max_pds=1.0/(double)m->max_pds;
   while (fgets(b, 1024, f))
     {
@@ -909,6 +905,8 @@ static hash_pt read_dictionary_file(model_pt m, FILE *f, size_t cs)
   char *s;
   char *buf = NULL;
   size_t n = 0;
+  char *buf2 = NULL;
+  size_t n2 = 0;
 
   
   if (!f) { return NULL; }
@@ -925,7 +923,7 @@ static hash_pt read_dictionary_file(model_pt m, FILE *f, size_t cs)
       size_t wc=0;
       
       if (!w) { continue; }
-      if (!cs) { w=lowercase(w); tgs=hash_get(d, w); }
+      if (!cs) { w=lowercase(w, &buf2, &n2); tgs=hash_get(d, w); }
       if (!tgs)
 	{ tgs=array_new(8); hash_put(d, (void *)sregister_get(g->strings,w), (void *)tgs); }
       for (s=tokenizer(NULL, " \t"); s; s=tokenizer(NULL, " \t"))
@@ -946,6 +944,10 @@ static hash_pt read_dictionary_file(model_pt m, FILE *f, size_t cs)
   if(buf) {
 	  free(buf);
 	  buf = NULL;
+  }
+  if(buf2) {
+	  free(buf2);
+	  buf2 = NULL;
   }
   report(1, "read %d lexicon entries, discarded %d entries\n", hash_size(d), lno-hash_size(d));
   return d;
@@ -1033,10 +1035,16 @@ static int mycompare(const void *ip, const void *jp, void *data)
 /* ------------------------------------------------------------ */
 static int predicate_matches_context(hash_pt d, predicate_pt pd, int t[], char *w[], size_t cs)
 {
+  char *buf2 = NULL;
+  size_t n2 = 0;
   predinfo_pt pi=pd->data;
   char *s=pi->w;
   /* TODO: check for case sensivity */
-  void *le=hash_get(d, cs ? w[2] : lowercase(w[2]));
+  void *le=hash_get(d, cs ? w[2] : lowercase(w[2], &buf2, &n2));
+  if(buf2) {
+	  free(buf2);
+	  buf2 = NULL;
+  }
   
   switch (pi->type)
     {
@@ -1063,7 +1071,9 @@ static void add_matching_predicates(array_pt pds, model_pt m, hash_pt d, int t[]
 {
   predindex_pt idx=(predindex_pt)m->userdata;
   predicate_pt pd;
-  char *s=cs ? w[2] : lowercase(w[2]);
+  char *buf2 = NULL;
+  size_t n2 = 0;
+  char *s=cs ? w[2] : lowercase(w[2], &buf2, &n2);
 
 #define ARRAY_ADD_IF_NONNULL(a, p) if (p) { array_add(a, p); }
 
@@ -1105,6 +1115,10 @@ static void add_matching_predicates(array_pt pds, model_pt m, hash_pt d, int t[]
   
   ARRAY_ADD_IF_NONNULL(pds, idx->def);
 #undef ARRAY_ADD_IF_NONNULL
+  if(buf2) {
+	  free(buf2);
+	  buf2 = NULL;
+  }
 }
 
 /* ------------------------------------------------------------ */
@@ -1132,8 +1146,8 @@ static void tag_probabilities(model_pt m, hash_pt d, int cs, int t[], char *w[],
   static array_pt mypds=NULL;
   array_pt tgs=m->outcomes;
   array_pt a;
-  int no_ocs=array_count(tgs);
-  int i;
+  size_t no_ocs=array_count(tgs);
+  size_t i;
 
   if (!mypds) { mypds=array_new(8); }
 
@@ -1185,8 +1199,14 @@ static void tag_probabilities(model_pt m, hash_pt d, int cs, int t[], char *w[],
 #endif
   if (d)
     {
-      a=hash_get(d, cs ? w[2] : lowercase(w[2]));
+      char *buf2 = NULL;
+      size_t n2 = 0;
+      a=hash_get(d, cs ? w[2] : lowercase(w[2], &buf2, &n2));
       if (a) { redistribute_probabilities(m, a, p); }
+      if(buf2) {
+	  free(buf2);
+	  buf2 = NULL;
+      }
     }
   eqsort((void *)s, no_ocs, sizeof(int), mycompare, p);
 #if DEBUG_TAG_PROBABILITIES
@@ -1205,7 +1225,7 @@ static int tag_in_context(model_pt m, hash_pt d, int t[], char *w[], double pt, 
   array_pt tgs=m->outcomes;
   array_pt pds=m->predicates;
   array_pt mypds=array_new(8);
-  int no_ocs=array_count(tgs);
+  size_t no_ocs=array_count(tgs);
   double p[m->no_ocs];
   int sorter[m->no_ocs];
   int i;
