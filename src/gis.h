@@ -73,7 +73,7 @@ typedef struct model_s
 {
   int no_fts;
 
-  int no_ocs;
+  size_t no_ocs;
   array_pt outcomes;
 
   int min_pds;
