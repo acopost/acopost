@@ -132,10 +132,10 @@ ssize_t readline(char **lineptr, size_t *n, FILE *stream);
 char *substr(char *s, int pos, int length);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   returns lowercase version of string, NOT reentrant,
-   max. size==4096
+   returns lowercase version of string s, returns a pointer
+   to buffer
 */
-char *lowercase(char *);
+char *lowercase(char *s, char **buffer, size_t *n);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    returns lowercase variant of c (including umlauts)
