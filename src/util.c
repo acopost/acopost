@@ -193,10 +193,44 @@ char *reverse(const char *s, char**buffer, size_t *n)
 	  *n = sl+1;
   }
   (*buffer)[sl]='\0';
-  for (i=0;i<sl; i++) {
+  for (i=0; i<sl; i++) {
 	  (*buffer)[i]=s[sl-i-1];
   }
   return *buffer;
+}
+
+/* ------------------------------------------------------------ */
+char mytolower(char c)
+{
+  static char *UC="ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc";
+  static char *LC="abcdefghijklmnopqrstuvwxyz\xe4\xf6\xfc";
+
+  char *t=strchr(UC, c);
+  return t ? LC[t-UC] : c;
+}
+
+/* ------------------------------------------------------------ */
+char *lowercase(char *s, char**buffer, size_t *n)
+{
+  size_t sl;
+  size_t i;
+  if(!s) {
+	  return NULL;
+  }
+  sl=strlen(s);
+  if (!*buffer) {
+	  *buffer=(char *)mem_malloc(sl+1);
+	  *n = sl+1;
+  }
+  if (*n<=sl) {
+	  *buffer=(char *)mem_realloc(*buffer, sl+1);
+	  *n = sl+1;
+  }
+  (*buffer)[sl]='\0';
+  for (i=0; i<sl; i++) {
+	  (*buffer)[i]=mytolower(s[i]);
+  }
+  return buffer;
 }
 
 ssize_t readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
@@ -287,28 +321,6 @@ char *substr(char *s, int pos, int length)
       for (i=0; length<0 && s[pos+length+1]; length++, i++) { b[i]=s[pos+length+1]; }
     }
 
-  return b;
-}
-
-/* ------------------------------------------------------------ */
-char mytolower(char c)
-{
-  static char *UC="ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc";
-  static char *LC="abcdefghijklmnopqrstuvwxyz\xe4\xf6\xfc";
-
-  char *t=strchr(UC, c);
-  return t ? LC[t-UC] : c;
-}
-
-/* ------------------------------------------------------------ */
-char *lowercase(char *s)
-{
-  static char b[4096];
-  int i;
-
-  for (i=0; s[i] && i<4096; i++) { b[i]=mytolower(s[i]); }
-  if (i==4096) { error("lowercase static buffer exceeded\n"); }
-  b[i]='\0';
   return b;
 }
 
