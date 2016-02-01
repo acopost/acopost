@@ -1,15 +1,12 @@
 * Remove segmentation faults
-* Uniform the binaries CLI
-  we already added prefixes, so it should not be a big issue trying to make
-  the options more uniform and changing the CLI; we should however write
-  a manual to cope with the differences in the interface.
-* Update UserGuide
+* make CLIs uniform
+** Update usage display, so that every command help has the same layout
+** Update UserGuide according to changes in CLIs
 * Implement acopost as a library
 ** Make main functions re-entrant and avoid global variables
 *** tokenizer/strtok (tokenizer revert the changes to the input string when
     finished)
 *** substr
-*** lowercase
 ** No library function should call exit
    Currently the only functions doing this are try_to_open() and the
    functions calling it
@@ -20,3 +17,5 @@
   unicode.
   Complete UTF-8 support would be a good option to improve that
   code.
+* Make the tagger generic
+** Allow multi-layer tagging
