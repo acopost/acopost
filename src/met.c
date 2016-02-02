@@ -37,6 +37,8 @@
 
 /* ------------------------------------------------------------ */
 #include "config-common.h"
+#include "options.h"
+#include "option_mode.h"
 #include <stddef.h> /* for ptrdiff_t and size_t. */
 #include <stdlib.h>
 #include <stdio.h>
@@ -59,13 +61,6 @@
 #include "sregister.h"
 #include "gis.h"
 #include "eqsort.h"
-
-typedef struct option_s
-{
-  char ch;
-  char *usage;
-} option_t;
-typedef option_t *option_pt;
 
 typedef struct globals_s
 {
@@ -126,49 +121,6 @@ typedef struct predindex_s
   predicate_pt def;
 } predindex_t;
 typedef predindex_t *predindex_pt;
-
-typedef struct invocation_s
-{
-  int mode;
-  char *cmd;
-  char *opt;
-  char *call;
-} invocation_t;
-typedef invocation_t *invocation_pt;
-
-/* ------------------------------------------------------------ */
-invocation_t ivs[]={
-  { 0, "acopost-met", "b:c:d:f:hi:m:np:r:st:v:", "[OPTIONS] model [input]" },
-  { 1, "met-tag", "b:d:hm:np:sv:", "[OPTIONS] model [text-file]" },
-  { 2, "met-test", "b:d:hm:np:sv:", "[OPTIONS] model [corpus-file]" },
-  { 3, "met-train", "d:f:hi:p:r:t:v:", "[OPTIONS] model [corpus-file]" },
-  { 1, "tag", NULL, NULL },
-  { 2, "test", NULL, NULL },
-  { 3, "train", NULL, NULL },
-  {0, NULL, NULL},
-};
-
-/* ------------------------------------------------------------ */
-char *banner=
-"Maximum Entropy Tagger (c) Ingo Schröder and others, http://acopost.sf.net/";
-
-
-option_t ops[]={
-  { 'b', "-b b  beam factor [1000] or n-best width [5]" },
-  { 'c', "-c c  command mode [NONE]" },
-  { 'd', "-d d  dictionary file [NONE]" },
-  { 'f', "-f f  threshold for feature count [5]" },
-  { 'h', "-h    displays help" },
-  { 'i', "-i i  maximum number of iterations [100]" },
-  { 'm', "-m m  probability threshold [1.0]" },
-  { 'n', "-n    use n-best instead of viterbi" },
-  { 'p', "-p p  priority class [19]" },
-  { 'r', "-r r  rare word threshold [5]" },
-  { 's', "-s    case sensitive mode for dictionary" },
-  { 't', "-t t  minimum improvement between iterations [0.0]" },
-  { 'v', "-v v  verbosity [1]" },
-  { '\0', NULL },
-};
 
 /* ------------------------------------------------------------ */
 static globals_pt new_globals(globals_pt old)
@@ -1615,148 +1567,126 @@ static void testing(FILE *mf, FILE *df, FILE *rf, double pt, size_t bw, size_t c
 }
 
 /* ------------------------------------------------------------ */
-static void usage(int mode)
+int main(int argc, char **argv)
 {
-  int i;
-  report(-1, "\n%s\n\n%s %s\nwhere OPTIONS can be\n\n", banner, g->cmd, ivs[mode].call);
-  for (i=0; ops[i].usage; i++)
-    {
-      if (strchr(ivs[mode].opt, ops[i].ch))
-	{ report(-1, "  %s\n", ops[i].usage); }
-    }
-  report(-1, "\n");
-}
+  int h = 0;
+  unsigned long v = 1;
+  long r = 5;
+  long f = 5;
+  long i = 100;
+  long b = -1;
+  int n = 0;
+  int C = 0;
+  double P = -1.0;
+  long K = 19;
+  double M = 0.0;
+  char *l = NULL;
+  enum OPTION_OPERATION_MODE o = OPTION_OPERATION_TAG;
+  option_callback_data_t cd = {
+    &o,
+    option_operation_mode_parser,
+    option_operation_mode_serializer
+  };
+  option_context_t options = {
+	  "Maximum Entropy Tagger (c) Ingo Schröder and others, http://acopost.sf.net/",
+	  argv[0],
+	  " OPTIONS modelfile [inputfile]",
+	  (option_entry_t[]) {
+		  { 'h', OPTION_NONE, (void*)&h, "display this help" },
+		  { 'v', OPTION_UNSIGNED_LONG, (void*)&v, "verbosity level [1]" },
+		  { 'n', OPTION_NONE, (void*)&n, "use n-best instead of viterbi" },
+		  { 'i', OPTION_SIGNED_LONG, (void*)&i, "maximum number of iterations [100]" },
+		  { 'b', OPTION_SIGNED_LONG, (void*)&b, "beam factor [1000] or n-best width [5]" },
+		  { 'l', OPTION_STRING, (void*)&l, "lexicon file [none]" },
+		  { 'r', OPTION_SIGNED_LONG, (void*)&r, "rare word threshold [0]" },
+		  { 'f', OPTION_SIGNED_LONG, (void*)&f, "threshold for feature count [5]" },
+		  { 'C', OPTION_NONE, (void*)&C, "case sensitive mode for dictionary" },
+		  { 'o', OPTION_CALLBACK, (void*)&cd, "mode of operation 0/tag, 1/test, 3/train [tag]" },
+		  { 'P', OPTION_DOUBLE, (void*)&P, "probability threshold [-1.0]" },
+		  { 'K', OPTION_SIGNED_LONG, (void*)&K, "priority class [19]" },
+		  { 'M', OPTION_DOUBLE, (void*)&M, "minimum improvement between iterations [0.0]" },
+		  { '\0', OPTION_NONE, NULL, NULL }
+	  }
+  };
+  int idx = options_parse(&options, "--", argc, argv);
+  if(h) {
+	  options_print_usage(&options, stdout);
+	  return 0;
+  }
+  if(n) {
+	if(b<0) {
+		b = 5;
+	}
+  } else {
+	if(b<0) {
+		b = 1000;
+	}
+  }
+  M /= 100.0;
+  char*mfn = NULL;
+  char*ipfn = NULL;
+  if (idx<argc)
+  {
+	  mfn=argv[idx];
+	  idx++;
+  } else {
+	  options_print_usage(&options, stderr);
+	  error("missing model file\n");
+  }
+  if (idx<argc && strcmp("-", argv[idx]))
+  {
+	  ipfn=argv[idx+1];
+  }
+  if(o!=OPTION_OPERATION_TAG && o!=OPTION_OPERATION_TRAIN && o!=OPTION_OPERATION_TEST)
+  {
+	  error("invalid mode of operation \"%d\"\n", o);
+  }
 
-/* ------------------------------------------------------------ */
-extern int main(int argc, char **argv)
-{ 
-  char c;
-  FILE *mf=NULL;
-  FILE *df=NULL;
-  char *dictfile=NULL;
-  FILE *rf=stdin;
-  int mi=100;
-  double dt=0.0;
-  double pt=-1.0;
-  int oldnice=nice(0), newnice=19;
-  ptrdiff_t fmin=5, bw=-1, cs=0, nbest=0, mode;
+  if(v >= 1) {
+	  options_print_configuration(&options, stderr);
+  }
+
+  int oldnice=nice(0);
+  if (oldnice<0) { error("can't get priority class\n"); }
+  if (nice(K-oldnice)<0) { error("can't set priority class\n"); }
 
   g=new_globals(NULL);
-  g->cmd=strdup(acopost_basename(argv[0], NULL));
+  g->rwt = r;
   g->strings = sregister_new(500);
-  if (oldnice<0) { error("can't get priority class\n"); }
 
-  for (mode=0; ivs[mode].cmd; mode++)
-    { if (!strcmp(g->cmd, ivs[mode].cmd)) { break; } }
-  if (!ivs[mode].cmd) { error("invalid command \"%s\"\n", g->cmd); }
-  mode=ivs[mode].mode;
+  FILE *mf=NULL;
+  FILE *df=NULL;
+  FILE *ipf=stdin;
 
-  while ((c=getopt(argc, argv, ivs[mode].opt))!=EOF)
+  if (ipfn) { ipf=try_to_open(ipfn, "r"); }
+
+  switch (o)
     {
-      switch (c)
-	{
-	case 'b':
-	  if (1!=sscanf(optarg, "%td", &bw))
-	    { error("invalid beam factor / n-best width \"%s\"\n", optarg); }
-	  else
-	    { report(1, "using %d as beam width\n", bw); }
-	  break;
-	case 'c':
-	  g->cmd=strdup(optarg);
-	  report(1, "running as %s\n", g->cmd);
-	  break;
-	case 'd':
-	  dictfile=strdup(optarg);
-	  report(1, "using %s as dictionary file\n", dictfile);
-	  break;
-	case 'f':
-	  if (1!=sscanf(optarg, "%td", &fmin))
-	    { error("invalid feature count threshold \"%s\"\n", optarg); }
-	  else
-	    { report(1, "using %d as feature count threshold\n", fmin); }
-	  break;
-	case 'h':
-	  usage(mode);
-	  exit(0);
-	  break;
-	case 'i':
-	  if (1!=sscanf(optarg, "%d", &mi))
-	    { error("invalid max number of iterations \"%s\"\n", optarg); }
-	  else
-	    { report(1, "using %d as max number of iterations\n", mi); }
-	  break;
-	case 'n':
-	  nbest=1;
-	  report(1, "using n-best as search method\n");
-	  break;
-	case 'm':
-	  if (1!=sscanf(optarg, "%lf", &pt))
-	    { error("invalid probability threshold \"%s\"\n", optarg); }
-	  else
-	    { report(1, "using %f as probability threshold\n", pt); }
-	  break;
-	case 'p':
-	  if (1!=sscanf(optarg, "%d", &newnice))
-	    { error("invalid priority class \"%s\"\n", optarg); }
-	  else
-	    { report(1, "using %d as priority class\n", newnice); }
-	  break;
-	case 'r':
-	  if (1!=sscanf(optarg, "%u", &(g->rwt)))
-	    { error("invalid rare word threshold \"%s\"\n", optarg); }
-	  else
-	    { report(1, "using %d as rare word threshold\n", g->rwt); }
-	  break;
-	case 's':
-	  cs=1;
-	  report(1, "using case sensitive mode for dictionary\n");
-	  break;
-	case 't':
-	  if (1!=sscanf(optarg, "%lf", &dt))
-	    { error("invalid delta threshold \"%s\"\n", optarg); }
-	  else
-	    { report(1, "using %f as delta threshold\n", dt); dt/=100.0; }
-	  break;
-	case 'v':
-	  if (1!=sscanf(optarg, "%d", &verbosity))
-	    { error("invalid verbosity \"%s\"\n", optarg); }
-	  break;
-	}
-    }
-  if (nice(newnice-oldnice)<0) { error("can't set priority class\n"); }
-  
-  if (optind>=argc) { error("too few arguments\n%s", banner); }
-  if (optind+1<argc) { rf=try_to_open(argv[optind+1], "r"); }
-  
-  if (bw<0) { bw= nbest ? 5 : 1000; }
-  
-  for (mode=0; ivs[mode].cmd; mode++)
-    { if (!strcmp(g->cmd, ivs[mode].cmd)) { break; } }
-  if (!ivs[mode].cmd) { error("invalid command \"%s\"\n", g->cmd); }
-  mode=ivs[mode].mode;
-  if (mode==3)
-    {
+    case OPTION_OPERATION_TAG:
+      mf=try_to_open(mfn, "r");
+      if (l) { df=try_to_open(l, "r"); }
+      tagging(mf, df, ipf, P, b, C, n);
+      break;
+    case OPTION_OPERATION_TEST:
+      mf=try_to_open(mfn, "r");
+      if (l) { df=try_to_open(l, "r"); }
+      testing(mf, df, ipf, P, b, C, n);
+      break;
+    case OPTION_OPERATION_TRAIN:
       if (g->rwt<0) { g->rwt=5; }
-      mf=try_to_open(argv[optind], "w");
-      if (dictfile) { df=try_to_open(dictfile, "w"); }
-      training(mf, df, rf, mi, dt, fmin);
+      mf=try_to_open(mfn, "w");
+      if (l) { df=try_to_open(l, "w"); }
+      training(mf, df, ipf, i, M, f);
+      break;
+    default:
+      report(0, "unknown mode of operation %d\n", o);
     }
-  else
-    {
-      mf=try_to_open(argv[optind], "r");
-      if (dictfile) { df=try_to_open(dictfile, "r"); }
-      if (mode==2)
-	{ testing(mf, df, rf, pt, bw, cs, nbest); }
-      else if (mode==1)
-	{ tagging(mf, df, rf, pt, bw, cs, nbest); }
-      else if (mode==4)
-	{ error("daemon mode not implemented\n"); }
-      else { error("don't know what to do (\"%s\")\n", g->cmd); }
-    }
+
+  report(1, "done\n");
 
   /* Free strings register */
   sregister_delete(g->strings);
-  
+
   exit(0);
 }
 
