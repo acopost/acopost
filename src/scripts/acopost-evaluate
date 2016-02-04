@@ -10,7 +10,7 @@ use FileHandle;
 
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
-$Usage="Usage: $cmd [-h] [[-i] -l lexicon] [-v] reference t1 ...\n";
+$Usage="Usage: $cmd [-h] [[-C] -l lexicon] [-v <int>] reference t1 ...\n";
 
 use Getopt::Long;
 Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
@@ -22,12 +22,12 @@ sub usage
 
 $lexicon = "";
 $opt_i = 0;
-$opt_v = 0;
+$opt_v = 1;
 GetOptions
 (
  'l=s' => \$lexicon,
- 'i' => \$opt_i,
- 'v' => \$opt_v,
+ 'C' => \$opt_i,
+ 'v=i' => \$opt_v,
  'h|help'        => sub { usage (); exit },
 );
 
