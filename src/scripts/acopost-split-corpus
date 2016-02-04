@@ -10,7 +10,7 @@ use FileHandle;
 
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
-$Usage="Usage: $cmd [-h] [-m modulo] [-p prefix] [-v] [corpusfile]\n";
+$Usage="Usage: $cmd [-h] [-k modulo] [-p prefix] [-v <int>] [corpusfile]\n";
 
 use Getopt::Long;
 Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
@@ -22,12 +22,12 @@ sub usage
 
 $p = "";
 $m = 10;
-$opt_v = 0;
+$opt_v = 1;
 GetOptions
 (
- 'p=s' => \$p,
- 'm=i' => \$m,
- 'v' => \$opt_v,
+ 'F=s' => \$p,
+ 'k=i' => \$m,
+ 'v=i' => \$opt_v,
  'h|help'        => sub { usage (); exit },
 );
 
