@@ -10,7 +10,7 @@ use FileHandle;
 
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
-$Usage="Usage: $cmd [-h] [-v] lexicon\n";
+$Usage="Usage: $cmd [-h] [-v <int>] lexicon\n";
 
 use Getopt::Long;
 Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
@@ -20,10 +20,10 @@ sub usage
     print $Usage;
 }
 
-$opt_v = 0;
+$opt_v = 1;
 GetOptions
 (
- 'v' => \$opt_v,
+ 'v=i' => \$opt_v,
  'h|help'        => sub { usage (); exit },
 );
 
