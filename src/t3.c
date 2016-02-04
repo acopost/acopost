@@ -1427,11 +1427,11 @@ int main(int argc, char **argv)
   double s = -1.0;
   long L = 10;
   long b = 0;
-  int U = 0;
+  int Z = 0;
   int x = 0;
   int y = 0;
   int z = 0;
-  char *d = NULL;
+  char *l = NULL;
   double a[3];
   a[0] = -1.0;
   a[1] = -1.0;
@@ -1455,8 +1455,8 @@ int main(int argc, char **argv)
 		  { 'h', OPTION_NONE, (void*)&h, "display this help" },
 		  { 'v', OPTION_UNSIGNED_LONG, (void*)&v, "verbosity level [1]" },
 		  { 'r', OPTION_SIGNED_LONG, (void*)&r, "rare word threshold [0]" },
-		  { 'd', OPTION_STRING, (void*)&d, "lexicon file [none]" },
-		  { 'U', OPTION_NONE, (void*)&U, "use line-buffered IO for input" },
+		  { 'l', OPTION_STRING, (void*)&l, "lexicon file [none]" },
+		  { 'Z', OPTION_NONE, (void*)&Z, "use line-buffered IO for input" },
 		  { 'x', OPTION_NONE, (void*)&x, "case-insensitive suffix tries [sensitive]" },
 		  { 'y', OPTION_NONE, (void*)&y, "case-insensitive when branching in suffix trie [sensitive]" },
 		  { 'z', OPTION_NONE, (void*)&z, "zero empirical transition probs if undefined [1/#tags]" },
@@ -1474,7 +1474,7 @@ int main(int argc, char **argv)
 	  options_print_usage(&options, stdout);
 	  return 0;
   }
-  if(d == NULL) {
+  if(l == NULL) {
 	  options_print_usage(&options, stderr);
 	  error("missing lexicon file\n");
   }
@@ -1515,7 +1515,7 @@ int main(int argc, char **argv)
   compute_transition_probs(model, z, (o == OPTION_OPERATION_DEBUG));
 
 
-  read_dictionary_file(d, model);
+  read_dictionary_file(l, model);
   if (s<0.0) { compute_theta(model); }
   else { model->theta=s; }
   build_suffix_trie(model);
@@ -1525,7 +1525,7 @@ int main(int argc, char **argv)
     {
     case OPTION_OPERATION_TAG:
       /* _IOFBF fully buffered; _IOLBF line buffered; _IONBF not buffered */
-      tagging(ipf, U ? _IOLBF : -1, model); break;
+      tagging(ipf, Z ? _IOLBF : -1, model); break;
     case OPTION_OPERATION_TEST:
       testing(ipf, model); break;
     case OPTION_OPERATION_DUMP:
