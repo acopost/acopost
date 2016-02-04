@@ -712,7 +712,7 @@ int main(int argc, char **argv)
 
   int h = 0;
   unsigned long v = 1;
-  char *d = NULL;
+  char *l = NULL;
   enum OPTION_OPERATION_MODE o = OPTION_OPERATION_TAG;
   option_callback_data_t cd = {
     &o,
@@ -726,7 +726,7 @@ int main(int argc, char **argv)
 	  (option_entry_t[]) {
 		  { 'h', OPTION_NONE, (void*)&h, "display this help" },
 		  { 'v', OPTION_UNSIGNED_LONG, (void*)&v, "verbosity level [1]" },
-		  { 'd', OPTION_STRING, (void*)&d, "lexicon file [none]" },
+		  { 'l', OPTION_STRING, (void*)&l, "lexicon file [none]" },
 		  { 'o', OPTION_CALLBACK, (void*)&cd, "mode of operation 0/tag, 1/test [tag]" },
 		  { '\0', OPTION_NONE, NULL, NULL }
 	  }
@@ -736,7 +736,7 @@ int main(int argc, char **argv)
 	  options_print_usage(&options, stdout);
 	  return 0;
   }
-  if(d == NULL) {
+  if(l == NULL) {
 	  options_print_usage(&options, stderr);
 	  error("missing lexicon file\n");
   }
@@ -773,7 +773,7 @@ int main(int argc, char **argv)
 
   model->strings = sregister_new(500);
 
-  read_dictionary_file(d, model);
+  read_dictionary_file(l, model);
 
   read_known_wtree(kf, model);
   read_unknown_wtree(uf, model);
