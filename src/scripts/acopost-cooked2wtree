@@ -10,7 +10,7 @@
 
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
-$Usage="Usage: $cmd [-a min] [-b max] [-d] [-h] [-w mfw] featurefile\n";
+$Usage="Usage: $cmd [-A min] [-B max] [-o debug] [-h] [-w mfw] [-r rwt] featurefile\n";
 
 use Getopt::Long;
 Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
@@ -24,20 +24,29 @@ $minc = -1;
 $maxc = -1;
 $exclude="";
 $include="";
-$debug=0;
+$mode="";
 $rwt = 0;
 $mfw = 100;
+$debug = 0;
 GetOptions
 (
- 'a=i' => \$minc,
- 'b=i' => \$maxc,
- 'd' => \$debug,
- 'e=s' => \$exclude,
- 'i=s' => \$include,
+ 'A=i' => \$minc,
+ 'B=i' => \$maxc,
+ 'o' => \$mode,
+ 'X=s' => \$exclude,
+ 'I=s' => \$include,
  'r=i' => \$rwt,
  'w=i' => \$mfw,
  'h|help'        => sub { usage (); exit },
 );
+
+if ( $mode ne "" ) {
+    if ( $mode eq "debug") {
+	$debug = 1;
+    } else {
+	die $Usage;
+    }
+}
 
 die $Usage if $#ARGV!=0;
 
