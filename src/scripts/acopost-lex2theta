@@ -6,7 +6,7 @@
 
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
-$Usage="Usage: $cmd [-h] [-r rwt] lexfile\n";
+$Usage="Usage: $cmd [-h] [-r rwt] -l lexfile\n";
 
 use Getopt::Long;
 Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
@@ -17,15 +17,17 @@ sub usage
 }
 
 $rwt = 5;
+$lexicon_file = "";
 GetOptions
 (
  'r=i' => \$rwt,
+ 'l=s' => \$lexicon_file,
  'h|help'        => sub { usage (); exit },
 );
 
-die $Usage if $#ARGV!=0;
+die $Usage if $lexicon_file eq "";
 
-open(F, "<$ARGV[0]") || die "can't open \"$ARGV[0]\": $!\n";
+open(F, "<$lexicon_file") || die "can't open \"$lexicon_file\": $!\n";
 LINE:
 while ($l=<F>) {
   chomp($l);
