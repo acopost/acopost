@@ -1426,7 +1426,7 @@ int main(int argc, char **argv)
   long m = 1;
   long r = 0;
   int R = 0;
-  char *d = NULL;
+  char *l = NULL;
   char *p = NULL;
   char *t = NULL;
   char *u = NULL;
@@ -1444,7 +1444,7 @@ int main(int argc, char **argv)
 		  { 'h', OPTION_NONE, (void*)&h, "display this help" },
 		  { 'v', OPTION_UNSIGNED_LONG, (void*)&v, "verbosity level [1]" },
 		  { 'i', OPTION_SIGNED_LONG, (void*)&i, "maximum number of iterations [unlimited]" },
-		  { 'd', OPTION_STRING, (void*)&d, "lexicon file [none]" },
+		  { 'l', OPTION_STRING, (void*)&l, "lexicon file [none]" },
 		  { 'm', OPTION_SIGNED_LONG, (void*)&m, "minimum improvement per iteration [1]" },
 		  { 'r', OPTION_SIGNED_LONG, (void*)&r, "rare word threshold [0]" },
 		  { 'o', OPTION_CALLBACK, (void*)&cd, "mode of operation 0/tag, 1/test, 2/train [tag]" },
@@ -1511,8 +1511,8 @@ int main(int argc, char **argv)
   /* TODO: find better seed */
   srand48(0);
 
-  if (d) {
-	  read_dictionary_file(d, model);
+  if (l) {
+	  read_dictionary_file(l, model);
   }
 
   int ret = read_rules_file(model, g->rf);
