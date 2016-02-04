@@ -6,7 +6,7 @@
 
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
-$Usage="Usage: $cmd [-h] tagged reference\n";
+$Usage="Usage: $cmd [-h] [-v <int>] tagged reference\n";
 
 use Getopt::Long;
 Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
@@ -16,14 +16,14 @@ sub usage
     print $Usage;
 }
 
-$opt_q = 0;
-$opt_v = 0;
+$opt_v = 1;
 GetOptions
 (
- 'q' => \$opt_q,
- 'v' => \$opt_v,
+ 'v=i' => \$opt_v,
  'h|help'        => sub { usage (); exit },
 );
+
+$opt_q = ! $opt_v;
 
 die $Usage if $#ARGV!=1;
 
