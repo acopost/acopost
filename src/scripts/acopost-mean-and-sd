@@ -6,7 +6,7 @@
 
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
-$Usage="Usage: $cmd [-c] [-h]\n";
+$Usage="Usage: $cmd [-c] [-D] [-h]\n";
 
 use Getopt::Long;
 Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
@@ -17,11 +17,11 @@ sub usage
 }
 
 $opt_c = 0;
-$opt_s = 0;
+$opt_D = 0;
 GetOptions
 (
  'c'             => \$opt_c,
- 's'             => \$opt_s,
+ 'D'             => \$opt_D,
  'h|help'        => sub { usage (); exit },
 );
 
@@ -50,7 +50,7 @@ for ($i=0; $i<=$#a; $i++) {
 $var=$sum/$#a;
 $sd=sqrt($var);
 
-if ($opt_s) {
+if ($opt_D) {
   printf "mean %f var %f sd %f\n", $mean, $var, $sd;
 } else {
   printf "count: %d\n", $c if $opt_c;
