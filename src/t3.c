@@ -257,7 +257,7 @@ void add_word_to_trie(void *key, void *value, void *data)
   char *s=(char *)key;
   word_pt wd=(word_pt)value;
   model_pt m=(model_pt)data;
-  char *uc=strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", s[0]);
+  int uc = is_uppercase(s[0]);
   trie_pt tr= uc ? m->upper_trie : m->lower_trie;
   char *t;
   size_t i;
@@ -875,8 +875,7 @@ prob_t *get_lexical_probs(model_pt m, char *s)
   if (w) { return w->lp; }
   else
     {
-      char *uc=strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc", s[0]);
-      trie_pt tr= uc ? m->upper_trie : m->lower_trie;
+      trie_pt tr= is_uppercase(s[0]) ? m->upper_trie : m->lower_trie;
 
       tr=lookup_suffix_in_trie(tr, s);
       return tr->lp;
@@ -1180,8 +1179,7 @@ void debugging(model_pt m)
 		}
 	      else
 		{
-		  char *uc=strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc", t[0]);
-		  trie_pt tr= uc ? m->upper_trie : m->lower_trie;
+		  trie_pt tr= is_uppercase(t[0]) ? m->upper_trie : m->lower_trie;
 	      
 		  tr=lookup_suffix_in_trie(tr, t);
 /* 		  report(-1, "SUFFIX %s \"%s\"\n", t, trie_string(tr)); */
