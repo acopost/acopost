@@ -230,7 +230,7 @@ char *lowercase(char *s, char**buffer, size_t *n)
   for (i=0; i<sl; i++) {
 	  (*buffer)[i]=mytolower(s[i]);
   }
-  return buffer;
+  return *buffer;
 }
 
 ssize_t readdelim(char **lineptr, size_t  *n, int delim, FILE *stream)
