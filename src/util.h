@@ -142,6 +142,22 @@ char *lowercase(char *s, char **buffer, size_t *n);
 */
 char mytolower(char);
 
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   returns the number of uppercase characters at the beginning of s
+*/
+size_t uppercase_prefix_length(char *s);
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   returns the first uppercase character occurrence in s or NULL
+*/
+char* get_first_uppercase(char *s);
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   returns non-zero if c is uppercase, 0 otherwise
+*/
+int is_uppercase(int c);
+
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    returns length of common prefix
 */
