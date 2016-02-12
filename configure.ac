@@ -2,8 +2,10 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([acopost], [2.0.0~pre01], [ulrikp@users.sourceforge.net])
-AM_INIT_AUTOMAKE([-Wall])
+AC_INIT([acopost], [2.0.0~pre01], [acopost-devel@lists.sourceforge.net])
+AC_CONFIG_AUX_DIR([build-aux])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_CONFIG_SRCDIR([src/t3.c])
 AC_CONFIG_HEADERS([config.h])
 
