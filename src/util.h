@@ -89,14 +89,6 @@ int intcmp(const void *ip, const void *jp);
 extern FILE *try_to_open(const char *name, char *mode);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   returns pointer to single internal static buffer that
-   holds the basename of the filename name minus the suffix
-   (if specified)
-   not reentrant
-*/
-char *acopost_basename(char *name, char *suffix);
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    successively returns tokens separated by one or more chars
    from sep string, not reentrant, temporarily modifies s,
    NOT reentrant
