@@ -677,23 +677,26 @@ static void assign_lexical_tags(void *p, void *data, void *globaldata)
 { array_map2((array_pt)p, assign_lexical_tag, data, globaldata); }
 
 /* ------------------------------------------------------------ */
-static int xxx_subtype(char *s, char *t)
+static int cap_subtype(char *s)
 {
-  if (strpbrk(s, t))
+  if (get_first_uppercase(s))
     {
-      if (strspn(s, t)==strlen(s)) { return PRE_ALL; }
+      if (uppercase_prefix_length(s)==strlen(s)) { return PRE_ALL; }
       else { return PRE_SOME; }
     }
   else { return PRE_NO; }
 }
 
 /* ------------------------------------------------------------ */
-static int cap_subtype(char *s)
-{ return xxx_subtype(s, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc"); }
-
-/* ------------------------------------------------------------ */
 static int digit_subtype(char *s)
-{ return xxx_subtype(s, "0123456789"); }
+{
+  if (strpbrk(s, "0123456789"))
+    {
+      if (strspn(s, "0123456789")==strlen(s)) { return PRE_ALL; }
+      else { return PRE_SOME; }
+    }
+  else { return PRE_NO; }
+}
 
 /* ------------------------------------------------------------ */
 static int precondition_satisfied(model_pt m, array_pt sps, int pos, rule_pt r, int pcn)
