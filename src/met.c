@@ -351,7 +351,7 @@ static void make_event(globals_pt g, char *w[], int t[], array_pt wcs, hash_pt w
       p.w=w[2];
       if (strpbrk(p.w, "0123456789"))
 	{ p.type=pt_number; register_predinfo(&p, m, ev); }
-      if (strpbrk(p.w, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc"))
+      if (get_first_uppercase(p.w))
 	{ p.type=pt_uppercase; register_predinfo(&p, m, ev); }
       if (strpbrk(p.w, "-"))
 	{ p.type=pt_hyphen; register_predinfo(&p, m, ev); }
@@ -1010,7 +1010,7 @@ static int predicate_matches_context(hash_pt d, predicate_pt pd, int t[], char *
     case pt_prefix: return !le && common_prefix_length(w[2], s)==strlen(s);
     case pt_suffix: return !le && common_suffix_length(w[2], s)==strlen(s);
     case pt_number: return !le && (int)strpbrk(w[2], "0123456789");
-    case pt_uppercase: return !le && (int)strpbrk(w[2], "ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc");
+    case pt_uppercase: return !le && (int)get_first_uppercase(w[2]);
     case pt_hyphen: return !le && (int)strpbrk(w[2], "-");
     case pt_default: return 1;
     }
@@ -1043,7 +1043,7 @@ static void add_matching_predicates(array_pt pds, model_pt m, hash_pt d, int t[]
 	}
       if (strpbrk(w[2], "0123456789"))
 	{ ARRAY_ADD_IF_NONNULL(pds, idx->number); }
-      if (strpbrk(w[2], "ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc"))
+      if (get_first_uppercase(w[2]))
 	{ ARRAY_ADD_IF_NONNULL(pds, idx->uppercase); }
       if (strpbrk(w[2], "-"))
 	{ ARRAY_ADD_IF_NONNULL(pds, idx->hyphen); }
