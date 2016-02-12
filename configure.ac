@@ -71,5 +71,4 @@ AC_CONFIG_FILES([doc/Makefile
 		 tests/data/Makefile
                  Makefile
                  acopost.spec])
-AC_CONFIG_FILES([tests/test1.test], [chmod +x tests/test1.test])
 AC_OUTPUT
