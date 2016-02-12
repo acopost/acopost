@@ -131,26 +131,6 @@ FILE *try_to_open(const char *name, char *mode)
 }
 
 /* ------------------------------------------------------------ */
-char *acopost_basename(char *name, char *s)
-{
-#ifndef MAXPATHLEN
-#define MAXPATHLEN 4096
-#endif
-  static char b[MAXPATHLEN];
-  int tl, sl;
-  char *t;
-  
-  t=strrchr(name, '/');
-  if (!t) { t=name; } else { t++; }
-  tl=strlen(t);
-  if (tl+1>=MAXPATHLEN) { error("acopost_basename: \"%s\" too long\n", t); }
-  b[0]='\0';
-  strncat(b, t, MAXPATHLEN-1);
-  if (s && tl>=(sl=strlen(s)) && !strcmp(t+tl-sl, s)) { b[tl-sl]='\0'; }
-  return b;
-}
-
-/* ------------------------------------------------------------ */
 char *tokenizer(char *s, const char *sep)
 {
   static char c;
