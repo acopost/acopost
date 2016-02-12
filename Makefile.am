@@ -5,4 +5,4 @@ CLEANFILES = *~
 EXTRA_DIST = README AUTHORS COPYING NEWS ChangeLog
 
 
-EXTRA_DIST += acopost.spec.in acopost.spec debian/source/* debian/*
+EXTRA_DIST += acopost.spec.in acopost.spec
