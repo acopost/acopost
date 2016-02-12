@@ -1,9 +1,35 @@
 #!/bin/sh
 
 set -e;
+current_dir=`pwd`
+abs_top_srcdir="$current_dir"/"$srcdir"/..
+abs_top_builddir="$current_dir"/..
+PATH="$abs_top_srcdir"/src/scripts/:"$abs_top_builddir"/src:"$PATH"
+INPUT_DIR="$abs_top_srcdir"/tests/data/
 
-PATH="@abs_top_srcdir@/"src/scripts/:"@abs_top_builddir@/src":"$PATH"
-INPUT_DIR="@abs_top_srcdir@/"tests/data/
+echo 1..4
+
+TEST_NO=0
+
+test_start() {
+    TEST_NO=$((TEST_NO+1))
+    TEST_RES="not ok"
+    TEST_TITLE="$1"
+}
+
+test_end() {
+    if [ x"$1" = xSKIP ]
+    then
+	TEST_RES=ok
+	echo "$TEST_RES $TEST_NO - $TEST_TITLE # $1 $2"
+    else
+	echo "$TEST_RES $TEST_NO - $TEST_TITLE"
+    fi
+}
+
+#
+# Prepare output dir
+#
 
 OUTPUT_DIR=test1_output/
 LOG_DIR="$OUTPUT_DIR"log/
@@ -12,13 +38,57 @@ rm -fr "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
 mkdir -p "$LOG_DIR"
 
-echo acopost-cooked2lex > "$LOG_DIR"test1.log 2>&1
-acopost-cooked2lex < "$INPUT_DIR"random_corpus.txt >> "$LOG_DIR"test1.log 2>&1 > "$OUTPUT_DIR"random_corpus.lex
-LC_ALL=C diff "$INPUT_DIR"random_corpus.lex "$OUTPUT_DIR"random_corpus.lex >> "$LOG_DIR"test1.log 2>&1
+#
+# acopost-cooked2lex TESTS
+#
 
-echo acopost-cooked2ngram > "$LOG_DIR"test1.log 2>&1
-acopost-cooked2ngram  < "$INPUT_DIR"random_corpus.txt >> "$LOG_DIR"test1.log 2>&1 > "$OUTPUT_DIR"random_corpus.ngrams
-LC_ALL=C diff "$INPUT_DIR"random_corpus.ngrams "$OUTPUT_DIR"random_corpus.ngrams >> "$LOG_DIR"test1.log 2>&1
+test_start "acopost-cooked2lex should support -h option"
+if acopost-cooked2lex -h >/dev/null
+then
+    TEST_RES=ok
+fi
+test_end
+
+test_start "acopost-cooked2lex should produce random_corpus.lex from random_corpus.txt"
+if acopost-cooked2lex < "$INPUT_DIR"random_corpus.txt >> "$LOG_DIR"test1.log 2>&1 > "$OUTPUT_DIR"random_corpus.lex
+then
+    if test -f "$OUTPUT_DIR"random_corpus.lex
+    then
+	if diff "$INPUT_DIR"random_corpus.lex "$OUTPUT_DIR"random_corpus.lex >&2
+	then
+	    TEST_RES=ok
+	fi
+    fi
+fi
+test_end
+
+#
+# acopost-cooked2ngram TESTS
+#
+
+test_start "acopost-cooked2ngram should support -h option"
+if acopost-cooked2ngram -h >/dev/null
+then
+    TEST_RES=ok
+fi
+test_end
+
+test_start "acopost-cooked2ngram should produce random_corpus.ngrams from random_corpus.txt"
+if acopost-cooked2ngram < "$INPUT_DIR"random_corpus.txt >> "$LOG_DIR"test1.log 2>&1 > "$OUTPUT_DIR"random_corpus.ngrams
+then
+    if test -f "$OUTPUT_DIR"random_corpus.ngrams
+    then
+	if diff "$INPUT_DIR"random_corpus.ngrams "$OUTPUT_DIR"random_corpus.ngrams >&2
+	then
+	    TEST_RES=ok
+	fi
+    fi
+fi
+test_end
+
+#
+# Clean-ups
+#
 
 rm -fr "$OUTPUT_DIR"
 
