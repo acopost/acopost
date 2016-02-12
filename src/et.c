@@ -372,7 +372,7 @@ static ptrdiff_t find_feature_value_from_sentence(model_pt m, feature_pt f, char
       {
 	char tmp[2]="X";
 	size_t slen=strlen(ws[rp]);
-	size_t clen=strspn(ws[rp], "ABCDEFGHIJKLMNOPQRSTUVWXY\xc4\xd6\xdc");
+	size_t clen=uppercase_prefix_length(ws[rp]);
 	tmp[0]= slen==clen ? '2' : (clen>0 ? '1' : '0');
 	return find_feature_value(f, tmp);
       }
