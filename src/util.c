@@ -200,11 +200,31 @@ char *reverse(const char *s, char**buffer, size_t *n)
 }
 
 /* ------------------------------------------------------------ */
+static char *UC="ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc";
+static char *LC="abcdefghijklmnopqrstuvwxyz\xe4\xf6\xfc";
+
+/* ------------------------------------------------------------ */
+size_t uppercase_prefix_length(char *s)
+{
+  return strspn(s, UC);
+}
+
+/* ------------------------------------------------------------ */
+char* get_first_uppercase(char *s)
+{
+  return strpbrk(s, UC);
+}
+
+/* ------------------------------------------------------------ */
+int is_uppercase(int c)
+{
+	return (int)(size_t)strchr(UC, c);
+}
+
+
+/* ------------------------------------------------------------ */
 char mytolower(char c)
 {
-  static char *UC="ABCDEFGHIJKLMNOPQRSTUVWXYZ\xc4\xd6\xdc";
-  static char *LC="abcdefghijklmnopqrstuvwxyz\xe4\xf6\xfc";
-
   char *t=strchr(UC, c);
   return t ? LC[t-UC] : c;
 }
