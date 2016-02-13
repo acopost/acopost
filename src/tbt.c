@@ -702,8 +702,9 @@ static int digit_subtype(char *s)
 static int precondition_satisfied(model_pt m, array_pt sps, int pos, rule_pt r, int pcn)
 {
   precondition_pt pc=&r->pc[pcn];
-  int rp=pos+pc->pos;
-  sample_pt sp= (rp>=0 && rp<array_count(sps)) ? (sample_pt)array_get(sps, rp) : NULL;
+  int rp = pos+pc->pos;
+  // casting the return of array_count() which is size_t (unsigned) for comparison
+  sample_pt sp= (rp>=0 && rp<(int)array_count(sps)) ? (sample_pt)array_get(sps, rp) : NULL;
 
   switch (pc->type)
     {
@@ -719,7 +720,8 @@ static int precondition_satisfied(model_pt m, array_pt sps, int pos, rule_pt r, 
     case PRE_BOS:
       return rp==-1;
     case PRE_EOS:
-      return rp==array_count(sps);
+      // casting array_count(), which is unsigned, to int for the comparison
+      return rp==(int)array_count(sps);
     case PRE_DIGIT:
       return sp && pc->u.digit==digit_subtype(sp->word);
     case PRE_CAP:
@@ -786,8 +788,9 @@ static void set_tag_to_tmptag(void *a)
 static int
 apply_rule(model_pt m, array_pt sts, rule_pt r, int countonly)
 {
-  int i, j, g=0, b=0, delta=0;
-  
+  int g=0, b=0, delta=0;
+  size_t i, j;
+
   for (i=0; i<array_count(sts); i++)
     {
       array_pt sps=(array_pt)array_get(sts, i);
@@ -916,7 +919,7 @@ static void free_preload_sentence(void *p)
 /* ------------------------------------------------------------ */
 static void preload_file(model_pt m, globals_pt g, char *fn, array_pt sts)
 {
-  int i, j;
+  size_t i, j;
   array_pt pls=read_cooked_file(m, fn);
 
   if (array_count(pls)!=array_count(sts))
@@ -952,7 +955,8 @@ precondition_from_template(model_pt m, array_pt sps, int pos, rule_pt t, rule_pt
 
   if (tpc->type!=PRE_BOS && tpc->type!=PRE_EOS)
     {
-      if (rp<0 || rp>=array_count(sps)) { return 0; }
+      // casting array_count(), which is unsigned, for comparison
+      if (rp < 0 || rp >= (int)array_count(sps)) { return 0; }
       sp=(sample_pt)array_get(sps, rp);
     }
   rpc->type=tpc->type;
@@ -999,7 +1003,8 @@ precondition_from_template(model_pt m, array_pt sps, int pos, rule_pt t, rule_pt
     case PRE_BOS:
       return rp==-1;
     case PRE_EOS:
-      return rp==array_count(sps);
+      // casting array_count(), which is unsigned, for comparison
+      return rp==(int)array_count(sps);
     case PRE_DIGIT:
       rpc->u.digit=digit_subtype(sp->word);
       if (tpc->u.digit!=PRE_ANY && tpc->u.digit!=rpc->u.digit) { return 0; }
@@ -1038,7 +1043,8 @@ make_rule(model_pt m, array_pt sps, int pos, rule_pt t)
 static void
 make_rules(model_pt m, array_pt sps, int pos, array_pt rs, int goodonly)
 {
-  int i, not=iregister_get_length(m->tags);
+  int not=iregister_get_length(m->tags);
+  size_t i;
   sample_pt sp=(sample_pt)array_get(sps, pos);
   word_pt w=get_word(m, sp->word);
   int israre=is_rare(m, sp->word);
@@ -1099,7 +1105,7 @@ static void register_correcting_rules(void *a, void *b)
 {
   array_pt sps=(array_pt)a, rs=array_new(8);
   model_pt m=(model_pt)b;
-  int i;
+  size_t i;
   
   for (i=0; i<array_count(sps); i++)
     {
@@ -1131,7 +1137,7 @@ static void make_deltas(void *a, void *b)
 {
   array_pt sps=(array_pt)a, rs=array_new(8);
   model_pt m=(model_pt)b;
-  int i;
+  size_t i;
 
   for (i=0; i<array_count(sps); i++)
     {
@@ -1287,7 +1293,7 @@ static void tagging(model_pt m, globals_pt g)
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       if(r == 0) { continue; }
       char *t;
-      int i;
+      size_t i;
       array_clear(sps);
       for (i=0, t=strtok(s, " \t"); t; i++, t=strtok(NULL, " \t"))
 	{
@@ -1317,7 +1323,7 @@ static void tagging(model_pt m, globals_pt g)
       for (i=0; i<array_count(m->rules); i++)
 	{
 	  rule_pt r=(rule_pt)array_get(m->rules, i);
-	  int j;
+	  size_t j;
 	  for (j=0; j<array_count(sps); j++)
 	    {
 	      sample_pt sp=(sample_pt)array_get(sps, j);
@@ -1367,7 +1373,7 @@ static void unknown_vs_known1(void *p, void *d1, void *d2)
 /* ------------------------------------------------------------ */
 static void testing(model_pt m, globals_pt g)
 {
-  int i;
+  size_t i;
   int c[4]={0, 0, 0, 0};
   array_pt sts=read_cooked_file(m, g->ipf);
 
