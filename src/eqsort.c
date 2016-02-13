@@ -69,10 +69,16 @@ void memswap(void *a, void *b, size_t n)
 void SymPartitionSort(void *a, ssize_t s, size_t n, size_t es, int (*cmp)(const void *,const void *,void *), void *data)
 {   char *pm,*pb,*pc,*pi,*pj;
     int i,v,vL,m,left,right,sp,eq,ineq,rc;
+
+    /* ssize_t (as in `s`) is always signed, size_t (as in `n`) is always unsigned;
+     * while in most case it will be safe to compare between them, it is better to
+     * cast `n` into a signed variable */
+    ssize_t sign_n = n;
+
     left=right=0;
     while(1){
-        if(n < 8){ //Insertion sort on small arrays
-             for (s=1; s < n; s++)
+        if(sign_n < 8){ //Insertion sort on small arrays
+             for (s=1; s < sign_n; s++)
 		for (pb = (char*)a+s*es; cmp(pb-es,pb,data) > 0; ) {
                         swap(pb,pb-es); pb-=es; 
                         if(pb <= (char*)a) break;
@@ -81,7 +87,7 @@ void SymPartitionSort(void *a, ssize_t s, size_t n, size_t es, int (*cmp)(const 
         }
         m= s<0 ? -s:s;
         if(m <= 2){//First,middle,last items are ordered and placed 1st,2nd and last
-            v = beta2 > n ? n : 63;
+            v = beta2 > sign_n ? sign_n : 63;
             pc=(char*)a+(v-1)*es;
             pm=(char*)a+es; 
             swap(pm,(char*)a+(v/2)*es);
@@ -93,17 +99,17 @@ void SymPartitionSort(void *a, ssize_t s, size_t n, size_t es, int (*cmp)(const 
                 left=right=1; pc-=es;
             }
             else{
-               v=m > n/beta1 ? n : p*m-1;
+               v=m > sign_n/beta1 ? sign_n : p*m-1;
                if(s < 0) {  //Move sorted items to left end
-                      if(v<n) {left=m; s=-s;}
+                      if(v<sign_n) {left=m; s=-s;}
                       else    {left=(m+1)/2; right=m/2;} 
-                      memswap(a, (char*)a+(n-m)*es, left*es);
+                      memswap(a, (char*)a+(sign_n-m)*es, left*es);
                       left--;
                }
                if(s>0){
                       pb=(char*)a+m*es; pc=(char*)a+v*es;  
-                      if(v < n){ //Extract sampling items 
-                          sp=(n/v)*es; pj=pb; pi=pb;  
+                      if(v < sign_n){ //Extract sampling items 
+                          sp=(sign_n/v)*es; pj=pb; pi=pb;  
                           for(; pi < pc; pi+=es, pj+=sp) swap(pi,pj);
                       }
                       i=right=m/2; //Right move sorted items
@@ -140,13 +146,13 @@ void SymPartitionSort(void *a, ssize_t s, size_t n, size_t es, int (*cmp)(const 
             vL=(pb-(char*)a)/es; 
             if(right < v-vL) SymPartitionSort(pb, -right, v-vL, es, cmp, data);
             vL=vL-eq/es; 
-            if(v < n){
+            if(v < sign_n){
 		if(left < vL) SymPartitionSort(a, left,vL,es,cmp, data);
                 s=v;  //Remove tail recursion
             }
             else{
                 if(left >= vL) return;
-                s=left; n=vL; //Remove tail recursion
+                s=left; sign_n=vL; //Remove tail recursion
             }
     }
 }
@@ -170,7 +176,7 @@ void eqsort(void *a, size_t n, size_t es, int (*cmp)(const void *,const void *,v
          if(rc>0) D_inv--;
     }
     pb=(char*)a+i-es;
-    if(abs(D_inv) > n/512 ) {     
+    if(abs(D_inv) > (int)n/512 ) { // for the comp., casts `n` to int (size_t is unsigned)
          if(Rev*D_inv < 0) {pb=a; Rev=-Rev;}  //If 1st run is reverse, re-find it
             pc=(char*)a+n*es; pj=pb;
             while(1){
@@ -178,7 +184,10 @@ void eqsort(void *a, size_t n, size_t es, int (*cmp)(const void *,const void *,v
                 if(pj >= pc) break;
                 while (pj < pc && Rev*cmp(pj-es, pj,data) <=0) pj+=es; //Find next run foreward
                 while (pi > pb && Rev*cmp(pi-es, pi,data) <=0) pi-=es; //Find next run backward
-                if(pj-pi < 4*es) continue;
+
+                // for the comparison, casts `es` to int (size_t is unsigned)
+                if(pj-pi < 4*(int)es) continue;
+
                 if(pb!=a) { //Find knots in 1st and 2nd run 
                       j=((pj-pi)/es)/2;
                       m=((pb-(char*)a)/es)/4;
@@ -198,5 +207,6 @@ void eqsort(void *a, size_t n, size_t es, int (*cmp)(const void *,const void *,v
         pc=a;
         while(pc < pb ) {swap(pc,pb); pc=(char*)pc+es; pb=(char*)pb-es; }
     }
-    if(left < n) SymPartitionSort(a, left, n, es, cmp, data);
+    // for the comparison, casts `n` to int, as size_t is unsigned
+    if(left < (int)n) SymPartitionSort(a, left, n, es, cmp, data);
 }
