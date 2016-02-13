@@ -152,9 +152,11 @@ static char *register_word(char *w, size_t t, array_pt wds, array_pt wtgs, array
   i=array_add(wcs, (void *)1);
   tags=array_new(16);
   array_add_unique(tags, (void *)t);
-  if (i!=array_add(wtgs, tags))
+  // for the comparisons, the return value of array_add (which is size_t, which is
+  // unsigned) is cast into ptrdiff_t, the type of `i`, which is always signed
+  if (i!=(ptrdiff_t)array_add(wtgs, tags))
     { error("word count/tag inconsistency\n"); }
-  if (i!=array_add(wds, s))
+  if (i!=(ptrdiff_t)array_add(wds, s))
     { error("word count/string inconsistency\n"); }
   hash_put(wh, s, (void *)(i+1));
   return s;
@@ -207,7 +209,7 @@ static void register_predinfo(predinfo_pt p, model_pt m, event_pt ev)
   array_pt pds=m->predicates;
   array_pt ta;
   predinfo_pt pr;
-  int i;
+  size_t i;
 
   if (!table[0])
     {
@@ -480,7 +482,7 @@ static void select_features(model_pt m, array_pt evs, int fmin)
   for (i=0; i<pds_count; i++)
     {
       predicate_pt pd=(predicate_pt)array_get(pds, i);
-      int j;
+      size_t j;
       int counter=0;
       
       for (j=0; j<m->no_ocs; j++)
@@ -531,7 +533,7 @@ static void setup_cf_E(void *p, void *data)
 static void add_default_features(model_pt md, array_pt evs)
 {
   array_pt pds=md->predicates;
-  int i;
+  size_t i;
   int minp=array_count(pds), maxp=0;
   predinfo_pt p;
   size_t no_etoken=0;  
@@ -566,13 +568,13 @@ static void write_model_file(FILE *f, model_pt m)
 {
   array_pt pds=m->predicates;
   array_pt tgs=m->outcomes;
-  int i;
+  size_t i;
   
   fprintf(f, "MET %lu %d %+12.11e\n", (unsigned long) array_count(m->outcomes), m->max_pds, m->cf_alpha);
   for (i=0; i<array_count(pds); i++)
     {
       predicate_pt pd=(predicate_pt)array_get(pds, i);
-      int j;
+      size_t j;
 
       print_predinfo(pd->data, f, tgs);
       fprintf(f, "\n");
@@ -592,7 +594,9 @@ static ptrdiff_t find_tag(char *s, array_pt tgs)
 {
   ptrdiff_t i;
 
-  for (i=0; i<array_count(tgs); i++)
+  // casting the return of array_count() (which is size_t, which is unsigned) into
+  // ptrdiff_t (which is signed)
+  for (i=0; i<(ptrdiff_t)array_count(tgs); i++)
     { if (!strcmp(s, (char *)array_get(tgs, i))) { return i; } }
   return -1;
 }
@@ -648,7 +652,7 @@ static predicate_pt read_predicate(char *s, model_pt m)
 /* ------------------------------------------------------------ */
 static void index_predicates(model_pt m)
 {
-  int i;
+  size_t i;
   array_pt pds=m->predicates;
   predindex_pt idx=new_predindex(m);
   
@@ -725,8 +729,15 @@ static model_pt read_model_file(FILE *f)
       else
 	{
 	  feature_pt ft;
-	  int c;
-	  double alpha;
+          // if for some reason the tokenizer and the sscanf don't fail, `alpha` might
+          // end up used uninitialized; there is no problem in setting its value here,
+          // as the program will exit (with error()) if some of them fail; this just
+          // guarantees the variable is not (eventually) used uninitalized; a negative
+          // alpha should guarantee, in these cases, that the tagging goes exceptionally
+          // wrong, thus making clear to the user that something wrong happened; the same
+          // is true for `c`
+	  double alpha = -1.0;
+          int c = -1;
 	  char *t=tokenizer(b, " \n");
 	  
 	  if (!t || 1!=sscanf(t, "%lf", &alpha))
@@ -912,7 +923,8 @@ static void count_words(void *p, void *data)
   int *wc=(int *)data;
   wc[0]++;
   wc[1]+=c;
-  if (c<g->rwt) { return; }
+  // casting g->rwt (an unsigned int) to ptrdiff_t for the comparison
+  if (c < (ptrdiff_t)g->rwt) { return; }
   wc[2]++;
   wc[3]+=c;
 }
@@ -1327,7 +1339,8 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
   report(-1, "tgs=%p, wds=%p, seq=%p, pseq=%p, pnew=%p, snew=%p, tnew=%p\n",
 	 tgs, wds, seq, pseq, pnew, snew, tnew);
 #endif
-  for (i=0; i < m->no_ocs; i++) { s[i]=i; }
+  // casting `m->no_ocs` which is size_t (unsigned) to int for comparison
+  for (i=0; i < (int)m->no_ocs; i++) { s[i]=i; }
   for (i=0; i<bw; i++) { pseq[i]=1.0; }
   for (i=0; i<wno; i++)
     {
@@ -1373,7 +1386,8 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
 	    report(-1, " --> %f\n", sum);
 	  }
 #endif
-	  for (k=0; k < bw && k < m->no_ocs; k++)
+          // casting `m->no_ocs` which is size_t (unsigned) to int for comparison
+	  for (k=0; k < bw && k < (int)m->no_ocs; k++)
 	    {
 	      int ti=s[k];
 	      double pcombined=pseq[j]*p[ti];
@@ -1673,7 +1687,7 @@ int main(int argc, char **argv)
       testing(mf, df, ipf, P, b, C, n);
       break;
     case OPTION_OPERATION_TRAIN:
-      if (g->rwt<0) { g->rwt=5; }
+      if (g->rwt == 0) { g->rwt=5; }
       mf=try_to_open(mfn, "w");
       if (l) { df=try_to_open(l, "w"); }
       training(mf, df, ipf, i, M, f);
