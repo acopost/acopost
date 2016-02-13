@@ -108,26 +108,28 @@ model_pt new_model(array_pt ocs, array_pt pds)
 /* ------------------------------------------------------------ */
 double train_iteration(model_pt m, array_pt evs)
 {
-  int no_ocs=m->outcomes ? array_count(m->outcomes) : 0;
-  int no_evs=array_count(evs);
+  unsigned int no_ocs=m->outcomes ? array_count(m->outcomes) : 0;
+  unsigned int no_evs=array_count(evs);
   int modulo=no_evs/20;
   double pab[no_ocs];
   int corr[no_ocs];  
   double cf_mod=0.0;  
-  int pos=0, neg=0, i;
+  int pos=0, neg=0;
+  unsigned int i;
 
   for (i=0; i<no_evs; i++)
     {      
       event_pt ev=(event_pt)array_get(evs, i);
       double psum=0.0, b_pab;
-      int j, b_oc;
+      int b_oc;
+      unsigned int j;
       
       if (i%modulo==0) { report(3, "%3d%%\r", i*100/no_evs); }
       for (j=0; j<no_ocs; j++) { pab[j]=0.0; corr[j]=m->max_pds; }
       for (j=0; j<array_count(ev->predicates); j++)
 	{
 	  predicate_pt pd=(predicate_pt)array_get(ev->predicates, j);
-	  int k;
+	  unsigned int k;
 
 	  for (k=0; k<array_count(pd->features); k++)
 	    {
@@ -162,7 +164,7 @@ double train_iteration(model_pt m, array_pt evs)
       for (j=0; j<array_count(ev->predicates); j++)
 	{
 	  predicate_pt pd=(predicate_pt)array_get(ev->predicates, j);
-	  int k;
+	  unsigned int k;
 
 	  for (k=0; k<array_count(pd->features); k++)
 	    {
@@ -176,7 +178,7 @@ double train_iteration(model_pt m, array_pt evs)
   for (i=0; i<array_count(m->predicates); i++)
     {
       predicate_pt pd=(predicate_pt)array_get(m->predicates, i);
-      int j;
+      unsigned int j;
 
       for (j=0; j<array_count(pd->features); j++)
 	{
@@ -198,17 +200,17 @@ double train_iteration(model_pt m, array_pt evs)
 /* ------------------------------------------------------------ */
 void assign_probabilities2(model_pt m, array_pt pds, double p[])
 {
-  int no_ocs=array_count(m->outcomes);
+  unsigned int no_ocs=array_count(m->outcomes);
   double inv_no_ocs=log(1.0/(double)no_ocs);
   int corr[no_ocs];
   double psum=0.0; 
-  int j;
+  unsigned int j;
 
   for (j=0; j<no_ocs; j++) { p[j]=inv_no_ocs; corr[j]=0; }
   for (j=0; j<array_count(pds); j++)
     {
       predicate_pt pd=(predicate_pt)array_get(pds, j);
-      int k;
+      unsigned int k;
 
       for (k=0; k<no_ocs; k++)
 	{
@@ -230,8 +232,8 @@ void assign_probabilities2(model_pt m, array_pt pds, double p[])
 /* ------------------------------------------------------------ */
 void assign_probabilities(model_pt m, array_pt pds, double p[])
 {
-  int j;
-  int no_ocs=array_count(m->outcomes);
+  unsigned int j;
+  unsigned int no_ocs=array_count(m->outcomes);
   int corr[no_ocs];  
   double psum=0.0;
   
@@ -239,7 +241,7 @@ void assign_probabilities(model_pt m, array_pt pds, double p[])
   for (j=0; j<array_count(pds); j++)
     {
       predicate_pt pd=(predicate_pt)array_get(pds, j);
-      int k;
+      unsigned int k;
 
       for (k=0; k<array_count(pd->features); k++)
 	{
@@ -267,7 +269,7 @@ void redistribute_probabilities(model_pt m, array_pt keep, double p[])
 {
   double psum=0.0;
   double tmp[m->no_ocs];
-  int i;
+  unsigned int i;
   
   if (!keep) { return; }
   memcpy(tmp, p, sizeof(double)*m->no_ocs);
