@@ -133,8 +133,8 @@ int array_test ()
     /* TODO: valgrind is accusing a memory leak in array_clone */
     printf("Testing 'array_clone()'...\n");
     arr3 = array_clone(arr1);
-    printf("--> arr1->size: %ld, arr1->v address: %p\n", arr1->size, (void*)(arr1->v));
-    printf("--> arr3->size: %ld, arr3->v address: %p\n", arr3->size, (void*)(arr3->v));
+    printf("--> arr1->size: %lu, arr1->v address: %p\n", (unsigned long)arr1->size, (void*)(arr1->v));
+    printf("--> arr3->size: %lu, arr3->v address: %p\n", (unsigned long)arr3->size, (void*)(arr3->v));
     printf("--> arr1->v[0]: %i, arr1->v[0] address: %p\n", *(int *)arr1->v[0], (void*)&arr1->v[0]);
     printf("--> arr3->v[0]: %i, arr3->v[0] address: %p\n", *(int *)arr3->v[0], (void*)&arr3->v[0]);
     printf("--> &i: %p\n", (void*) i);
