@@ -241,8 +241,8 @@ int miller_rabin_size_t(size_t x)
 			&& miller_rabin_pass_size_t(x, 211991001UL)
 			&& miller_rabin_pass_size_t(x, 3749873356UL);
 	}
-	else
-	{
+//	else // commented, so compilers never complain that the function might return void
+//	{
 		return 
 			miller_rabin_pass_size_t(x, 2UL)
 			&& miller_rabin_pass_size_t(x, 325UL)
@@ -251,7 +251,7 @@ int miller_rabin_size_t(size_t x)
 			&& miller_rabin_pass_size_t(x, 450775UL)
 			&& miller_rabin_pass_size_t(x, 9780504UL)
 			&& miller_rabin_pass_size_t(x, 1795265022UL);
-	}
+//	}
 }
 
 size_t miller_rabin_next_prime_size_t(size_t n)
