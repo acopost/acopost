@@ -347,7 +347,9 @@ static ptrdiff_t find_feature_value_from_sentence(model_pt m, feature_pt f, char
 
   DEBUG(2, "find_feature_value_from_sentence: f=%s rp=%td i=%td arg1=%td arg2=%td\n", f->string, rp, i, f->arg1, f->arg2);
   
-  if (rp<0 || rp>=wno) { return find_feature_value(f, "*BOUNDARY*"); }
+  // casting `wno` (which is size_t, unsigned) to ptrdiff_t (which is signed) for
+  // the comparison
+  if (rp<0 || rp >= (ptrdiff_t)wno) { return find_feature_value(f, "*BOUNDARY*"); }
 
   w=hash_get(m->dictionary, ws[rp]);
   switch (f->type)
@@ -364,7 +366,9 @@ static ptrdiff_t find_feature_value_from_sentence(model_pt m, feature_pt f, char
     case FT_LETTER:
       {
 	size_t slen=strlen(ws[rp]);
-	if (slen<abs(f->arg2)) { return find_feature_value(f, "*NONE*"); }
+        // casting slen (which is size_t, unsigned) to int for comparison
+        if(abs(f->arg2) >= (int)slen)
+	  { return find_feature_value(f, "*NONE*"); }
 	else if (f->arg2<0) { return find_feature_value(f, substr(ws[rp], slen+f->arg2, -1)); }
 	else { return find_feature_value(f, substr(ws[rp], f->arg2-1, 1)); }
       }
@@ -516,7 +520,7 @@ static wtree_pt read_wtree(model_pt m, const char *fname)
 	  if (1!=sscanf(t, "%lu", &c))
 	    { error("%s:%lu: tag count not a number\n", fname, (unsigned long) lno); }
 	  wt->tagcount[ti]=c;
-	  if (c>wt->tagcount[wt->defaulttag]) { wt->defaulttag=ti; }
+	  if (c > wt->tagcount[wt->defaulttag]) { wt->defaulttag=ti; }
 	}
       ns[l]=wt;
     }
@@ -608,7 +612,8 @@ static void tagging(const char* fn, model_pt m)
 
 	      fi=find_feature_value_from_sentence(m, f, words, tags, i, wno);
 	      if (fi<0) { report(4, "can't find value, breaking out\n"); break; }
-	      if (fi>=array_count(tree->children))
+              // casting array_count() (size_t) to ptrdiff_t for comparison
+	      if (fi>=(ptrdiff_t)array_count(tree->children))
 		{ report(4, "can't find child %zd>=%zd, breaking out\n", fi, array_count(tree->children)); break; }
 	      next=(wtree_pt)array_get(tree->children, fi);
 	      if (!next) { report(4, "can't find child for %zd, breaking out\n", fi); break; }
