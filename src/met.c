@@ -152,11 +152,9 @@ static char *register_word(char *w, size_t t, array_pt wds, array_pt wtgs, array
   i=array_add(wcs, (void *)1);
   tags=array_new(16);
   array_add_unique(tags, (void *)t);
-  // for the comparisons, the return value of array_add (which is size_t, which is
-  // unsigned) is cast into ptrdiff_t, the type of `i`, which is always signed
-  if (i!=(ptrdiff_t)array_add(wtgs, tags))
+  if (i!=(ssize_t)array_add(wtgs, tags))
     { error("word count/tag inconsistency\n"); }
-  if (i!=(ptrdiff_t)array_add(wds, s))
+  if (i!=(ssize_t)array_add(wds, s))
     { error("word count/string inconsistency\n"); }
   hash_put(wh, s, (void *)(i+1));
   return s;
@@ -594,9 +592,7 @@ static ptrdiff_t find_tag(char *s, array_pt tgs)
 {
   ptrdiff_t i;
 
-  // casting the return of array_count() (which is size_t, which is unsigned) into
-  // ptrdiff_t (which is signed)
-  for (i=0; i<(ptrdiff_t)array_count(tgs); i++)
+  for (i=0; i<(ssize_t)array_count(tgs); i++)
     { if (!strcmp(s, (char *)array_get(tgs, i))) { return i; } }
   return -1;
 }
@@ -923,8 +919,7 @@ static void count_words(void *p, void *data)
   int *wc=(int *)data;
   wc[0]++;
   wc[1]+=c;
-  // casting g->rwt (an unsigned int) to ptrdiff_t for the comparison
-  if (c < (ptrdiff_t)g->rwt) { return; }
+  if (c < (ssize_t)g->rwt) { return; }
   wc[2]++;
   wc[3]+=c;
 }
@@ -1339,8 +1334,7 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
   report(-1, "tgs=%p, wds=%p, seq=%p, pseq=%p, pnew=%p, snew=%p, tnew=%p\n",
 	 tgs, wds, seq, pseq, pnew, snew, tnew);
 #endif
-  // casting `m->no_ocs` which is size_t (unsigned) to int for comparison
-  for (i=0; i < (int)m->no_ocs; i++) { s[i]=i; }
+  for (i=0; i < (ssize_t)m->no_ocs; i++) { s[i]=i; }
   for (i=0; i<bw; i++) { pseq[i]=1.0; }
   for (i=0; i<wno; i++)
     {
@@ -1386,8 +1380,7 @@ static void tag_sentence(model_pt m, hash_pt d, int cs, int t[], char *w[], int 
 	    report(-1, " --> %f\n", sum);
 	  }
 #endif
-          // casting `m->no_ocs` which is size_t (unsigned) to int for comparison
-	  for (k=0; k < bw && k < (int)m->no_ocs; k++)
+	  for (k=0; k < bw && k < (ssize_t)m->no_ocs; k++)
 	    {
 	      int ti=s[k];
 	      double pcombined=pseq[j]*p[ti];
@@ -1612,7 +1605,7 @@ int main(int argc, char **argv)
 		  { 'i', OPTION_SIGNED_LONG, (void*)&i, "maximum number of iterations [100]" },
 		  { 'b', OPTION_SIGNED_LONG, (void*)&b, "beam factor [1000] or n-best width [5]" },
 		  { 'l', OPTION_STRING, (void*)&l, "lexicon file [none]" },
-		  { 'r', OPTION_SIGNED_LONG, (void*)&r, "rare word threshold [0]" },
+		  { 'r', OPTION_SIGNED_LONG, (void*)&r, "rare word threshold [5]" },
 		  { 'f', OPTION_SIGNED_LONG, (void*)&f, "threshold for feature count [5]" },
 		  { 'C', OPTION_NONE, (void*)&C, "case sensitive mode for dictionary" },
 		  { 'o', OPTION_CALLBACK, (void*)&cd, "mode of operation 0/tag, 1/test, 3/train [tag]" },
