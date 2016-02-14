@@ -176,7 +176,7 @@ void eqsort(void *a, size_t n, size_t es, int (*cmp)(const void *,const void *,v
          if(rc>0) D_inv--;
     }
     pb=(char*)a+i-es;
-    if(abs(D_inv) > (int)n/512 ) { // for the comp., casts `n` to int (size_t is unsigned)
+    if(labs(D_inv) > (ssize_t)n/512 ) {
          if(Rev*D_inv < 0) {pb=a; Rev=-Rev;}  //If 1st run is reverse, re-find it
             pc=(char*)a+n*es; pj=pb;
             while(1){
@@ -184,9 +184,7 @@ void eqsort(void *a, size_t n, size_t es, int (*cmp)(const void *,const void *,v
                 if(pj >= pc) break;
                 while (pj < pc && Rev*cmp(pj-es, pj,data) <=0) pj+=es; //Find next run foreward
                 while (pi > pb && Rev*cmp(pi-es, pi,data) <=0) pi-=es; //Find next run backward
-
-                // for the comparison, casts `es` to int (size_t is unsigned)
-                if(pj-pi < 4*(int)es) continue;
+                if(pj-pi < 4*(ssize_t)es) continue;
 
                 if(pb!=a) { //Find knots in 1st and 2nd run 
                       j=((pj-pi)/es)/2;
@@ -207,6 +205,5 @@ void eqsort(void *a, size_t n, size_t es, int (*cmp)(const void *,const void *,v
         pc=a;
         while(pc < pb ) {swap(pc,pb); pc=(char*)pc+es; pb=(char*)pb-es; }
     }
-    // for the comparison, casts `n` to int, as size_t is unsigned
-    if(left < (int)n) SymPartitionSort(a, left, n, es, cmp, data);
+    if(left < (ssize_t)n) SymPartitionSort(a, left, n, es, cmp, data);
 }
