@@ -703,8 +703,7 @@ static int precondition_satisfied(model_pt m, array_pt sps, int pos, rule_pt r, 
 {
   precondition_pt pc=&r->pc[pcn];
   int rp = pos+pc->pos;
-  // casting the return of array_count() which is size_t (unsigned) for comparison
-  sample_pt sp= (rp>=0 && rp<(int)array_count(sps)) ? (sample_pt)array_get(sps, rp) : NULL;
+  sample_pt sp= (rp>=0 && rp<(ssize_t)array_count(sps)) ? (sample_pt)array_get(sps, rp) : NULL;
 
   switch (pc->type)
     {
@@ -720,8 +719,7 @@ static int precondition_satisfied(model_pt m, array_pt sps, int pos, rule_pt r, 
     case PRE_BOS:
       return rp==-1;
     case PRE_EOS:
-      // casting array_count(), which is unsigned, to int for the comparison
-      return rp==(int)array_count(sps);
+      return rp==(ssize_t)array_count(sps);
     case PRE_DIGIT:
       return sp && pc->u.digit==digit_subtype(sp->word);
     case PRE_CAP:
@@ -955,8 +953,7 @@ precondition_from_template(model_pt m, array_pt sps, int pos, rule_pt t, rule_pt
 
   if (tpc->type!=PRE_BOS && tpc->type!=PRE_EOS)
     {
-      // casting array_count(), which is unsigned, for comparison
-      if (rp < 0 || rp >= (int)array_count(sps)) { return 0; }
+      if (rp < 0 || rp >= (ssize_t)array_count(sps)) { return 0; }
       sp=(sample_pt)array_get(sps, rp);
     }
   rpc->type=tpc->type;
@@ -1003,8 +1000,7 @@ precondition_from_template(model_pt m, array_pt sps, int pos, rule_pt t, rule_pt
     case PRE_BOS:
       return rp==-1;
     case PRE_EOS:
-      // casting array_count(), which is unsigned, for comparison
-      return rp==(int)array_count(sps);
+      return rp==(ssize_t)array_count(sps);
     case PRE_DIGIT:
       rpc->u.digit=digit_subtype(sp->word);
       if (tpc->u.digit!=PRE_ANY && tpc->u.digit!=rpc->u.digit) { return 0; }
@@ -1404,7 +1400,7 @@ static void testing(model_pt m, globals_pt g)
 	     i+1, g->pos, g->neg, g->pos+g->neg, 100.0*g->pos/(g->pos+g->neg));
       report(-2, "known %dp %dn %7.3f%% unknown %dp %dn %7.3f%%\n",
 	     c[0], c[2], 100.0*c[0]/(c[0]+c[2]), c[1], c[3], 100.0*c[1]/(c[1]+c[3]));
-      fprintf(stdout, "%5d %d %d %7.3f %d %d %7.3f %d %d %7.3f\n", i+1,
+      fprintf(stdout, "%5lu %d %d %7.3f %d %d %7.3f %d %d %7.3f\n", (unsigned long)i+1,
 	      g->pos, g->neg, g->pos+g->neg==0 ? 0.0 : 100.0*g->pos/(g->pos+g->neg),
 	      c[0], c[2], c[0]+c[2]==0 ? 0.0 : 100.0*c[0]/(c[0]+c[2]),
 	      c[1], c[3], c[1]+c[3]==0 ? 0.0 : 100.0*c[1]/(c[1]+c[3]) );
