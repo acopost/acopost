@@ -303,25 +303,36 @@ ssize_t readline(char **lineptr, size_t  *n, FILE *stream) {
 }
 
 /* ------------------------------------------------------------ */
-char *substr(char *s, int pos, int length)
+char *substr(const char *s, size_t pos, ssize_t length, char**buffer, size_t *n)
 {
-  static char b[4096];
-  int i;
-
-  if (abs(length)>=4096) { error("substr static buffer exceeded\n"); }
-
-  if (length>=0)
-    {
-      for (i=0; length>0 && s[pos+i]; length--, i++) { b[i]=s[pos+i]; }
-      b[i]='\0';
-    }
-  else
-    {
-      b[abs(length)]='\0';
-      for (i=0; length<0 && s[pos+length+1]; length++, i++) { b[i]=s[pos+length+1]; }
-    }
-
-  return b;
+  size_t i;
+  size_t sl = length;
+  if(length < 0) {
+	  sl = -length;
+	  if(pos+1 < sl) {
+		  sl -= pos - 1;
+		  pos = 0;
+	  } else {
+		  pos = pos + length + 1;
+	  }
+  }
+  const char *orig = s + pos;
+  if(!s) {
+	  return NULL;
+  }
+  if (!*buffer) {
+	  *buffer=(char *)mem_malloc(sl+1);
+	  *n = sl+1;
+  }
+  if (*n<=sl) {
+	  *buffer=(char *)mem_realloc(*buffer, sl+1);
+	  *n = sl+1;
+  }
+  for (i=0; i<sl && orig[i]; i++) {
+	  (*buffer)[i] = orig[i];
+  }
+  (*buffer)[i]='\0';
+  return *buffer;
 }
 
 /* ------------------------------------------------------------ */
