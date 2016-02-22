@@ -364,10 +364,16 @@ static ptrdiff_t find_feature_value_from_sentence(model_pt m, feature_pt f, char
     case FT_LETTER:
       {
 	size_t slen=strlen(ws[rp]);
+	char* tmp = NULL;
+        size_t tmp_n = 0;
         if(labs(f->arg2) >= (ssize_t)slen)
 	  { return find_feature_value(f, "*NONE*"); }
-	else if (f->arg2<0) { return find_feature_value(f, substr(ws[rp], slen+f->arg2, -1)); }
-	else { return find_feature_value(f, substr(ws[rp], f->arg2-1, 1)); }
+	else if (f->arg2<0) { return find_feature_value(f, substr(ws[rp], slen+f->arg2, -1, &tmp, &tmp_n)); }
+	else { return find_feature_value(f, substr(ws[rp], f->arg2-1, 1, &tmp, &tmp_n)); }
+	if(tmp != NULL) {
+		free(tmp);
+		tmp = NULL;
+	}
       }
     case FT_CAP:
       {
