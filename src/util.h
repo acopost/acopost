@@ -115,13 +115,13 @@ ssize_t readline(char **lineptr, size_t *n, FILE *stream);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    returns substring of s with maximum length length,
-   NOT reentrant
    - if length>0: starting at pos
-     substr("12345", 1, 3)="234"
+     substr("12345", 1, 3, &buffer, &size)="234"
    - if length<0: ending with pos 
-     substr("12345", 3, -2)="34"
+     substr("12345", 3, -2, &buffer, &size)="34"
+   returns a pointer to buffer
 */
-char *substr(char *s, int pos, int length);
+char *substr(const char *s, size_t pos, ssize_t length, char**buffer, size_t *n);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    returns lowercase version of string s, returns a pointer
