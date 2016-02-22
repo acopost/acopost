@@ -339,14 +339,20 @@ static void make_event(globals_pt g, char *w[], int t[], array_pt wcs, hash_pt w
       /* FIXME: bug in jmx: a X-character word cannot have prefixes
 	 or suffixes of length X
       */
+      char* tmp = NULL;
+      size_t tmp_n = 0;
       for (i=1; i<5 && i<cl; i++)
 	{
 	  p.type=pt_prefix;
-	  p.w=(char*)sregister_get(g->strings,substr(w[2], 0, i));
+	  p.w=(char*)sregister_get(g->strings,substr(w[2], 0, i, &tmp, &tmp_n));
 	  register_predinfo(&p, m, ev);
 	  p.type=pt_suffix;
-	  p.w=(char*)sregister_get(g->strings,substr(w[2], cl-1, -i));
+	  p.w=(char*)sregister_get(g->strings,substr(w[2], cl-1, -i, &tmp, &tmp_n));
 	  register_predinfo(&p, m, ev);
+	}
+	if(tmp != NULL) {
+		free(tmp);
+		tmp = NULL;
 	}
       p.w=w[2];
       if (strpbrk(p.w, "0123456789"))
@@ -1045,8 +1051,8 @@ static void add_matching_predicates(array_pt pds, model_pt m, hash_pt d, int t[]
       size_t i;
       for (i=1; i<5 && i<cl; i++)
 	{
-	  pd=hash_get(idx->prefix, substr(w[2], 0, i)); ARRAY_ADD_IF_NONNULL(pds, pd);
-	  pd=hash_get(idx->suffix, substr(w[2], cl-1, -i)); ARRAY_ADD_IF_NONNULL(pds, pd);
+	  pd=hash_get(idx->prefix, substr(w[2], 0, i, &buf2, &n2)); ARRAY_ADD_IF_NONNULL(pds, pd);
+	  pd=hash_get(idx->suffix, substr(w[2], cl-1, -i, &buf2, &n2)); ARRAY_ADD_IF_NONNULL(pds, pd);
 	}
       if (strpbrk(w[2], "0123456789"))
 	{ ARRAY_ADD_IF_NONNULL(pds, idx->number); }
