@@ -976,9 +976,21 @@ precondition_from_template(model_pt m, array_pt sps, int pos, rule_pt t, rule_pt
 	}
       else
 	{
-	  char *s=substr(sp->word, 0, tpc->u.prefix.length);
-	  if (strlen(s) != tpc->u.prefix.length) { return 0; }
+	  char* tmp = NULL;
+	  size_t tmp_n = 0;
+	  char *s=substr(sp->word, 0, tpc->u.prefix.length, &tmp, &tmp_n);
+	  if (strlen(s) != tpc->u.prefix.length) {
+		  if(tmp != NULL) {
+			  free(tmp);
+			  tmp = NULL;
+		  }
+		  return 0;
+	  }
 	  rpc->u.prefix.prefix=REGISTER_STRING(s);
+	  if(tmp != NULL) {
+		  free(tmp);
+		  tmp = NULL;
+	  }
 	}
       rpc->u.prefix.length=tpc->u.prefix.length;
       return 1;
@@ -991,9 +1003,21 @@ precondition_from_template(model_pt m, array_pt sps, int pos, rule_pt t, rule_pt
 	}
       else
 	{
-	  char *s=substr(sp->word, strlen(sp->word)-1, -tpc->u.suffix.length);
-	  if (strlen(s)!=tpc->u.suffix.length) { return 0; }
+	  char* tmp = NULL;
+	  size_t tmp_n = 0;
+	  char *s=substr(sp->word, strlen(sp->word)-1, -tpc->u.suffix.length, &tmp, &tmp_n);
+	  if (strlen(s) != tpc->u.suffix.length) {
+		  if(tmp != NULL) {
+			  free(tmp);
+			  tmp = NULL;
+		  }
+		  return 0;
+	  }
 	  rpc->u.suffix.suffix=REGISTER_STRING(s);
+	  if(tmp != NULL) {
+		  free(tmp);
+		  tmp = NULL;
+	  }
 	}
       rpc->u.suffix.length=tpc->u.suffix.length;
       return 1;
