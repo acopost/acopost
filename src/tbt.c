@@ -478,13 +478,13 @@ static int read_rules_file(model_pt m, char*fn)
       if(r == 0) { continue; }
       rule_t rt;
 
-      s=tokenizer(s, " \t");
+      s=strtok(s, " \t");
       if (!s) { continue; }      
       if (s[0]=='#' && s[1]=='#') { cno++; continue; }      
       rt.tag=iregister_add_name(m->tags, s);
-      for (rt.nop=0, s=tokenizer(NULL, " \t");
+      for (rt.nop=0, s=strtok(NULL, " \t");
 	   s && rt.nop<MAX_NO_PC;
-	   rt.nop++, s=tokenizer(NULL, " \t"))
+	   rt.nop++, s=strtok(NULL, " \t"))
       { read_precondition_into_rule(m, &rt, rt.nop, s, 0); }
       if (s) { report(0, "rule too long (%s:%d)\n", fn, lno); }      
       array_add(m->rules, (void *)new_rule(&rt));
@@ -543,17 +543,17 @@ static void read_dictionary_file(const char*fn, model_pt m)
       ptrdiff_t bcnt, btag;
       char *t;
       
-      s=tokenizer(s, " \t");
+      s=strtok(s, " \t");
       if (!s) { continue; }
       if (s[0]=='#' && s[1]=='#') { cno++; continue; }
       s=REGISTER_STRING(s);
       w=new_word(s, 0, not);
       bcnt=btag=-1;
-      for (t=tokenizer(NULL, " \t"); t;  t=tokenizer(NULL, " \t"))
+      for (t=strtok(NULL, " \t"); t;  t=strtok(NULL, " \t"))
 	{
 	  ptrdiff_t cnt, ti=iregister_add_name(m->tags, t);
 	  
-	  t=tokenizer(NULL, " \t");
+	  t=strtok(NULL, " \t");
 	  if (!t || 1!=sscanf(t, "%td", &cnt))
 	    { report(1, "can't find tag count (%s:%d)\n", fn, lno); continue; }
 	  if (cnt>bcnt) { bcnt=cnt; btag=ti; }
@@ -626,11 +626,11 @@ static array_pt read_cooked_file(model_pt m, char *name)
       array_pt st=array_new(8);
       char *w, *t;
 
-      for (w=tokenizer(s, " \t"); w; w=tokenizer(NULL, " \t"))
+      for (w=strtok(s, " \t"); w; w=strtok(NULL, " \t"))
 	{
 	  sample_pt sp;
 	  w=REGISTER_STRING(w);
-	  t=tokenizer(NULL, " \t");
+	  t=strtok(NULL, " \t");
 	  if (!t)
 	    { report(0, "can't read tag (%s:%d)\n", fn, lno); continue; }
 	  sp=new_sample();
@@ -884,13 +884,13 @@ static void read_template_file(model_pt m, char* fn)
       rule_t rt;
       rule_pt r;
       
-      s=tokenizer(s, " \t");
+      s=strtok(s, " \t");
       if (!s) { continue; }
       if (s[0]=='#' || s[1]=='#') { cno++; continue; }
       rt.tag= strcmp(s, jokerstring) ? iregister_add_name(m->tags, s) : -1;
-      for (rt.nop=0, s=tokenizer(NULL, " \t");
+      for (rt.nop=0, s=strtok(NULL, " \t");
 	   rt.nop<MAX_NO_PC && s;
-	   rt.nop++, s=tokenizer(NULL, " \t"))
+	   rt.nop++, s=strtok(NULL, " \t"))
       { read_precondition_into_rule(m, &rt, rt.nop, s, 1); }
       if (s) { error("template too long (%s:%d)\n", fn, lno); }      
       r=new_rule(&rt);
