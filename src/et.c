@@ -214,9 +214,9 @@ static void read_dictionary_file(const char*fn, model_pt m)
       lno++;
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       if(r == 0) { continue; }
-      for (s=tokenizer(s, " \t"), s=tokenizer(NULL, " \t");
+      for (s=strtok(s, " \t"), s=strtok(NULL, " \t");
 	   s;
-	   s=tokenizer(NULL, " \t"), s=tokenizer(NULL, " \t"))
+	   s=strtok(NULL, " \t"), s=strtok(NULL, " \t"))
 	{
       iregister_add_name(m->tags, s);
         }
@@ -240,7 +240,7 @@ static void read_dictionary_file(const char*fn, model_pt m)
       size_t cnt;
       word_pt wd, old;
       
-      s=tokenizer(s, " \t");
+      s=strtok(s, " \t");
       if (!s) { report(1, "can't find word (%s:%lu)\n", fn, (unsigned long) lno); continue; }
       rs=(char*)sregister_get(m->strings,s);
       wd=new_word(rs, 0, not);
@@ -252,7 +252,7 @@ static void read_dictionary_file(const char*fn, model_pt m)
 	}
       wd->defaulttag=-1;
       b[0]='*', b[1]='\0';
-      for (s=tokenizer(NULL, " \t"); s;  s=tokenizer(NULL, " \t"))
+      for (s=strtok(NULL, " \t"); s;  s=strtok(NULL, " \t"))
 	{
 	  ptrdiff_t ti=iregister_get_index(m->tags, s);
 	  
@@ -261,7 +261,7 @@ static void read_dictionary_file(const char*fn, model_pt m)
 	  if (strlen(b)+strlen(s)+2>BLEN)
 	    { error("oops, ambiguity class too long (%s:%lu)\n", fn, (unsigned long) lno); }
 	  strcat(b, s); strcat(b, "*");
-	  s=tokenizer(NULL, " \t");
+	  s=strtok(NULL, " \t");
 	  if (!s || 1!=sscanf(s, "%lu", &tmp))
 	    { report(1, "can't find tag count (%s:%lu)\n", fn, (unsigned long) lno); continue; }
 	  cnt = tmp;
