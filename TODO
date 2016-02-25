@@ -4,9 +4,11 @@
 ** Update UserGuide according to changes in CLIs
 * Implement acopost as a library
 ** Make main functions re-entrant and avoid global variables
-*** tokenizer/strtok (tokenizer revert the changes to the input string when
-    finished)
-*** substr
+*** tokenizer/strtok (tokenizer is like strtok, but additionally revert the
+    changes made to the input string at the end. This feature is not used
+    anywhere in acopost, so all calls to tokenizer has been replaced with
+    calls to strtok. tokenizer() can be used as the base to implement a
+    re-entrant version of strtok)
 ** No library function should call exit
    Currently the only functions doing this are try_to_open() and the
    functions calling it
@@ -15,6 +17,22 @@
   latin1 strings, that are used to deal with ä, ö, ü, Ä, Ö, and Ü
   there is no support for other common latin1 symbols, nor for
   unicode.
+  All the relevant code has been isolated and put into functions
+  in util.c/util.h, so that it will be possible to update only these
+  functions and obtain proper UTF-8 support.
+  The functions are:
+  - is_uppercase: this function apparently is locale independent (good);
+  - get_first_uppercase: this function should be implemented properly
+    on top of is_uppercase(). A function to get an int uchar from a string
+    should be probably implemented;
+  - uppercase_prefix_length: this function should probably be implemented on
+    top of is_uppercase(). The output should be in bytes, not characters;
+  - mytolower(): this function should be dropped as there is no one-to-one
+    mapping possible;
+  - lowercase(): it should be investigated if this function is supposed to
+    convert to lowercase() (that is locale dependent) or to caseinsensitive()
+    (that apparently is locale independent). In both case it should be
+    adapted accordingly.
   Complete UTF-8 support would be a good option to improve that
   code.
 * Make the tagger generic
