@@ -731,7 +731,7 @@ static model_pt read_model_file(FILE *f)
       else
 	{
 	  feature_pt ft;
-          // if for some reason the tokenizer and the sscanf don't fail, `alpha` might
+          // if for some reason the strtok and the sscanf don't fail, `alpha` might
           // end up used uninitialized; there is no problem in setting its value here,
           // as the program will exit (with error()) if some of them fail; this just
           // guarantees the variable is not (eventually) used uninitalized; a negative
@@ -740,19 +740,19 @@ static model_pt read_model_file(FILE *f)
           // is true for `c`
 	  double alpha = -1.0;
           int c = -1;
-	  char *t=tokenizer(b, " \n");
+	  char *t=strtok(b, " \n");
 	  
 	  if (!t || 1!=sscanf(t, "%lf", &alpha))
 	    { error("can't read alpha in line %d\n", lno); }
-	  t=tokenizer(NULL, " \n");
+	  t=strtok(NULL, " \n");
 	  if (!t || 1!=sscanf(t, "%d", &c))
 	    { error("can't read count in line %d\n", lno); }
-	  t=tokenizer(NULL, " \n");
+	  t=strtok(NULL, " \n");
 	  if (!t || !*t)
 	    { error("can't read tag in line %d\n", lno); }
 	  ft=new_feature(c, array_add_unique(tgs, (char*)sregister_get(g->strings,t)), pd);
 	  m->no_fts++;
-	  t=tokenizer(NULL, " \n");
+	  t=strtok(NULL, " \n");
 	  if (t)
 	    { error("additional material in line %d\n", lno); }
 	  ft->alpha=alpha;
@@ -884,20 +884,20 @@ static hash_pt read_dictionary_file(model_pt m, FILE *f, size_t cs)
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       if(r == 0) { continue; }
       array_pt tgs=NULL;
-      char *w=tokenizer(s, " \t");
+      char *w=strtok(s, " \t");
       size_t wc=0;
       
       if (!w) { continue; }
       if (!cs) { w=lowercase(w, &buf2, &n2); tgs=hash_get(d, w); }
       if (!tgs)
 	{ tgs=array_new(8); hash_put(d, (void *)sregister_get(g->strings,w), (void *)tgs); }
-      for (s=tokenizer(NULL, " \t"); s; s=tokenizer(NULL, " \t"))
+      for (s=strtok(NULL, " \t"); s; s=strtok(NULL, " \t"))
 	{
 	  ptrdiff_t ti=find_tag(s, m->outcomes);
 
 	  if (ti<0) { error("unknown tag \"%s\"\n", s); }
 	  array_add(tgs, (void *)ti);
-	  s=tokenizer(NULL, " \t");
+	  s=strtok(NULL, " \t");
 	  if (!s)
 	    { error("can't find tag count in line %d (old lexicon format?)\n", lno); }
 	  if (1!=sscanf(s, "%td", &ti))
