@@ -716,7 +716,7 @@ static void read_dictionary_file(const char*fn, model_pt m)
       size_t cnt;
       word_pt wd, old;
       
-      s=tokenizer(s, " \t");
+      s=strtok(s, " \t");
       if (!s) { report(1, "can't find word (%s:%lu)\n", fn, (unsigned long) lno); continue; }
       rs=(char*)sregister_get(m->strings,s);
       wd=new_word(rs, 0, not);
@@ -726,14 +726,14 @@ static void read_dictionary_file(const char*fn, model_pt m)
 	  report(1, "duplicate dictionary entry \"%s\" (%s:%lu)\n", s, fn, (unsigned long) lno);
 	  delete_word(old);
 	}
-      for (s=tokenizer(NULL, " \t"); s;  s=tokenizer(NULL, " \t"))
+      for (s=strtok(NULL, " \t"); s;  s=strtok(NULL, " \t"))
 	{
 	  ptrdiff_t fti;
 	  ptrdiff_t ti=iregister_get_index(m->tags, s);
 	  
 	  if (ti<0)
 	    { report(0, "invalid tag \"%s\" (%s:%lu)\n", s, fn, (unsigned long) lno); continue; }
-	  s=tokenizer(NULL, " \t");
+	  s=strtok(NULL, " \t");
 	  if (!s || 1!=sscanf(s, "%lu", &tmp))
 	    { report(1, "can't find tag count (%s:%lu)\n", fn, (unsigned long) lno); continue; }
 	  cnt = tmp;
@@ -1125,7 +1125,7 @@ void debugging(model_pt m)
       if (r>0 && s[r-1]=='\n') s[r-1] = '\0';
       char *t;
       size_t i, j, mode;
-      for (i=0, t=tokenizer(s, " \t"), mode=0; t && i<3 && mode==0; i++, t=tokenizer(NULL, " \t"))
+      for (i=0, t=strtok(s, " \t"), mode=0; t && i<3 && mode==0; i++, t=strtok(NULL, " \t"))
 	{
 	  ts[i]=iregister_get_index(m->tags, t);
 	  if (!strcmp(t, "NULL")) { ts[i]=0; }
@@ -1160,8 +1160,8 @@ void debugging(model_pt m)
 	}
       else
 	{
-	  while (tokenizer(NULL, " \t")) { /* nada */ }
-	  for (t=tokenizer(s, " \t"); t; t=tokenizer(NULL, " \t"))
+	  while (strtok(NULL, " \t")) { /* nada */ }
+	  for (t=strtok(s, " \t"); t; t=strtok(NULL, " \t"))
 	    {
 	      prob_t *p=get_lexical_probs(m, t);
 	      word_pt w=hash_get(m->dictionary, t);
