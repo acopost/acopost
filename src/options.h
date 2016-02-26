@@ -58,9 +58,10 @@ typedef option_entry_t *option_entry_pt;
 
 typedef struct option_context_s
 {
-  char *banner;
   char *cmd;
   char *description;
+  char *synopsis;
+  char *banner;
   option_entry_pt ops;
 } option_context_t;
 typedef option_context_t *option_context_pt;
