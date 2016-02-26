@@ -1466,9 +1466,10 @@ int main(int argc, char **argv)
     option_operation_mode_serializer
   };
   option_context_t options = {
-	  "Transformation-based Tagger (c) Ingo Schröder and others, http://acopost.sf.net/",
 	  argv[0],
-	  " OPTIONS rulefile [inputfile]",
+	  "transformation-based part-of-speech tagger",
+	  "OPTIONS rulefile [inputfile]",
+	  version_copyright_banner,
 	  (option_entry_t[]) {
 		  { 'h', OPTION_NONE, (void*)&h, "display this help" },
 		  { 'v', OPTION_UNSIGNED_LONG, (void*)&v, "verbosity level [1]" },
