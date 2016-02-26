@@ -33,6 +33,9 @@
 
 */
 
+#ifndef CONFIG_COMMON_H
+#define CONFIG_COMMON_H
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #else
@@ -42,8 +45,7 @@
 #define HAVE_SRAND48 1
 #endif
 
-#ifndef CONFIG_COMMON_H
-#define CONFIG_COMMON_H
+static const char* version_copyright_banner = "  ACOPOST 2.0.0 <https://github.com/acopost/acopost>\n  Copyright (c) 2007-2016, ACOPOST Developers Team\n  Copyright (c) 2001-2002, Ingo Schröder";
 
 #include <stdio.h>
 
