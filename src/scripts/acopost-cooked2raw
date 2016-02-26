@@ -6,7 +6,27 @@
 
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
-$Usage="Usage: $cmd [-h]\n";
+$purpouse = "drop tags from cooked file";
+$Usage=
+"NAME
+
+  $cmd - $purpouse
+
+SYNOPSIS
+
+  $cmd OPTIONS
+
+OPTIONS
+
+  -h          display this help
+
+VERSION
+
+
+  ACOPOST 2.0.0 <https://github.com/acopost/acopost>
+  Copyright (c) 2007-2016, ACOPOST Developers Team
+  Copyright (c) 2001-2002, Ingo Schröder
+";
 
 use Getopt::Long;
 Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
