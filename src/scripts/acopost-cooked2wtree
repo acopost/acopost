@@ -1,16 +1,39 @@
 #!/usr/bin/env perl
 
 #
-# Ingo Schröder, schroeder@informatik.uni-hamburg.de
+# Ingo Schröder
 #
-# see http://nats-www.informatik.uni-hamburg.de/~ingo/icopost/
-#
-
-#use strict;
 
 $cmd=$0;
 $cmd=~s/(.*\/)*//;
-$Usage="Usage: $cmd [-A min] [-B max] [-o debug] [-h] [-w mfw] [-r rwt] featurefile\n";
+$purpouse = "compute word tree";
+$Usage=
+"NAME
+
+  $cmd - $purpouse
+
+SYNOPSIS
+
+  $cmd OPTIONS featurefile
+
+OPTIONS
+
+  -h          display this help
+  -A   <uint> minimum word count [0]
+  -B   <uint> maximum word count []
+  -X <string> exclude file []
+  -I <string> include file []
+  -r    <int> rare word threshold [0]
+  -w    <int> word rank threshold [100]
+  -o  <value> mode of operation "", debug []
+
+VERSION
+
+
+  ACOPOST 2.0.0 <https://github.com/acopost/acopost>
+  Copyright (c) 2007-2016, ACOPOST Developers Team
+  Copyright (c) 2001-2002, Ingo Schröder
+";
 
 use Getopt::Long;
 Getopt::Long::Configure(qw( auto_abbrev no_ignore_case ));
@@ -32,7 +55,7 @@ GetOptions
 (
  'A=i' => \$minc,
  'B=i' => \$maxc,
- 'o' => \$mode,
+ 'o=s' => \$mode,
  'X=s' => \$exclude,
  'I=s' => \$include,
  'r=i' => \$rwt,
