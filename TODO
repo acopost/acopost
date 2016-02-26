@@ -1,6 +1,6 @@
 * Remove segmentation faults
 * make CLIs uniform
-** Update usage display, so that every command help has the same layout
+** Update scripts so that they all report their purpouse
 ** Update UserGuide according to changes in CLIs
 * Implement acopost as a library
 ** Make main functions re-entrant and avoid global variables
