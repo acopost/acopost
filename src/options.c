@@ -99,13 +99,18 @@ int options_print_configuration(option_context_pt options, FILE* out) {
 
 
 int options_print_usage(option_context_pt options, FILE *out) {
-	fprintf(out, "\n%s\n\nUsage: %s%s\nwhere OPTIONS can be\n\n", options->banner, options->cmd, options->description);
+	fprintf(out, "NAME\n\n  %s - %s\n\nSYNOPSYS\n\n  %s %s\n\n", options->cmd, options->description, options->cmd, options->synopsis);
 	option_entry_pt opt = options->ops;
+	if(opt->character) {
+		fprintf(out, "OPTIONS\n\n");
+	}
 	while(opt->character) {
 		fprintf(out, "  -%c %8s %s\n", opt->character, option_arg_type_to_string(opt->arg_type), opt->usage);
 		opt++;
 	}
-	fprintf(out, "\n");
+	if(options->banner) {
+		fprintf(out, "\nVERSION\n\n%s\n", options->banner);
+	}
 	return 0;
 }
 
