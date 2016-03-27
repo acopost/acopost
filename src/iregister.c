@@ -69,6 +69,7 @@ void iregister_delete(iregister_pt l) {
 	iregister_clear(l);
 	hash_delete(l->g_table);
 	array_free(l->g_array);
+	free(l);
 }
 
 void iregister_clear(iregister_pt l) {
