@@ -10,8 +10,12 @@
     calls to strtok. tokenizer() can be used as the base to implement a
     re-entrant version of strtok)
 ** No library function should call exit
-   Currently the only functions doing this are try_to_open() and the
-   functions calling it
+   Currently the only functions doing this are
+*** try_to_open() and the functions calling it
+*** error and the functions calling it
+** No library function should call abort
+   Currently the only functions doing this are hash functions and the
+   functions calling them
 * Support UTF-8
   Currently util.c, tbt.c, t3.c, met.c, et.c contain hard-coded
   latin1 strings, that are used to deal with ä, ö, ü, Ä, Ö, and Ü
