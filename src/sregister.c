@@ -74,7 +74,9 @@ const char *sregister_get(sregister_pt st, const char *s)
   else { t=hash_get(st->g_table, (char*)s); if (t) { return t; } }
 
   t=strdup(s);
-  hash_put(st->g_table, (char*)t, (char*)t);
+  if(t != NULL) {
+    hash_put(st->g_table, (char*)t, (char*)t);
+  }
   return t;
 }
 	
@@ -105,8 +107,9 @@ sregister_pt sregister_new (size_t cp)
   sregister_pt st;
   /* creates the string register */
   st = (sregister_pt)mem_malloc(sizeof(sregister_s));
-  if(st != NULL)
+  if(st != NULL) {
     st->g_table = NULL;
-  st->cp = cp;
+    st->cp = cp;
+  }
   return(st);
 }
