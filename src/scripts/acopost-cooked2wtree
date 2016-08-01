@@ -25,7 +25,7 @@ OPTIONS
   -I <string> include file []
   -r    <int> rare word threshold [0]
   -w    <int> word rank threshold [100]
-  -o  <value> mode of operation "", debug []
+  -o  <value> mode of operation \"\", debug []
 
 VERSION
 
@@ -235,7 +235,7 @@ for (my $i=0; $i<=$#s; $i++) {
       } elsif ($f=~m/^WORD\[(-?\d+)\]$/) {
 	my $rp=$1;
 	my $pos=$j+2*$rp;
-	$tmp= ($pos<0 || $pos>$#ls) ? "*BOUNDARY*" : ($wc{$ls[$pos]}>$mfwt ? $ls[$pos] : "*RARE*");	
+	$tmp= ($pos<0 || $pos>$#ls) ? "*BOUNDARY*" : ($wc{$ls[$pos]}>$mfwt ? $ls[$pos] : "*RARE*");
       } elsif ($f=~m/^LETTER\[(-?\d+),(-?\d+)\]$/) {
 	my $rp=$1;
 	my $pos=$j+2*$rp;
