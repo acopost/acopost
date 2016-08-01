@@ -1,7 +1,11 @@
 * Remove segmentation faults
-* make CLIs uniform
-** Update scripts so that they all report their purpouse
-** Update UserGuide according to changes in CLIs
+* Update documentation
+** Update UserGuide so that contact information are ACOPOST Developer Team
+   and not Ingo.
+** Add a note about the fact that the CLI changed.
+* DONE make CLIs uniform
+** DONE Update scripts so that they all report their purpouse
+** DONE Update UserGuide according to changes in CLIs
 * Implement acopost as a library
 ** Make main functions re-entrant and avoid global variables
 *** tokenizer/strtok (tokenizer is like strtok, but additionally revert the
