@@ -1477,7 +1477,7 @@ int main(int argc, char **argv)
 		  { 'l', OPTION_STRING, (void*)&l, "lexicon file [none]" },
 		  { 'm', OPTION_SIGNED_LONG, (void*)&m, "minimum improvement per iteration [1]" },
 		  { 'r', OPTION_SIGNED_LONG, (void*)&r, "rare word threshold [0]" },
-		  { 'o', OPTION_CALLBACK, (void*)&cd, "mode of operation 0/tag, 1/test, 2/train [tag]" },
+		  { 'o', OPTION_CALLBACK, (void*)&cd, "mode of operation tag, test, train [tag]" },
 		  { 'p', OPTION_STRING, (void*)&p, "preload file [none]" },
 		  { 'R', OPTION_NONE, (void*)&R, "assume raw format for input [cooked format]" },
 		  { 't', OPTION_STRING, (void*)&t, "template file [none]" },
