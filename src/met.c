@@ -1615,7 +1615,7 @@ int main(int argc, char **argv)
 		  { 'r', OPTION_SIGNED_LONG, (void*)&r, "rare word threshold [5]" },
 		  { 'f', OPTION_SIGNED_LONG, (void*)&f, "threshold for feature count [5]" },
 		  { 'C', OPTION_NONE, (void*)&C, "case sensitive mode for dictionary" },
-		  { 'o', OPTION_CALLBACK, (void*)&cd, "mode of operation 0/tag, 1/test, 3/train [tag]" },
+		  { 'o', OPTION_CALLBACK, (void*)&cd, "mode of operation tag, test, train [tag]" },
 		  { 'P', OPTION_DOUBLE, (void*)&P, "probability threshold [-1.0]" },
 		  { 'K', OPTION_SIGNED_LONG, (void*)&K, "priority class [19]" },
 		  { 'M', OPTION_DOUBLE, (void*)&M, "minimum improvement between iterations [0.0]" },
