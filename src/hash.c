@@ -241,6 +241,11 @@ void *hash_remove(hash_pt ht, void *key)
  */
 void hash_clear(hash_pt ht)
 {
+  if (ht == NULL)
+  {
+    return;
+  }
+  
   size_t i;
 
   for (i=0; i<ht->capacity; i++)
@@ -326,6 +331,11 @@ int hash_contains_value(hash_pt ht, void *value)
  */
 void hash_delete(hash_pt ht)
 {
+  if (ht == NULL)
+  {
+    return;
+  }
+  
   hash_clear(ht);
   mem_free(ht->entries);
   mem_free(ht);
