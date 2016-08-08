@@ -1489,7 +1489,7 @@ int main(int argc, char **argv)
   }
   if (idx<argc && strcmp("-", argv[idx]))
   {
-	  ipf=argv[idx+1];
+	  ipf=argv[idx];
   }
   if(o!=OPTION_OPERATION_TAG && o!=OPTION_OPERATION_TEST && o!=OPTION_OPERATION_DUMP && o!=OPTION_OPERATION_DEBUG)
   {
